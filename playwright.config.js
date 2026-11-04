@@ -2,7 +2,7 @@ const { defineConfig, devices } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  fullyParallel: false,
   reporter: "list",
   use: {
     baseURL: "http://127.0.0.1:4173",
@@ -15,7 +15,7 @@ module.exports = defineConfig({
     }
   ],
   webServer: {
-    command: "python3 -m http.server 4173 --bind 127.0.0.1",
+    command: "npx http-server -p 4173 -d false",
     url: "http://127.0.0.1:4173",
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,

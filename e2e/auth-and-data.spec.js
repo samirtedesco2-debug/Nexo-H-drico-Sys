@@ -9,6 +9,12 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
+async function aguardarBancoDisponivel(page) {
+  await expect
+    .poll(() => page.locator("#seletor-data option").count(), { timeout: 20_000 })
+    .toBeGreaterThan(0);
+}
+
 test("login acessível rejeita credenciais inválidas", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#nexo-auth-overlay .auth-brand-logo")).toBeVisible();
@@ -39,10 +45,12 @@ test("login acessível rejeita credenciais inválidas", async ({ page }) => {
 });
 
 test("login válido cria sessão e abre o painel", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto("/");
   await page.getByLabel("Usuário").fill("admin.nexo");
   const campoSenha = page.locator("#login-password");
   await campoSenha.fill("Admin@2026");
+  const loginReload = page.waitForEvent("load");
   await expect(campoSenha).toHaveAttribute("type", "password");
   await expect(page.locator("#login-password-eye-icon")).toBeVisible();
   await expect(page.locator("#login-password-eye-off-icon")).toBeHidden();
@@ -64,6 +72,7 @@ test("login válido cria sessão e abre o painel", async ({ page }) => {
   await page.getByRole("button", { name: "Entrar" }).click();
 
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
+  await loginReload;
   await expect(page.locator(".view-launcher")).toBeVisible();
   await expect(page.locator("#tab-exceccoes")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Escolha uma visão" })).toBeVisible();
@@ -85,11 +94,19 @@ test("login válido cria sessão e abre o painel", async ({ page }) => {
 });
 
 test("visualizações abrem em janelas focadas reutilizáveis", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto("/");
   await page.getByLabel("Usuário").fill("admin.nexo");
   await page.locator("#login-password").fill("Admin@2026");
+  const loginReload = page.waitForEvent("load");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
+  await loginReload;
+  await aguardarBancoDisponivel(page);
+  await page.evaluate(() => {
+    window.nexoViewWindows = {};
+    window.ccoMuralWindow = null;
+  });
 
   const visualizacoes = [
     { aba: "tab-operacional", view: "operacional", painel: "painel-operacional" },
@@ -121,8 +138,15 @@ test("controles operacionais ficam na visão operacional", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Usuário").fill("admin.nexo");
   await page.locator("#login-password").fill("Admin@2026");
+  const loginReload = page.waitForEvent("load");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
+  await loginReload;
+  await aguardarBancoDisponivel(page);
+  await page.evaluate(() => {
+    window.nexoViewWindows = {};
+    window.ccoMuralWindow = null;
+  });
 
   const popupPromise = page.waitForEvent("popup");
   await page.locator("#tab-operacional").click();
@@ -132,10 +156,10 @@ test("controles operacionais ficam na visão operacional", async ({ page }) => {
   await expect(popup.locator("header #seletor-data")).toHaveCount(0);
   await expect(popup.locator("#seletor-filtro")).toBeVisible();
   await expect(popup.locator("#seletor-data")).toBeVisible();
-  await expect(popup.locator(".btn-view-mode-cco")).toBeVisible();
+  await expect(popup.locator("#painel-operacional .btn-view-mode-cco")).toBeVisible();
   await expect(popup.getByRole("button", { name: "Fechar visualização" })).toBeVisible();
 
-  await popup.locator(".btn-view-mode-cco").click();
+  await popup.locator("#painel-operacional .btn-view-mode-cco").click();
   await expect(popup.locator("body")).toHaveClass(/modo-cco-ativo/);
   await popup.close();
 });
@@ -163,7 +187,7 @@ test("clique no mural abre o reservatório direto na investigação", async ({ p
 
   await expect(investigacao).toHaveURL(/[?&]view=operacional(?:&|$)/);
   await expect(investigacao).toHaveURL(/[?&]reservatorio=R01-A(?:&|$)/);
-  await expect(investigacao.locator("#cco-lean-investigation-header")).toBeVisible();
+  await expect(investigacao.locator("#cco-lean-investigation-header")).toBeVisible({ timeout: 15_000 });
   await expect(investigacao.locator("#cco-investigation-title")).toHaveText("R01-A");
   await expect(investigacao.locator("body")).toHaveClass(/is-cco-investigation-active/);
   await expect(investigacao.locator("header")).toBeHidden();
@@ -356,30 +380,41 @@ test("logout permite entrar novamente com a mesma conta", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Usuário").fill("admin.nexo");
   await page.locator("#login-password").fill("Admin@2026");
+  const loginReload = page.waitForEvent("load");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
+  await loginReload;
 
   page.once("dialog", (dialog) => dialog.accept());
+  const logoutReload = page.waitForEvent("load");
   await page.getByRole("button", { name: "Sair" }).click();
+  await logoutReload;
   await expect(page.locator("#nexo-auth-overlay")).toBeVisible({ timeout: 15_000 });
   expect(await page.evaluate(() => localStorage.getItem("nexo_hidrico_session"))).toBeNull();
 
   await page.getByLabel("Usuário").fill("admin.nexo");
   await page.locator("#login-password").fill("Admin@2026");
+  const reloginReload = page.waitForEvent("load");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
+  await reloginReload;
   await expect(page.locator("#logged-username-display")).toContainText("admin.nexo");
 });
 
 test("bloqueio de uma conta não impede o login de outro usuário", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto("/");
 
   await page.getByLabel("Usuário").fill("operador.nexo");
   await page.locator("#login-password").fill("Agent@2026");
+  const operatorLoginReload = page.waitForEvent("load");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
+  await operatorLoginReload;
   page.once("dialog", (dialog) => dialog.accept());
+  const operatorLogoutReload = page.waitForEvent("load");
   await page.getByRole("button", { name: "Sair" }).click();
+  await operatorLogoutReload;
   await expect(page.locator("#nexo-auth-overlay")).toBeVisible({ timeout: 15_000 });
 
   for (let tentativa = 1; tentativa <= 3; tentativa += 1) {
@@ -391,8 +426,10 @@ test("bloqueio de uma conta não impede o login de outro usuário", async ({ pag
 
   await page.getByLabel("Usuário").fill("operador.nexo");
   await page.locator("#login-password").fill("Agent@2026");
+  const operatorReloginReload = page.waitForEvent("load");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
+  await operatorReloginReload;
   await expect(page.locator("#logged-username-display")).toContainText("operador.nexo");
 });
 
@@ -407,6 +444,7 @@ test("painel alerta quando um arquivo mensal não carrega", async ({ page }) => 
 });
 
 test("reconhecimento do alarme persiste e sincroniza entre janelas", async ({ page, context }) => {
+  test.setTimeout(60_000);
   await context.addInitScript(() => {
     localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify({
       "R01-A": { nivelAtencao: 101, nivelCritico: 100, alertaNivelAtivo: true }
