@@ -1,0 +1,2961 @@
+{
+  "anoMes": "2026_11",
+  "dias": {
+    "01/11/2026": {
+      "ultimaAtualizacao": "01/11/2026 05:15",
+      "horarios": [
+        "00:15",
+        "01:15",
+        "02:15",
+        "03:15",
+        "04:15",
+        "05:15"
+      ],
+      "reservatorios": {
+        "R01-A": {
+          "nome": "R01-A",
+          "grupo": "R1",
+          "kpis": {
+            "nivelAtual": "85.4%",
+            "nivelMedio": "82.4%",
+            "nivelMin": "76.3%",
+            "nivelMax": "86.8%",
+            "vazaoAtual": "12.5 L/s",
+            "vazaoMin": "12.5 L/s",
+            "vazaoMax": "23.7 L/s",
+            "vazaoMedia": "16.4 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              76.3,
+              80.3,
+              86.8,
+              83.5,
+              81.9,
+              85.4
+            ],
+            "vazao": [
+              23.7,
+              18.7,
+              16.6,
+              13.2,
+              13.6,
+              12.5
+            ]
+          }
+        },
+        "R01-B": {
+          "nome": "R01-B",
+          "grupo": "R1",
+          "kpis": {
+            "nivelAtual": "91.5%",
+            "nivelMedio": "85.0%",
+            "nivelMin": "72.8%",
+            "nivelMax": "94.6%",
+            "vazaoAtual": "11.5 L/s",
+            "vazaoMin": "1.2 L/s",
+            "vazaoMax": "16.8 L/s",
+            "vazaoMedia": "11.4 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              72.8,
+              81.1,
+              94.6,
+              86.2,
+              83.8,
+              91.5
+            ],
+            "vazao": [
+              16.8,
+              14.6,
+              12.8,
+              11.6,
+              1.2,
+              11.5
+            ]
+          }
+        },
+        "R02": {
+          "nome": "R02",
+          "grupo": "R2",
+          "kpis": {
+            "nivelAtual": "90.8%",
+            "nivelMedio": "83.3%",
+            "nivelMin": "74.2%",
+            "nivelMax": "90.8%",
+            "vazaoAtual": "26.3 L/s",
+            "vazaoMin": "26.3 L/s",
+            "vazaoMax": "36.9 L/s",
+            "vazaoMedia": "29.9 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              74.2,
+              76.8,
+              82.2,
+              86.5,
+              89.3,
+              90.8
+            ],
+            "vazao": [
+              36.9,
+              32.9,
+              28.7,
+              27.9,
+              26.7,
+              26.3
+            ]
+          }
+        },
+        "R03-B": {
+          "nome": "R03-B",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "74.2%",
+            "nivelMedio": "60.2%",
+            "nivelMin": "47.6%",
+            "nivelMax": "74.2%",
+            "vazaoAtual": "59.1 L/s",
+            "vazaoMin": "59.1 L/s",
+            "vazaoMax": "103.3 L/s",
+            "vazaoMedia": "88.4 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              47.6,
+              50.8,
+              56.4,
+              62.2,
+              69.9,
+              74.2
+            ],
+            "vazao": [
+              102.1,
+              103.3,
+              95.6,
+              98.4,
+              71.7,
+              59.1
+            ]
+          }
+        },
+        "ERAT R303 - Rua Rinaldo Bogo": {
+          "nome": "ERAT R303 - Rua Rinaldo Bogo",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "73.9%",
+            "nivelMedio": "80.3%",
+            "nivelMin": "73.9%",
+            "nivelMax": "88.2%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              88.2,
+              87.0,
+              83.5,
+              74.6,
+              74.8,
+              73.9
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "EAT - R314 - Boa Vista, Rua Domingos Rosa": {
+          "nome": "EAT - R314 - Boa Vista, Rua Domingos Rosa",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "75.6%",
+            "nivelMedio": "81.2%",
+            "nivelMin": "75.6%",
+            "nivelMax": "89.0%",
+            "vazaoAtual": "0.7 L/s",
+            "vazaoMin": "0.7 L/s",
+            "vazaoMax": "1.6 L/s",
+            "vazaoMedia": "1.0 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              89.0,
+              80.9,
+              80.3,
+              84.2,
+              77.4,
+              75.6
+            ],
+            "vazao": [
+              1.6,
+              0.8,
+              1.1,
+              1.1,
+              0.8,
+              0.7
+            ]
+          }
+        },
+        "ERAT Figueira": {
+          "nome": "ERAT Figueira",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "70.4%",
+            "nivelMedio": "69.7%",
+            "nivelMin": "65.3%",
+            "nivelMax": "74.2%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              65.3,
+              68.5,
+              65.7,
+              74.1,
+              74.2,
+              70.4
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "EAT R316 - (ERAT Krause) Rua Martim Kochella, Bairro Krause": {
+          "nome": "EAT R316 - (ERAT Krause) Rua Martim Kochella, Bairro Krause",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "79.5%",
+            "nivelMedio": "81.3%",
+            "nivelMin": "77.0%",
+            "nivelMax": "87.1%",
+            "vazaoAtual": "7.7 L/s",
+            "vazaoMin": "6.8 L/s",
+            "vazaoMax": "9.4 L/s",
+            "vazaoMedia": "8.0 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              87.1,
+              77.1,
+              80.8,
+              86.1,
+              77.0,
+              79.5
+            ],
+            "vazao": [
+              8.6,
+              9.4,
+              8.0,
+              7.7,
+              6.8,
+              7.7
+            ]
+          }
+        },
+        "ERAT R306 - (ERAT Águas Claras) Rua Águas Claras": {
+          "nome": "ERAT R306 - (ERAT Águas Claras) Rua Águas Claras",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "82.0%",
+            "nivelMedio": "82.9%",
+            "nivelMin": "79.1%",
+            "nivelMax": "86.7%",
+            "vazaoAtual": "3.9 L/s",
+            "vazaoMin": "3.8 L/s",
+            "vazaoMax": "5.7 L/s",
+            "vazaoMedia": "4.3 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              79.1,
+              82.9,
+              86.7,
+              80.1,
+              86.3,
+              82.0
+            ],
+            "vazao": [
+              5.7,
+              4.2,
+              4.0,
+              3.8,
+              4.2,
+              3.9
+            ]
+          }
+        },
+        "R14 - Reservatório Caravágio": {
+          "nome": "R14 - Reservatório Caravágio",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "80.8%",
+            "nivelMedio": "81.2%",
+            "nivelMin": "70.9%",
+            "nivelMax": "87.8%",
+            "vazaoAtual": "1.1 L/s",
+            "vazaoMin": "1.1 L/s",
+            "vazaoMax": "1.7 L/s",
+            "vazaoMedia": "1.3 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              70.9,
+              79.5,
+              87.8,
+              82.2,
+              86.0,
+              80.8
+            ],
+            "vazao": [
+              1.7,
+              1.3,
+              1.3,
+              1.1,
+              1.1,
+              1.1
+            ]
+          }
+        },
+        "R04": {
+          "nome": "R04",
+          "grupo": "R4",
+          "kpis": {
+            "nivelAtual": "83.2%",
+            "nivelMedio": "69.0%",
+            "nivelMin": "54.2%",
+            "nivelMax": "83.2%",
+            "vazaoAtual": "43.9 L/s",
+            "vazaoMin": "43.3 L/s",
+            "vazaoMax": "59.2 L/s",
+            "vazaoMedia": "48.8 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              54.2,
+              58.4,
+              65.7,
+              72.6,
+              79.6,
+              83.2
+            ],
+            "vazao": [
+              56.5,
+              59.2,
+              46.3,
+              43.3,
+              43.3,
+              43.9
+            ]
+          }
+        },
+        "EAT R413 - Rua Paulo Voltolini, Bairro Ribeirão Cavalo": {
+          "nome": "EAT R413 - Rua Paulo Voltolini, Bairro Ribeirão Cavalo",
+          "grupo": "R4",
+          "kpis": {
+            "nivelAtual": "79.3%",
+            "nivelMedio": "76.6%",
+            "nivelMin": "71.8%",
+            "nivelMax": "80.3%",
+            "vazaoAtual": "1.5 L/s",
+            "vazaoMin": "1.2 L/s",
+            "vazaoMax": "2.4 L/s",
+            "vazaoMedia": "1.6 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              76.5,
+              80.3,
+              77.3,
+              74.6,
+              71.8,
+              79.3
+            ],
+            "vazao": [
+              2.4,
+              1.5,
+              1.3,
+              1.5,
+              1.2,
+              1.5
+            ]
+          }
+        },
+        "R05": {
+          "nome": "R05",
+          "grupo": "R05",
+          "kpis": {
+            "nivelAtual": "79.1%",
+            "nivelMedio": "71.7%",
+            "nivelMin": "63.6%",
+            "nivelMax": "79.1%",
+            "vazaoAtual": "37.7 L/s",
+            "vazaoMin": "34.3 L/s",
+            "vazaoMax": "47.2 L/s",
+            "vazaoMedia": "38.4 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              63.6,
+              66.4,
+              69.9,
+              73.7,
+              77.2,
+              79.1
+            ],
+            "vazao": [
+              47.2,
+              39.9,
+              36.8,
+              34.3,
+              34.5,
+              37.7
+            ]
+          }
+        },
+        "R06": {
+          "nome": "R06",
+          "grupo": "R06",
+          "kpis": {
+            "nivelAtual": "81.4%",
+            "nivelMedio": "77.5%",
+            "nivelMin": "69.0%",
+            "nivelMax": "82.9%",
+            "vazaoAtual": "14.3 L/s",
+            "vazaoMin": "13.7 L/s",
+            "vazaoMax": "24.3 L/s",
+            "vazaoMedia": "17.1 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              69.0,
+              72.2,
+              77.2,
+              82.2,
+              82.9,
+              81.4
+            ],
+            "vazao": [
+              24.3,
+              20.3,
+              16.3,
+              13.7,
+              13.9,
+              14.3
+            ]
+          }
+        },
+        "ETA Sul": {
+          "nome": "ETA Sul",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "75.5%",
+            "nivelMedio": "74.5%",
+            "nivelMin": "66.1%",
+            "nivelMax": "85.7%",
+            "vazaoAtual": "66.2 L/s",
+            "vazaoMin": "66.2 L/s",
+            "vazaoMax": "83.3 L/s",
+            "vazaoMedia": "72.2 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              85.7,
+              78.3,
+              69.3,
+              66.1,
+              71.9,
+              75.5
+            ],
+            "vazao": [
+              83.3,
+              67.4,
+              69.2,
+              67.5,
+              79.9,
+              66.2
+            ]
+          }
+        },
+        "EAT ES03 - Rua Francisco Hruschka, Bairro São Luís": {
+          "nome": "EAT ES03 - Rua Francisco Hruschka, Bairro São Luís",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "75.2%",
+            "nivelMedio": "74.8%",
+            "nivelMin": "71.1%",
+            "nivelMax": "77.2%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              71.1,
+              77.2,
+              75.7,
+              74.9,
+              74.6,
+              75.2
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "ERAT ES01 - Rua Alvino Flor da Silva, Bairro Jaraguá 84": {
+          "nome": "ERAT ES01 - Rua Alvino Flor da Silva, Bairro Jaraguá 84",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "90.0%",
+            "nivelMedio": "90.0%",
+            "nivelMin": "89.9%",
+            "nivelMax": "90.0%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              90.0,
+              90.0,
+              90.0,
+              89.9,
+              90.0,
+              90.0
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "R08 - Presídio": {
+          "nome": "R08 - Presídio",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "79.1%",
+            "nivelMedio": "73.3%",
+            "nivelMin": "63.0%",
+            "nivelMax": "79.4%",
+            "vazaoAtual": "0.2 L/s",
+            "vazaoMin": "0.2 L/s",
+            "vazaoMax": "0.6 L/s",
+            "vazaoMedia": "0.3 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              63.0,
+              67.0,
+              73.0,
+              78.1,
+              79.4,
+              79.1
+            ],
+            "vazao": [
+              0.6,
+              0.3,
+              0.2,
+              0.4,
+              0.2,
+              0.2
+            ]
+          }
+        },
+        "ERAT ES02 (Parque de Eventos) - Rua Walter Marquardt, Bairro Barra do Rio Molha": {
+          "nome": "ERAT ES02 (Parque de Eventos) - Rua Walter Marquardt, Bairro Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "75.8%",
+            "nivelMedio": "73.1%",
+            "nivelMin": "68.0%",
+            "nivelMax": "75.8%",
+            "vazaoAtual": "13.0 L/s",
+            "vazaoMin": "12.7 L/s",
+            "vazaoMax": "13.1 L/s",
+            "vazaoMedia": "12.9 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              75.7,
+              68.0,
+              72.6,
+              75.0,
+              71.8,
+              75.8
+            ],
+            "vazao": [
+              13.1,
+              12.7,
+              12.7,
+              13.0,
+              12.8,
+              13.0
+            ]
+          }
+        },
+        "ERAT ES03 - (ERAT Molha Intermediária) Rua RI069, Barra do Rio Molha": {
+          "nome": "ERAT ES03 - (ERAT Molha Intermediária) Rua RI069, Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "69.5%",
+            "nivelMedio": "58.2%",
+            "nivelMin": "45.0%",
+            "nivelMax": "69.5%",
+            "vazaoAtual": "3.1 L/s",
+            "vazaoMin": "3.1 L/s",
+            "vazaoMax": "4.5 L/s",
+            "vazaoMedia": "3.7 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              45.0,
+              49.5,
+              56.6,
+              61.7,
+              67.0,
+              69.5
+            ],
+            "vazao": [
+              4.5,
+              4.2,
+              3.9,
+              3.1,
+              3.2,
+              3.1
+            ]
+          }
+        },
+        "ERAT ES04 - (SI Molha) Rua Pedro Chiodini, Bairro Barra do Rio Molha": {
+          "nome": "ERAT ES04 - (SI Molha) Rua Pedro Chiodini, Bairro Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "47.3%",
+            "nivelMedio": "46.9%",
+            "nivelMin": "44.9%",
+            "nivelMax": "49.4%",
+            "vazaoAtual": "0.2 L/s",
+            "vazaoMin": "0.2 L/s",
+            "vazaoMax": "0.3 L/s",
+            "vazaoMedia": "0.2 L/s",
+            "status": "Crítico"
+          },
+          "leituras": {
+            "nivel": [
+              49.4,
+              48.5,
+              45.4,
+              44.9,
+              46.2,
+              47.3
+            ],
+            "vazao": [
+              0.3,
+              0.3,
+              0.2,
+              0.2,
+              0.2,
+              0.2
+            ]
+          }
+        },
+        "R17 - Reservatório Aldrovandi": {
+          "nome": "R17 - Reservatório Aldrovandi",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "81.1%",
+            "nivelMedio": "82.4%",
+            "nivelMin": "75.7%",
+            "nivelMax": "88.1%",
+            "vazaoAtual": "1.6 L/s",
+            "vazaoMin": "1.6 L/s",
+            "vazaoMax": "1.8 L/s",
+            "vazaoMedia": "1.7 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              75.7,
+              79.7,
+              83.8,
+              88.1,
+              85.7,
+              81.1
+            ],
+            "vazao": [
+              1.8,
+              1.6,
+              1.7,
+              1.6,
+              1.6,
+              1.6
+            ]
+          }
+        }
+      }
+    },
+    "04/11/2026": {
+      "ultimaAtualizacao": "04/11/2026 05:15",
+      "horarios": [
+        "00:15",
+        "01:15",
+        "02:15",
+        "03:15",
+        "04:15",
+        "05:15"
+      ],
+      "reservatorios": {
+        "R01-A": {
+          "nome": "R01-A",
+          "grupo": "R1",
+          "kpis": {
+            "nivelAtual": "83.0%",
+            "nivelMedio": "70.7%",
+            "nivelMin": "59.3%",
+            "nivelMax": "83.0%",
+            "vazaoAtual": "15.7 L/s",
+            "vazaoMin": "15.7 L/s",
+            "vazaoMax": "37.6 L/s",
+            "vazaoMedia": "24.5 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              59.3,
+              64.0,
+              70.4,
+              76.7,
+              83.0,
+              null
+            ],
+            "vazao": [
+              37.6,
+              33.3,
+              19.5,
+              16.4,
+              15.7,
+              null
+            ]
+          }
+        },
+        "R01-B": {
+          "nome": "R01-B",
+          "grupo": "R1",
+          "kpis": {
+            "nivelAtual": "86.5%",
+            "nivelMedio": "60.9%",
+            "nivelMin": "37.8%",
+            "nivelMax": "86.5%",
+            "vazaoAtual": "14.3 L/s",
+            "vazaoMin": "13.0 L/s",
+            "vazaoMax": "21.1 L/s",
+            "vazaoMedia": "15.8 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              37.8,
+              47.2,
+              60.0,
+              73.1,
+              86.5,
+              null
+            ],
+            "vazao": [
+              21.1,
+              16.5,
+              13.9,
+              13.0,
+              14.3,
+              null
+            ]
+          }
+        },
+        "R02": {
+          "nome": "R02",
+          "grupo": "R2",
+          "kpis": {
+            "nivelAtual": "87.8%",
+            "nivelMedio": "84.6%",
+            "nivelMin": "81.7%",
+            "nivelMax": "87.8%",
+            "vazaoAtual": "30.1 L/s",
+            "vazaoMin": "28.3 L/s",
+            "vazaoMax": "44.4 L/s",
+            "vazaoMedia": "34.0 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              81.7,
+              83.8,
+              85.0,
+              84.9,
+              87.8,
+              null
+            ],
+            "vazao": [
+              44.4,
+              35.4,
+              31.6,
+              28.3,
+              30.1,
+              null
+            ]
+          }
+        },
+        "R03-B": {
+          "nome": "R03-B",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "82.8%",
+            "nivelMedio": "73.9%",
+            "nivelMin": "65.2%",
+            "nivelMax": "82.8%",
+            "vazaoAtual": "59.1 L/s",
+            "vazaoMin": "59.1 L/s",
+            "vazaoMax": "125.7 L/s",
+            "vazaoMedia": "95.1 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              65.2,
+              69.1,
+              74.2,
+              78.3,
+              82.8,
+              null
+            ],
+            "vazao": [
+              125.7,
+              92.5,
+              87.8,
+              110.5,
+              59.1,
+              null
+            ]
+          }
+        },
+        "ERAT R303 - Rua Rinaldo Bogo": {
+          "nome": "ERAT R303 - Rua Rinaldo Bogo",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "90.7%",
+            "nivelMedio": "76.9%",
+            "nivelMin": "70.0%",
+            "nivelMax": "90.7%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              83.5,
+              70.5,
+              70.0,
+              70.0,
+              90.7,
+              null
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "EAT - R314 - Boa Vista, Rua Domingos Rosa": {
+          "nome": "EAT - R314 - Boa Vista, Rua Domingos Rosa",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "88.0%",
+            "nivelMedio": "82.0%",
+            "nivelMin": "75.4%",
+            "nivelMax": "89.4%",
+            "vazaoAtual": "1.0 L/s",
+            "vazaoMin": "0.9 L/s",
+            "vazaoMax": "1.5 L/s",
+            "vazaoMedia": "1.2 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              76.7,
+              89.4,
+              80.7,
+              75.4,
+              88.0,
+              null
+            ],
+            "vazao": [
+              1.5,
+              1.3,
+              1.1,
+              0.9,
+              1.0,
+              null
+            ]
+          }
+        },
+        "ERAT Figueira": {
+          "nome": "ERAT Figueira",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "82.3%",
+            "nivelMedio": "74.6%",
+            "nivelMin": "66.0%",
+            "nivelMax": "82.3%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              77.3,
+              73.3,
+              66.0,
+              74.1,
+              82.3,
+              null
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "EAT R316 - (ERAT Krause) Rua Martim Kochella, Bairro Krause": {
+          "nome": "EAT R316 - (ERAT Krause) Rua Martim Kochella, Bairro Krause",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "77.2%",
+            "nivelMedio": "79.8%",
+            "nivelMin": "76.5%",
+            "nivelMax": "87.3%",
+            "vazaoAtual": "8.4 L/s",
+            "vazaoMin": "8.2 L/s",
+            "vazaoMax": "11.0 L/s",
+            "vazaoMedia": "9.0 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              81.2,
+              76.5,
+              76.7,
+              87.3,
+              77.2,
+              null
+            ],
+            "vazao": [
+              11.0,
+              8.9,
+              8.2,
+              8.5,
+              8.4,
+              null
+            ]
+          }
+        },
+        "ERAT R306 - (ERAT Águas Claras) Rua Águas Claras": {
+          "nome": "ERAT R306 - (ERAT Águas Claras) Rua Águas Claras",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "87.5%",
+            "nivelMedio": "82.8%",
+            "nivelMin": "78.1%",
+            "nivelMax": "87.5%",
+            "vazaoAtual": "4.6 L/s",
+            "vazaoMin": "4.0 L/s",
+            "vazaoMax": "5.7 L/s",
+            "vazaoMedia": "4.7 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              80.6,
+              84.4,
+              78.1,
+              83.6,
+              87.5,
+              null
+            ],
+            "vazao": [
+              5.7,
+              4.9,
+              4.2,
+              4.0,
+              4.6,
+              null
+            ]
+          }
+        },
+        "R14 - Reservatório Caravágio": {
+          "nome": "R14 - Reservatório Caravágio",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "88.6%",
+            "nivelMedio": "85.6%",
+            "nivelMin": "80.2%",
+            "nivelMax": "89.8%",
+            "vazaoAtual": "1.6 L/s",
+            "vazaoMin": "1.2 L/s",
+            "vazaoMax": "1.6 L/s",
+            "vazaoMedia": "1.4 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              89.8,
+              80.2,
+              89.2,
+              80.2,
+              88.6,
+              null
+            ],
+            "vazao": [
+              1.6,
+              1.3,
+              1.2,
+              1.2,
+              1.6,
+              null
+            ]
+          }
+        },
+        "R04": {
+          "nome": "R04",
+          "grupo": "R4",
+          "kpis": {
+            "nivelAtual": "87.0%",
+            "nivelMedio": "74.7%",
+            "nivelMin": "63.4%",
+            "nivelMax": "87.0%",
+            "vazaoAtual": "45.2 L/s",
+            "vazaoMin": "45.2 L/s",
+            "vazaoMax": "57.1 L/s",
+            "vazaoMedia": "48.6 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              63.4,
+              69.4,
+              75.6,
+              77.9,
+              87.0,
+              null
+            ],
+            "vazao": [
+              57.1,
+              50.0,
+              45.2,
+              45.4,
+              45.2,
+              null
+            ]
+          }
+        },
+        "EAT R413 - Rua Paulo Voltolini, Bairro Ribeirão Cavalo": {
+          "nome": "EAT R413 - Rua Paulo Voltolini, Bairro Ribeirão Cavalo",
+          "grupo": "R4",
+          "kpis": {
+            "nivelAtual": "78.9%",
+            "nivelMedio": "75.9%",
+            "nivelMin": "71.4%",
+            "nivelMax": "78.9%",
+            "vazaoAtual": "1.4 L/s",
+            "vazaoMin": "1.2 L/s",
+            "vazaoMax": "2.1 L/s",
+            "vazaoMedia": "1.6 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              78.9,
+              74.4,
+              71.4,
+              76.1,
+              78.9,
+              null
+            ],
+            "vazao": [
+              2.1,
+              1.9,
+              1.2,
+              1.4,
+              1.4,
+              null
+            ]
+          }
+        },
+        "R05": {
+          "nome": "R05",
+          "grupo": "R05",
+          "kpis": {
+            "nivelAtual": "74.8%",
+            "nivelMedio": "68.5%",
+            "nivelMin": "62.3%",
+            "nivelMax": "74.8%",
+            "vazaoAtual": "35.7 L/s",
+            "vazaoMin": "35.4 L/s",
+            "vazaoMax": "46.8 L/s",
+            "vazaoMedia": "38.6 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              62.3,
+              65.5,
+              68.3,
+              71.8,
+              74.8,
+              null
+            ],
+            "vazao": [
+              46.8,
+              39.5,
+              35.8,
+              35.4,
+              35.7,
+              null
+            ]
+          }
+        },
+        "R06": {
+          "nome": "R06",
+          "grupo": "R06",
+          "kpis": {
+            "nivelAtual": "86.5%",
+            "nivelMedio": "82.2%",
+            "nivelMin": "78.1%",
+            "nivelMax": "86.5%",
+            "vazaoAtual": "13.1 L/s",
+            "vazaoMin": "13.1 L/s",
+            "vazaoMax": "20.8 L/s",
+            "vazaoMedia": "16.5 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              78.1,
+              80.7,
+              82.3,
+              83.3,
+              86.5,
+              null
+            ],
+            "vazao": [
+              20.8,
+              17.1,
+              16.1,
+              15.5,
+              13.1,
+              null
+            ]
+          }
+        },
+        "ETA Sul": {
+          "nome": "ETA Sul",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "65.9%",
+            "nivelMedio": "55.3%",
+            "nivelMin": "50.0%",
+            "nivelMax": "65.9%",
+            "vazaoAtual": "61.9 L/s",
+            "vazaoMin": "58.5 L/s",
+            "vazaoMax": "82.4 L/s",
+            "vazaoMedia": "71.9 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              50.0,
+              50.8,
+              51.6,
+              58.4,
+              65.9,
+              null
+            ],
+            "vazao": [
+              82.4,
+              82.2,
+              74.5,
+              58.5,
+              61.9,
+              null
+            ]
+          }
+        },
+        "EAT ES03 - Rua Francisco Hruschka, Bairro São Luís": {
+          "nome": "EAT ES03 - Rua Francisco Hruschka, Bairro São Luís",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "77.7%",
+            "nivelMedio": "74.5%",
+            "nivelMin": "71.2%",
+            "nivelMax": "77.7%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              72.0,
+              71.2,
+              73.9,
+              77.7,
+              77.7,
+              null
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "ERAT ES01 - Rua Alvino Flor da Silva, Bairro Jaraguá 84": {
+          "nome": "ERAT ES01 - Rua Alvino Flor da Silva, Bairro Jaraguá 84",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "89.9%",
+            "nivelMedio": "88.6%",
+            "nivelMin": "85.2%",
+            "nivelMax": "90.0%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              88.2,
+              90.0,
+              85.2,
+              89.9,
+              89.9,
+              null
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "R08 - Presídio": {
+          "nome": "R08 - Presídio",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "73.8%",
+            "nivelMedio": "63.9%",
+            "nivelMin": "54.3%",
+            "nivelMax": "73.8%",
+            "vazaoAtual": "0.3 L/s",
+            "vazaoMin": "0.2 L/s",
+            "vazaoMax": "0.4 L/s",
+            "vazaoMedia": "0.3 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              54.3,
+              59.0,
+              63.6,
+              68.8,
+              73.8,
+              null
+            ],
+            "vazao": [
+              0.4,
+              0.2,
+              0.2,
+              0.3,
+              0.3,
+              null
+            ]
+          }
+        },
+        "ERAT ES02 (Parque de Eventos) - Rua Walter Marquardt, Bairro Barra do Rio Molha": {
+          "nome": "ERAT ES02 (Parque de Eventos) - Rua Walter Marquardt, Bairro Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "81.7%",
+            "nivelMedio": "75.8%",
+            "nivelMin": "70.1%",
+            "nivelMax": "81.7%",
+            "vazaoAtual": "0.0 L/s",
+            "vazaoMin": "0.0 L/s",
+            "vazaoMax": "12.9 L/s",
+            "vazaoMedia": "7.7 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              70.1,
+              75.2,
+              70.5,
+              81.3,
+              81.7,
+              null
+            ],
+            "vazao": [
+              12.9,
+              12.9,
+              12.7,
+              0.0,
+              0.0,
+              null
+            ]
+          }
+        },
+        "ERAT ES03 - (ERAT Molha Intermediária) Rua RI069, Barra do Rio Molha": {
+          "nome": "ERAT ES03 - (ERAT Molha Intermediária) Rua RI069, Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "88.1%",
+            "nivelMedio": "89.5%",
+            "nivelMin": "85.2%",
+            "nivelMax": "92.8%",
+            "vazaoAtual": "3.4 L/s",
+            "vazaoMin": "3.4 L/s",
+            "vazaoMax": "5.2 L/s",
+            "vazaoMedia": "4.2 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              85.2,
+              88.9,
+              92.5,
+              92.8,
+              88.1,
+              null
+            ],
+            "vazao": [
+              5.2,
+              4.8,
+              4.1,
+              3.6,
+              3.4,
+              null
+            ]
+          }
+        },
+        "ERAT ES04 - (SI Molha) Rua Pedro Chiodini, Bairro Barra do Rio Molha": {
+          "nome": "ERAT ES04 - (SI Molha) Rua Pedro Chiodini, Bairro Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "46.0%",
+            "nivelMedio": "45.5%",
+            "nivelMin": "43.0%",
+            "nivelMax": "46.9%",
+            "vazaoAtual": "0.2 L/s",
+            "vazaoMin": "0.1 L/s",
+            "vazaoMax": "0.4 L/s",
+            "vazaoMedia": "0.2 L/s",
+            "status": "Crítico"
+          },
+          "leituras": {
+            "nivel": [
+              43.0,
+              45.5,
+              46.9,
+              46.3,
+              46.0,
+              null
+            ],
+            "vazao": [
+              0.4,
+              0.3,
+              0.1,
+              0.1,
+              0.2,
+              null
+            ]
+          }
+        },
+        "R17 - Reservatório Aldrovandi": {
+          "nome": "R17 - Reservatório Aldrovandi",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "84.9%",
+            "nivelMedio": "81.0%",
+            "nivelMin": "77.0%",
+            "nivelMax": "85.1%",
+            "vazaoAtual": "1.7 L/s",
+            "vazaoMin": "1.6 L/s",
+            "vazaoMax": "1.7 L/s",
+            "vazaoMedia": "1.6 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              85.1,
+              77.6,
+              77.0,
+              80.3,
+              84.9,
+              null
+            ],
+            "vazao": [
+              1.7,
+              1.6,
+              1.6,
+              1.6,
+              1.7,
+              null
+            ]
+          }
+        }
+      }
+    },
+    "03/11/2026": {
+      "ultimaAtualizacao": "03/11/2026 05:15",
+      "horarios": [
+        "00:15",
+        "01:15",
+        "02:15",
+        "03:15",
+        "04:15",
+        "05:15"
+      ],
+      "reservatorios": {
+        "R01-A": {
+          "nome": "R01-A",
+          "grupo": "R1",
+          "kpis": {
+            "nivelAtual": "82.0%",
+            "nivelMedio": "70.4%",
+            "nivelMin": "58.6%",
+            "nivelMax": "82.0%",
+            "vazaoAtual": "15.3 L/s",
+            "vazaoMin": "13.1 L/s",
+            "vazaoMax": "23.9 L/s",
+            "vazaoMedia": "17.0 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              58.6,
+              62.3,
+              67.7,
+              76.0,
+              76.0,
+              82.0
+            ],
+            "vazao": [
+              23.9,
+              19.4,
+              16.2,
+              14.2,
+              13.1,
+              15.3
+            ]
+          }
+        },
+        "R01-B": {
+          "nome": "R01-B",
+          "grupo": "R1",
+          "kpis": {
+            "nivelAtual": "84.5%",
+            "nivelMedio": "59.9%",
+            "nivelMin": "35.3%",
+            "nivelMax": "84.5%",
+            "vazaoAtual": "16.5 L/s",
+            "vazaoMin": "12.4 L/s",
+            "vazaoMax": "17.8 L/s",
+            "vazaoMedia": "15.0 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              35.3,
+              42.8,
+              54.4,
+              71.7,
+              70.6,
+              84.5
+            ],
+            "vazao": [
+              17.8,
+              15.8,
+              14.7,
+              12.7,
+              12.4,
+              16.5
+            ]
+          }
+        },
+        "R02": {
+          "nome": "R02",
+          "grupo": "R2",
+          "kpis": {
+            "nivelAtual": "87.2%",
+            "nivelMedio": "78.5%",
+            "nivelMin": "70.3%",
+            "nivelMax": "87.2%",
+            "vazaoAtual": "31.9 L/s",
+            "vazaoMin": "26.9 L/s",
+            "vazaoMax": "40.8 L/s",
+            "vazaoMedia": "31.7 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              74.2,
+              70.3,
+              73.2,
+              81.2,
+              84.9,
+              87.2
+            ],
+            "vazao": [
+              40.8,
+              34.5,
+              29.1,
+              26.9,
+              27.0,
+              31.9
+            ]
+          }
+        },
+        "R03-B": {
+          "nome": "R03-B",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "90.2%",
+            "nivelMedio": "77.2%",
+            "nivelMin": "64.3%",
+            "nivelMax": "90.2%",
+            "vazaoAtual": "67.8 L/s",
+            "vazaoMin": "67.8 L/s",
+            "vazaoMax": "94.3 L/s",
+            "vazaoMedia": "80.1 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              64.3,
+              69.6,
+              73.8,
+              80.9,
+              84.6,
+              90.2
+            ],
+            "vazao": [
+              94.3,
+              72.6,
+              93.2,
+              82.7,
+              69.9,
+              67.8
+            ]
+          }
+        },
+        "ERAT R303 - Rua Rinaldo Bogo": {
+          "nome": "ERAT R303 - Rua Rinaldo Bogo",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "73.0%",
+            "nivelMedio": "77.4%",
+            "nivelMin": "65.4%",
+            "nivelMax": "89.5%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              65.4,
+              65.5,
+              89.5,
+              86.0,
+              85.0,
+              73.0
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "EAT - R314 - Boa Vista, Rua Domingos Rosa": {
+          "nome": "EAT - R314 - Boa Vista, Rua Domingos Rosa",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "85.0%",
+            "nivelMedio": "81.3%",
+            "nivelMin": "75.9%",
+            "nivelMax": "86.2%",
+            "vazaoAtual": "1.2 L/s",
+            "vazaoMin": "1.2 L/s",
+            "vazaoMax": "1.7 L/s",
+            "vazaoMedia": "1.3 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              83.5,
+              76.7,
+              86.2,
+              80.6,
+              75.9,
+              85.0
+            ],
+            "vazao": [
+              1.7,
+              1.2,
+              1.3,
+              1.3,
+              1.2,
+              1.2
+            ]
+          }
+        },
+        "ERAT Figueira": {
+          "nome": "ERAT Figueira",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "69.4%",
+            "nivelMedio": "69.9%",
+            "nivelMin": "62.5%",
+            "nivelMax": "74.4%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              69.2,
+              62.5,
+              71.0,
+              74.4,
+              73.0,
+              69.4
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "EAT R316 - (ERAT Krause) Rua Martim Kochella, Bairro Krause": {
+          "nome": "EAT R316 - (ERAT Krause) Rua Martim Kochella, Bairro Krause",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "79.9%",
+            "nivelMedio": "83.1%",
+            "nivelMin": "79.1%",
+            "nivelMax": "86.5%",
+            "vazaoAtual": "9.1 L/s",
+            "vazaoMin": "6.9 L/s",
+            "vazaoMax": "9.1 L/s",
+            "vazaoMedia": "8.0 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              83.7,
+              86.5,
+              79.1,
+              86.1,
+              83.4,
+              79.9
+            ],
+            "vazao": [
+              8.4,
+              7.6,
+              7.5,
+              6.9,
+              8.6,
+              9.1
+            ]
+          }
+        },
+        "ERAT R306 - (ERAT Águas Claras) Rua Águas Claras": {
+          "nome": "ERAT R306 - (ERAT Águas Claras) Rua Águas Claras",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "83.7%",
+            "nivelMedio": "82.7%",
+            "nivelMin": "78.9%",
+            "nivelMax": "86.5%",
+            "vazaoAtual": "4.9 L/s",
+            "vazaoMin": "3.7 L/s",
+            "vazaoMax": "5.0 L/s",
+            "vazaoMedia": "4.4 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              78.9,
+              86.0,
+              79.8,
+              81.2,
+              86.5,
+              83.7
+            ],
+            "vazao": [
+              5.0,
+              4.5,
+              4.0,
+              3.7,
+              4.1,
+              4.9
+            ]
+          }
+        },
+        "R14 - Reservatório Caravágio": {
+          "nome": "R14 - Reservatório Caravágio",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "83.4%",
+            "nivelMedio": "84.8%",
+            "nivelMin": "79.5%",
+            "nivelMax": "89.8%",
+            "vazaoAtual": "1.5 L/s",
+            "vazaoMin": "1.2 L/s",
+            "vazaoMax": "1.5 L/s",
+            "vazaoMedia": "1.4 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              88.2,
+              79.5,
+              89.8,
+              80.9,
+              87.2,
+              83.4
+            ],
+            "vazao": [
+              1.5,
+              1.3,
+              1.3,
+              1.2,
+              1.4,
+              1.5
+            ]
+          }
+        },
+        "R04": {
+          "nome": "R04",
+          "grupo": "R4",
+          "kpis": {
+            "nivelAtual": "79.4%",
+            "nivelMedio": "64.7%",
+            "nivelMin": "49.9%",
+            "nivelMax": "79.4%",
+            "vazaoAtual": "64.6 L/s",
+            "vazaoMin": "43.8 L/s",
+            "vazaoMax": "64.6 L/s",
+            "vazaoMedia": "52.8 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              49.9,
+              55.1,
+              60.9,
+              68.5,
+              74.2,
+              79.4
+            ],
+            "vazao": [
+              51.5,
+              47.0,
+              43.8,
+              54.0,
+              56.0,
+              64.6
+            ]
+          }
+        },
+        "EAT R413 - Rua Paulo Voltolini, Bairro Ribeirão Cavalo": {
+          "nome": "EAT R413 - Rua Paulo Voltolini, Bairro Ribeirão Cavalo",
+          "grupo": "R4",
+          "kpis": {
+            "nivelAtual": "75.1%",
+            "nivelMedio": "75.7%",
+            "nivelMin": "72.3%",
+            "nivelMax": "79.1%",
+            "vazaoAtual": "3.0 L/s",
+            "vazaoMin": "1.2 L/s",
+            "vazaoMax": "3.0 L/s",
+            "vazaoMedia": "1.8 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              77.5,
+              74.8,
+              72.3,
+              75.2,
+              79.1,
+              75.1
+            ],
+            "vazao": [
+              2.1,
+              1.2,
+              1.2,
+              1.5,
+              1.7,
+              3.0
+            ]
+          }
+        },
+        "R05": {
+          "nome": "R05",
+          "grupo": "R05",
+          "kpis": {
+            "nivelAtual": "76.1%",
+            "nivelMedio": "69.0%",
+            "nivelMin": "61.6%",
+            "nivelMax": "76.1%",
+            "vazaoAtual": "51.0 L/s",
+            "vazaoMin": "34.5 L/s",
+            "vazaoMax": "51.0 L/s",
+            "vazaoMedia": "39.9 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              61.6,
+              64.1,
+              67.6,
+              71.5,
+              73.0,
+              76.1
+            ],
+            "vazao": [
+              44.0,
+              37.1,
+              36.2,
+              34.5,
+              36.4,
+              51.0
+            ]
+          }
+        },
+        "R06": {
+          "nome": "R06",
+          "grupo": "R06",
+          "kpis": {
+            "nivelAtual": "86.6%",
+            "nivelMedio": "77.8%",
+            "nivelMin": "68.6%",
+            "nivelMax": "86.6%",
+            "vazaoAtual": "21.6 L/s",
+            "vazaoMin": "14.1 L/s",
+            "vazaoMax": "21.6 L/s",
+            "vazaoMedia": "17.2 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              68.6,
+              72.0,
+              76.2,
+              80.2,
+              83.3,
+              86.6
+            ],
+            "vazao": [
+              19.8,
+              17.1,
+              15.1,
+              14.1,
+              15.3,
+              21.6
+            ]
+          }
+        },
+        "ETA Sul": {
+          "nome": "ETA Sul",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "87.3%",
+            "nivelMedio": "81.4%",
+            "nivelMin": "75.7%",
+            "nivelMax": "87.3%",
+            "vazaoAtual": "103.8 L/s",
+            "vazaoMin": "67.6 L/s",
+            "vazaoMax": "103.8 L/s",
+            "vazaoMedia": "79.0 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              85.7,
+              81.3,
+              77.7,
+              75.7,
+              80.7,
+              87.3
+            ],
+            "vazao": [
+              72.8,
+              86.3,
+              73.4,
+              67.6,
+              70.2,
+              103.8
+            ]
+          }
+        },
+        "EAT ES03 - Rua Francisco Hruschka, Bairro São Luís": {
+          "nome": "EAT ES03 - Rua Francisco Hruschka, Bairro São Luís",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "76.6%",
+            "nivelMedio": "73.6%",
+            "nivelMin": "69.1%",
+            "nivelMax": "77.1%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              77.1,
+              73.2,
+              69.1,
+              71.7,
+              74.0,
+              76.6
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "ERAT ES01 - Rua Alvino Flor da Silva, Bairro Jaraguá 84": {
+          "nome": "ERAT ES01 - Rua Alvino Flor da Silva, Bairro Jaraguá 84",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "89.5%",
+            "nivelMedio": "89.2%",
+            "nivelMin": "85.9%",
+            "nivelMax": "90.0%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              85.9,
+              90.0,
+              90.0,
+              90.0,
+              89.8,
+              89.5
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "R08 - Presídio": {
+          "nome": "R08 - Presídio",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "79.9%",
+            "nivelMedio": "67.8%",
+            "nivelMin": "56.3%",
+            "nivelMax": "79.9%",
+            "vazaoAtual": "0.3 L/s",
+            "vazaoMin": "0.2 L/s",
+            "vazaoMax": "0.3 L/s",
+            "vazaoMedia": "0.3 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              56.3,
+              60.1,
+              64.6,
+              70.4,
+              75.4,
+              79.9
+            ],
+            "vazao": [
+              0.2,
+              0.3,
+              0.2,
+              0.3,
+              0.3,
+              0.3
+            ]
+          }
+        },
+        "ERAT ES02 (Parque de Eventos) - Rua Walter Marquardt, Bairro Barra do Rio Molha": {
+          "nome": "ERAT ES02 (Parque de Eventos) - Rua Walter Marquardt, Bairro Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "72.9%",
+            "nivelMedio": "72.2%",
+            "nivelMin": "69.0%",
+            "nivelMax": "75.7%",
+            "vazaoAtual": "12.8 L/s",
+            "vazaoMin": "12.7 L/s",
+            "vazaoMax": "13.1 L/s",
+            "vazaoMedia": "12.9 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              69.5,
+              75.3,
+              69.0,
+              70.8,
+              75.7,
+              72.9
+            ],
+            "vazao": [
+              12.7,
+              13.0,
+              12.8,
+              12.8,
+              13.1,
+              12.8
+            ]
+          }
+        },
+        "ERAT ES03 - (ERAT Molha Intermediária) Rua RI069, Barra do Rio Molha": {
+          "nome": "ERAT ES03 - (ERAT Molha Intermediária) Rua RI069, Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "77.5%",
+            "nivelMedio": "66.8%",
+            "nivelMin": "57.2%",
+            "nivelMax": "77.5%",
+            "vazaoAtual": "4.9 L/s",
+            "vazaoMin": "3.8 L/s",
+            "vazaoMax": "4.9 L/s",
+            "vazaoMedia": "4.4 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              57.2,
+              60.0,
+              63.9,
+              69.0,
+              72.9,
+              77.5
+            ],
+            "vazao": [
+              4.8,
+              4.5,
+              4.2,
+              4.2,
+              3.8,
+              4.9
+            ]
+          }
+        },
+        "ERAT ES04 - (SI Molha) Rua Pedro Chiodini, Bairro Barra do Rio Molha": {
+          "nome": "ERAT ES04 - (SI Molha) Rua Pedro Chiodini, Bairro Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "47.2%",
+            "nivelMedio": "44.8%",
+            "nivelMin": "44.0%",
+            "nivelMax": "47.2%",
+            "vazaoAtual": "0.3 L/s",
+            "vazaoMin": "0.2 L/s",
+            "vazaoMax": "0.3 L/s",
+            "vazaoMedia": "0.2 L/s",
+            "status": "Crítico"
+          },
+          "leituras": {
+            "nivel": [
+              44.3,
+              44.1,
+              44.2,
+              44.0,
+              44.8,
+              47.2
+            ],
+            "vazao": [
+              0.2,
+              0.2,
+              0.2,
+              0.2,
+              0.2,
+              0.3
+            ]
+          }
+        },
+        "R17 - Reservatório Aldrovandi": {
+          "nome": "R17 - Reservatório Aldrovandi",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "78.1%",
+            "nivelMedio": "82.0%",
+            "nivelMin": "76.8%",
+            "nivelMax": "87.3%",
+            "vazaoAtual": "1.7 L/s",
+            "vazaoMin": "1.6 L/s",
+            "vazaoMax": "1.7 L/s",
+            "vazaoMedia": "1.6 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              76.8,
+              79.7,
+              83.0,
+              87.0,
+              87.3,
+              78.1
+            ],
+            "vazao": [
+              1.6,
+              1.6,
+              1.7,
+              1.6,
+              1.6,
+              1.7
+            ]
+          }
+        }
+      }
+    },
+    "02/11/2026": {
+      "ultimaAtualizacao": "02/11/2026 05:15",
+      "horarios": [
+        "00:15",
+        "01:15",
+        "02:15",
+        "03:15",
+        "04:15",
+        "05:15"
+      ],
+      "reservatorios": {
+        "R01-A": {
+          "nome": "R01-A",
+          "grupo": "R1",
+          "kpis": {
+            "nivelAtual": "82.7%",
+            "nivelMedio": "81.3%",
+            "nivelMin": "74.2%",
+            "nivelMax": "84.1%",
+            "vazaoAtual": "14.8 L/s",
+            "vazaoMin": "14.3 L/s",
+            "vazaoMax": "20.7 L/s",
+            "vazaoMedia": "16.1 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              74.2,
+              79.3,
+              84.1,
+              83.9,
+              83.7,
+              82.7
+            ],
+            "vazao": [
+              20.7,
+              16.0,
+              16.0,
+              14.3,
+              14.5,
+              14.8
+            ]
+          }
+        },
+        "R01-B": {
+          "nome": "R01-B",
+          "grupo": "R1",
+          "kpis": {
+            "nivelAtual": "85.9%",
+            "nivelMedio": "83.1%",
+            "nivelMin": "68.3%",
+            "nivelMax": "89.1%",
+            "vazaoAtual": "11.9 L/s",
+            "vazaoMin": "10.7 L/s",
+            "vazaoMax": "17.1 L/s",
+            "vazaoMedia": "12.8 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              68.3,
+              78.8,
+              89.1,
+              87.9,
+              88.4,
+              85.9
+            ],
+            "vazao": [
+              17.1,
+              13.7,
+              12.7,
+              11.0,
+              10.7,
+              11.9
+            ]
+          }
+        },
+        "R02": {
+          "nome": "R02",
+          "grupo": "R2",
+          "kpis": {
+            "nivelAtual": "90.8%",
+            "nivelMedio": "79.8%",
+            "nivelMin": "70.1%",
+            "nivelMax": "90.8%",
+            "vazaoAtual": "26.1 L/s",
+            "vazaoMin": "25.5 L/s",
+            "vazaoMax": "38.7 L/s",
+            "vazaoMedia": "29.8 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              70.1,
+              72.8,
+              76.0,
+              83.1,
+              86.3,
+              90.8
+            ],
+            "vazao": [
+              38.7,
+              32.5,
+              29.5,
+              26.4,
+              25.5,
+              26.1
+            ]
+          }
+        },
+        "R03-B": {
+          "nome": "R03-B",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "91.6%",
+            "nivelMedio": "80.7%",
+            "nivelMin": "72.7%",
+            "nivelMax": "91.6%",
+            "vazaoAtual": "56.9 L/s",
+            "vazaoMin": "53.5 L/s",
+            "vazaoMax": "104.8 L/s",
+            "vazaoMedia": "72.2 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              72.7,
+              73.8,
+              78.6,
+              82.0,
+              85.4,
+              91.6
+            ],
+            "vazao": [
+              99.4,
+              61.9,
+              56.5,
+              104.8,
+              53.5,
+              56.9
+            ]
+          }
+        },
+        "ERAT R303 - Rua Rinaldo Bogo": {
+          "nome": "ERAT R303 - Rua Rinaldo Bogo",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "67.0%",
+            "nivelMedio": "78.9%",
+            "nivelMin": "67.0%",
+            "nivelMax": "92.0%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              92.0,
+              84.3,
+              79.6,
+              79.5,
+              70.8,
+              67.0
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "EAT - R314 - Boa Vista, Rua Domingos Rosa": {
+          "nome": "EAT - R314 - Boa Vista, Rua Domingos Rosa",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "79.5%",
+            "nivelMedio": "81.2%",
+            "nivelMin": "75.4%",
+            "nivelMax": "85.9%",
+            "vazaoAtual": "1.4 L/s",
+            "vazaoMin": "0.9 L/s",
+            "vazaoMax": "1.4 L/s",
+            "vazaoMedia": "1.1 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              78.6,
+              85.3,
+              82.6,
+              75.4,
+              85.9,
+              79.5
+            ],
+            "vazao": [
+              1.2,
+              1.2,
+              1.0,
+              1.1,
+              0.9,
+              1.4
+            ]
+          }
+        },
+        "ERAT Figueira": {
+          "nome": "ERAT Figueira",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "71.2%",
+            "nivelMedio": "74.7%",
+            "nivelMin": "66.3%",
+            "nivelMax": "83.7%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              66.3,
+              76.6,
+              68.6,
+              81.6,
+              83.7,
+              71.2
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "EAT R316 - (ERAT Krause) Rua Martim Kochella, Bairro Krause": {
+          "nome": "EAT R316 - (ERAT Krause) Rua Martim Kochella, Bairro Krause",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "89.5%",
+            "nivelMedio": "82.8%",
+            "nivelMin": "76.3%",
+            "nivelMax": "89.5%",
+            "vazaoAtual": "7.7 L/s",
+            "vazaoMin": "6.7 L/s",
+            "vazaoMax": "9.5 L/s",
+            "vazaoMedia": "7.8 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              87.3,
+              76.3,
+              77.1,
+              86.3,
+              80.6,
+              89.5
+            ],
+            "vazao": [
+              9.5,
+              8.4,
+              7.4,
+              7.3,
+              6.7,
+              7.7
+            ]
+          }
+        },
+        "ERAT R306 - (ERAT Águas Claras) Rua Águas Claras": {
+          "nome": "ERAT R306 - (ERAT Águas Claras) Rua Águas Claras",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "79.6%",
+            "nivelMedio": "80.5%",
+            "nivelMin": "72.4%",
+            "nivelMax": "87.5%",
+            "vazaoAtual": "4.3 L/s",
+            "vazaoMin": "4.0 L/s",
+            "vazaoMax": "5.3 L/s",
+            "vazaoMedia": "4.6 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              84.6,
+              77.2,
+              72.4,
+              81.5,
+              87.5,
+              79.6
+            ],
+            "vazao": [
+              5.3,
+              5.0,
+              5.0,
+              4.0,
+              4.0,
+              4.3
+            ]
+          }
+        },
+        "R14 - Reservatório Caravágio": {
+          "nome": "R14 - Reservatório Caravágio",
+          "grupo": "R3",
+          "kpis": {
+            "nivelAtual": "84.3%",
+            "nivelMedio": "85.8%",
+            "nivelMin": "79.8%",
+            "nivelMax": "89.5%",
+            "vazaoAtual": "1.3 L/s",
+            "vazaoMin": "1.1 L/s",
+            "vazaoMax": "1.5 L/s",
+            "vazaoMedia": "1.3 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              89.2,
+              79.8,
+              89.5,
+              82.5,
+              89.5,
+              84.3
+            ],
+            "vazao": [
+              1.5,
+              1.5,
+              1.2,
+              1.1,
+              1.3,
+              1.3
+            ]
+          }
+        },
+        "R04": {
+          "nome": "R04",
+          "grupo": "R4",
+          "kpis": {
+            "nivelAtual": "87.6%",
+            "nivelMedio": "77.6%",
+            "nivelMin": "68.7%",
+            "nivelMax": "87.6%",
+            "vazaoAtual": "43.8 L/s",
+            "vazaoMin": "42.2 L/s",
+            "vazaoMax": "62.1 L/s",
+            "vazaoMedia": "47.0 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              68.7,
+              71.2,
+              74.8,
+              80.1,
+              83.2,
+              87.6
+            ],
+            "vazao": [
+              62.1,
+              46.9,
+              44.6,
+              42.2,
+              42.2,
+              43.8
+            ]
+          }
+        },
+        "EAT R413 - Rua Paulo Voltolini, Bairro Ribeirão Cavalo": {
+          "nome": "EAT R413 - Rua Paulo Voltolini, Bairro Ribeirão Cavalo",
+          "grupo": "R4",
+          "kpis": {
+            "nivelAtual": "76.5%",
+            "nivelMedio": "74.5%",
+            "nivelMin": "70.0%",
+            "nivelMax": "77.2%",
+            "vazaoAtual": "1.7 L/s",
+            "vazaoMin": "1.1 L/s",
+            "vazaoMax": "2.2 L/s",
+            "vazaoMedia": "1.6 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              76.5,
+              77.2,
+              75.1,
+              71.6,
+              70.0,
+              76.5
+            ],
+            "vazao": [
+              2.2,
+              1.7,
+              1.5,
+              1.1,
+              1.2,
+              1.7
+            ]
+          }
+        },
+        "R05": {
+          "nome": "R05",
+          "grupo": "R05",
+          "kpis": {
+            "nivelAtual": "87.0%",
+            "nivelMedio": "83.4%",
+            "nivelMin": "77.9%",
+            "nivelMax": "87.0%",
+            "vazaoAtual": "37.3 L/s",
+            "vazaoMin": "33.1 L/s",
+            "vazaoMax": "45.4 L/s",
+            "vazaoMedia": "37.1 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              77.9,
+              80.8,
+              83.4,
+              85.4,
+              85.9,
+              87.0
+            ],
+            "vazao": [
+              45.4,
+              38.3,
+              34.6,
+              34.2,
+              33.1,
+              37.3
+            ]
+          }
+        },
+        "R06": {
+          "nome": "R06",
+          "grupo": "R06",
+          "kpis": {
+            "nivelAtual": "85.8%",
+            "nivelMedio": "82.2%",
+            "nivelMin": "73.7%",
+            "nivelMax": "89.5%",
+            "vazaoAtual": "16.5 L/s",
+            "vazaoMin": "12.1 L/s",
+            "vazaoMax": "22.1 L/s",
+            "vazaoMedia": "16.0 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              73.7,
+              77.1,
+              80.6,
+              86.3,
+              89.5,
+              85.8
+            ],
+            "vazao": [
+              22.1,
+              17.8,
+              14.9,
+              12.1,
+              12.3,
+              16.5
+            ]
+          }
+        },
+        "ETA Sul": {
+          "nome": "ETA Sul",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "91.0%",
+            "nivelMedio": "76.3%",
+            "nivelMin": "67.5%",
+            "nivelMax": "91.0%",
+            "vazaoAtual": "79.2 L/s",
+            "vazaoMin": "59.4 L/s",
+            "vazaoMax": "79.2 L/s",
+            "vazaoMedia": "68.3 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              80.3,
+              72.5,
+              67.5,
+              70.9,
+              75.7,
+              91.0
+            ],
+            "vazao": [
+              60.0,
+              74.7,
+              59.4,
+              76.2,
+              60.2,
+              79.2
+            ]
+          }
+        },
+        "EAT ES03 - Rua Francisco Hruschka, Bairro São Luís": {
+          "nome": "EAT ES03 - Rua Francisco Hruschka, Bairro São Luís",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "74.0%",
+            "nivelMedio": "74.5%",
+            "nivelMin": "71.8%",
+            "nivelMax": "77.3%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              75.0,
+              75.7,
+              71.8,
+              73.1,
+              77.3,
+              74.0
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "ERAT ES01 - Rua Alvino Flor da Silva, Bairro Jaraguá 84": {
+          "nome": "ERAT ES01 - Rua Alvino Flor da Silva, Bairro Jaraguá 84",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "90.0%",
+            "nivelMedio": "89.5%",
+            "nivelMin": "86.8%",
+            "nivelMax": "90.1%",
+            "vazaoAtual": "N/A",
+            "vazaoMin": "N/A",
+            "vazaoMax": "N/A",
+            "vazaoMedia": "N/A",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              89.9,
+              90.0,
+              86.8,
+              90.0,
+              90.1,
+              90.0
+            ],
+            "vazao": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        "R08 - Presídio": {
+          "nome": "R08 - Presídio",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "78.9%",
+            "nivelMedio": "72.6%",
+            "nivelMin": "61.8%",
+            "nivelMax": "79.8%",
+            "vazaoAtual": "0.2 L/s",
+            "vazaoMin": "0.2 L/s",
+            "vazaoMax": "0.3 L/s",
+            "vazaoMedia": "0.2 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              61.8,
+              66.6,
+              71.2,
+              77.3,
+              79.8,
+              78.9
+            ],
+            "vazao": [
+              0.3,
+              0.3,
+              0.2,
+              0.2,
+              0.2,
+              0.2
+            ]
+          }
+        },
+        "ERAT ES02 (Parque de Eventos) - Rua Walter Marquardt, Bairro Barra do Rio Molha": {
+          "nome": "ERAT ES02 (Parque de Eventos) - Rua Walter Marquardt, Bairro Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "77.0%",
+            "nivelMedio": "78.0%",
+            "nivelMin": "69.5%",
+            "nivelMax": "83.4%",
+            "vazaoAtual": "11.0 L/s",
+            "vazaoMin": "0.0 L/s",
+            "vazaoMax": "11.3 L/s",
+            "vazaoMedia": "7.4 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              83.4,
+              83.4,
+              76.7,
+              69.5,
+              78.3,
+              77.0
+            ],
+            "vazao": [
+              0.0,
+              0.0,
+              11.3,
+              11.0,
+              11.1,
+              11.0
+            ]
+          }
+        },
+        "ERAT ES03 - (ERAT Molha Intermediária) Rua RI069, Barra do Rio Molha": {
+          "nome": "ERAT ES03 - (ERAT Molha Intermediária) Rua RI069, Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "92.5%",
+            "nivelMedio": "87.0%",
+            "nivelMin": "82.0%",
+            "nivelMax": "92.5%",
+            "vazaoAtual": "3.6 L/s",
+            "vazaoMin": "3.2 L/s",
+            "vazaoMax": "4.6 L/s",
+            "vazaoMedia": "3.6 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              89.5,
+              83.9,
+              82.0,
+              86.0,
+              88.1,
+              92.5
+            ],
+            "vazao": [
+              4.6,
+              3.5,
+              3.5,
+              3.3,
+              3.2,
+              3.6
+            ]
+          }
+        },
+        "ERAT ES04 - (SI Molha) Rua Pedro Chiodini, Bairro Barra do Rio Molha": {
+          "nome": "ERAT ES04 - (SI Molha) Rua Pedro Chiodini, Bairro Barra do Rio Molha",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "49.9%",
+            "nivelMedio": "48.6%",
+            "nivelMin": "45.5%",
+            "nivelMax": "49.9%",
+            "vazaoAtual": "0.2 L/s",
+            "vazaoMin": "0.1 L/s",
+            "vazaoMax": "0.3 L/s",
+            "vazaoMedia": "0.2 L/s",
+            "status": "Crítico"
+          },
+          "leituras": {
+            "nivel": [
+              45.5,
+              47.1,
+              49.4,
+              49.8,
+              49.9,
+              49.9
+            ],
+            "vazao": [
+              0.3,
+              0.2,
+              0.2,
+              0.1,
+              0.1,
+              0.2
+            ]
+          }
+        },
+        "R17 - Reservatório Aldrovandi": {
+          "nome": "R17 - Reservatório Aldrovandi",
+          "grupo": "ETA Sul",
+          "kpis": {
+            "nivelAtual": "83.0%",
+            "nivelMedio": "81.6%",
+            "nivelMin": "77.0%",
+            "nivelMax": "88.4%",
+            "vazaoAtual": "1.9 L/s",
+            "vazaoMin": "1.8 L/s",
+            "vazaoMax": "2.0 L/s",
+            "vazaoMedia": "1.8 L/s",
+            "status": "Normal"
+          },
+          "leituras": {
+            "nivel": [
+              88.4,
+              84.9,
+              77.9,
+              77.0,
+              78.6,
+              83.0
+            ],
+            "vazao": [
+              2.0,
+              1.8,
+              1.8,
+              1.8,
+              1.8,
+              1.9
+            ]
+          }
+        }
+      }
+    }
+  }
+}

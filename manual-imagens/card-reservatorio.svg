@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" role="img" aria-labelledby="title desc">
+  <title id="title">Ilustração do card de um reservatório</title>
+  <desc id="desc">Card selecionado com indicadores de nível e vazão, rosca de nível atual, comparações e um gráfico horário ilustrativo.</desc>
+  <rect width="1000" height="500" rx="18" fill="#101216"/>
+  <rect x="24" y="20" width="952" height="460" rx="16" fill="#191d22" stroke="#2b3138"/>
+  <rect x="48" y="44" width="904" height="412" rx="12" fill="#1b2026" stroke="#34404a"/>
+  <text x="72" y="81" fill="#f4f7fa" font-family="Arial,sans-serif" font-size="24" font-weight="700">RXX · Reservatório selecionado</text>
+  <text x="72" y="106" fill="#aab4bf" font-family="Arial,sans-serif" font-size="14">Resumo das leituras da madrugada · DD/MM/AAAA</text>
+  <g font-family="Arial,sans-serif">
+    <rect x="72" y="128" width="220" height="74" rx="8" fill="#14171b" stroke="#343b43"/>
+    <text x="88" y="153" fill="#aab4bf" font-size="12">NÍVEL MÍN/MÁX</text>
+    <text x="88" y="181" fill="#f4f7fa" font-size="20" font-weight="700">78% / 86%</text>
+    <rect x="306" y="128" width="220" height="74" rx="8" fill="#14171b" stroke="#343b43"/>
+    <text x="322" y="153" fill="#aab4bf" font-size="12">NÍVEL MÉDIO</text>
+    <text x="322" y="181" fill="#f4f7fa" font-size="20" font-weight="700">82%</text>
+    <rect x="540" y="128" width="220" height="74" rx="8" fill="#14171b" stroke="#343b43"/>
+    <text x="556" y="153" fill="#aab4bf" font-size="12">VAZÃO MÍN/MÁX (DIA)</text>
+    <text x="556" y="181" fill="#f4f7fa" font-size="20" font-weight="700">8 / 12 L/s</text>
+    <rect x="774" y="128" width="154" height="74" rx="8" fill="#14171b" stroke="#343b43"/>
+    <text x="790" y="153" fill="#aab4bf" font-size="12">VAZÃO MÉDIA</text>
+    <text x="790" y="181" fill="#f4f7fa" font-size="20" font-weight="700">10 L/s</text>
+  </g>
+  <rect x="72" y="220" width="856" height="62" rx="8" fill="#14171b" stroke="#343b43"/>
+  <text x="90" y="246" fill="#aab4bf" font-family="Arial,sans-serif" font-size="12" font-weight="700">COMPARAÇÃO COM A BASE SELECIONADA</text>
+  <text x="90" y="268" fill="#7bd6a0" font-family="Arial,sans-serif" font-size="14">Nível · Vazão mínima · Vazão máxima</text>
+  <rect x="72" y="300" width="856" height="130" rx="8" fill="#14171b" stroke="#343b43"/>
+  <text x="92" y="327" fill="#f4f7fa" font-family="Arial,sans-serif" font-size="15" font-weight="700">Leituras da madrugada</text>
+  <path d="M105 397 C175 379 220 389 285 360 S405 378 470 348 S590 365 655 340 S775 362 890 332" fill="none" stroke="#33a2e5" stroke-width="4"/>
+  <path d="M105 410 C190 401 225 407 285 394 S405 403 470 390 S590 399 655 384 S775 394 890 377" fill="none" stroke="#ff780a" stroke-width="3" stroke-dasharray="8 7"/>
+  <g fill="#33a2e5"><circle cx="105" cy="397" r="4"/><circle cx="285" cy="360" r="4"/><circle cx="470" cy="348" r="4"/><circle cx="655" cy="340" r="4"/><circle cx="890" cy="332" r="4"/></g>
+  <text x="92" y="420" fill="#8f9ba7" font-family="Arial,sans-serif" font-size="11">Nível (%) — linha azul</text>
+  <text x="782" y="420" fill="#8f9ba7" font-family="Arial,sans-serif" font-size="11">Vazão (L/s) — tracejada</text>
+</svg>

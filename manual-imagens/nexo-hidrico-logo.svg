@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" role="img" aria-labelledby="logo-title logo-description">
+  <title id="logo-title">Nexo Hídrico</title>
+  <desc id="logo-description">Símbolo de gota d'água com pontos conectados, ao lado do nome Nexo Hídrico.</desc>
+  <defs>
+    <linearGradient id="water-gradient" x1="20" y1="10" x2="98" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 10C46 27 25 48 25 70a33 33 0 0 0 66 0c0-22-21-43-33-60Z" fill="url(#water-gradient)" stroke="#38bdf8" stroke-width="3"/>
+    <path d="M40 69c0 11 8 20 19 22" stroke="#e0f2fe" stroke-width="5"/>
+    <path d="M48 54 68 45l13 17-17 19-24-2" stroke="#e0f2fe" stroke-width="3.5"/>
+    <path d="M48 54 40 48m28-3 2-9m11 26 9 2m-26 18-1 10" stroke="#e0f2fe" stroke-width="3"/>
+    <circle cx="48" cy="54" r="5" fill="#fff" stroke="#0c4a6e" stroke-width="2"/>
+    <circle cx="68" cy="45" r="5" fill="#fff" stroke="#0c4a6e" stroke-width="2"/>
+    <circle cx="81" cy="62" r="5" fill="#fff" stroke="#0c4a6e" stroke-width="2"/>
+    <circle cx="64" cy="81" r="5" fill="#fff" stroke="#0c4a6e" stroke-width="2"/>
+    <circle cx="40" cy="79" r="5" fill="#fff" stroke="#0c4a6e" stroke-width="2"/>
+    <circle cx="40" cy="48" r="3" fill="#e0f2fe" stroke="none"/>
+    <circle cx="70" cy="36" r="3" fill="#e0f2fe" stroke="none"/>
+    <circle cx="90" cy="64" r="3" fill="#e0f2fe" stroke="none"/>
+    <circle cx="63" cy="94" r="3" fill="#e0f2fe" stroke="none"/>
+  </g>
+  <text x="116" y="68" fill="#0f172a" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="43" font-weight="700" letter-spacing="-1.6">Nexo <tspan fill="#0284c7">Hídrico</tspan></text>
+  <text x="119" y="94" fill="#475569" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="2.2">MONITORAMENTO E OPERAÇÃO</text>
+</svg>

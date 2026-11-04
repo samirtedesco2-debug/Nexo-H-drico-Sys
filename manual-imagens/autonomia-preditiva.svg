@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+      .bg { fill: #0b0f15; }
+      .card { fill: #131b26; stroke: #223042; stroke-width: 1.5; rx: 12px; }
+      .title { font-family: 'Inter', sans-serif; font-weight: 700; fill: #f0f4f8; font-size: 18px; }
+      .subtitle { font-family: 'Inter', sans-serif; font-weight: 400; fill: #8899a6; font-size: 13px; }
+      .label { font-family: 'Inter', sans-serif; font-weight: 500; fill: #8899a6; font-size: 12px; }
+      .value { font-family: 'Inter', sans-serif; font-weight: 600; fill: #f0f4f8; font-size: 15px; }
+      .alert-text { font-family: 'Inter', sans-serif; font-weight: 600; fill: #e35d6a; font-size: 13px; }
+      .safe-text { font-family: 'Inter', sans-serif; font-weight: 600; fill: #73bf69; font-size: 13px; }
+      
+      /* Animações */
+      @keyframes pulseAlert {
+        0% { opacity: 0.8; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.02); filter: drop-shadow(0 0 8px rgba(227, 93, 106, 0.4)); }
+        100% { opacity: 0.8; transform: scale(1); }
+      }
+      @keyframes drainWater {
+        0% { height: 160px; y: 90px; }
+        50% { height: 100px; y: 150px; }
+        100% { height: 160px; y: 90px; }
+      }
+      @keyframes moveWave {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50px); }
+      }
+      .anim-alert { animation: pulseAlert 2.5s infinite ease-in-out; transform-origin: center; }
+      .water-level { animation: drainWater 6s infinite ease-in-out; }
+      .wave { animation: moveWave 3s infinite linear; }
+    </style>
+    
+    <linearGradient id="waterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#33a2e5" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#1b6ca8" stop-opacity="0.9"/>
+    </linearGradient>
+    
+    <linearGradient id="alertGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#26161a"/>
+      <stop offset="100%" stop-color="#131b26"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fundo -->
+  <rect width="800" height="480" class="bg"/>
+
+  <!-- Cabeçalho -->
+  <text x="40" y="45" class="title">CCO SAMAE — Fluxo de Autonomia Preditiva</text>
+  <text x="40" y="65" class="subtitle">Monitoramento proativo baseado em Capacidade Útil, Balanço de Vazão e Projeção Temporal</text>
+
+  <!-- 1. Banner Global Preditivo (Topo) -->
+  <g class="anim-alert" transform="translate(40, 85)">
+    <rect width="720" height="60" rx="8" fill="url(#alertGrad)" stroke="#e35d6a" stroke-width="1.5"/>
+    <circle cx="25" cy="30" r="12" fill="rgba(227, 93, 106, 0.2)"/>
+    <text x="25" y="34" font-size="14" text-anchor="middle">⏳</text>
+    <text x="55" y="27" class="alert-text">Alerta Preditivo CCO: 1 reservatório em risco de esgotamento</text>
+    <text x="55" y="45" class="value" font-size="12" fill="#a0aec0">Reservatório R-01: Risco de atingir nível crítico (&lt;30%) em ~2.4h</text>
+    
+    <!-- Botão de Ação -->
+    <rect x="590" y="15" width="110" height="30" rx="6" fill="#1e293b" stroke="#334155"/>
+    <text x="645" y="34" font-family="Inter" font-size="11" font-weight="600" fill="#33a2e5" text-anchor="middle">Ver Detalhes ↗</text>
+  </g>
+
+  <!-- 2. Bloco Esquerdo: Tanque / Nível em Tempo Real -->
+  <g transform="translate(40, 165)">
+    <rect width="220" height="275" class="card"/>
+    <text x="20" y="30" class="title" font-size="15">Reservatório R-01</text>
+    <text x="20" y="48" class="label">Capacidade: 5.000 m³</text>
+    
+    <!-- Tanque Gráfico -->
+    <rect x="70" y="70" width="80" height="180" rx="6" fill="#0b0f15" stroke="#334155" stroke-width="2"/>
+    
+    <!-- Água animada -->
+    <clipPath id="tankClip">
+      <rect x="71" y="71" width="78" height="178" rx="5"/>
+    </clipPath>
+    <g clip-path="url(#tankClip)">
+      <rect class="water-level" x="71" y="110" width="78" height="140" fill="url(#waterGrad)"/>
+      <!-- Ondas -->
+      <path class="wave" d="M 71 110 Q 91 105 111 110 T 151 110 T 191 110 L 191 260 L 71 260 Z" fill="#4fb3f6" opacity="0.4"/>
+    </g>
+    
+    <!-- Indicador de Nível -->
+    <text x="110" y="165" font-family="Inter" font-weight="700" fill="#fff" font-size="16" text-anchor="middle">42.5%</text>
+    <text x="110" y="182" font-family="Inter" font-weight="500" fill="#cbd5e1" font-size="10" text-anchor="middle">Nível Atual</text>
+    
+    <text x="110" y="268" class="label" font-size="11" text-anchor="middle">Tendência: Esvaziando 📉</text>
+  </g>
+
+  <!-- 3. Bloco Central: Balanço de Vazão (Fórmula) -->
+  <g transform="translate(280, 165)">
+    <rect width="220" height="275" class="card"/>
+    <text x="20" y="30" class="title" font-size="15">Balanço Hidráulico</text>
+    <text x="20" y="48" class="label">Taxa de Variação (Net Flow)</text>
+    
+    <!-- Entradas / Saídas -->
+    <rect x="20" y="70" width="180" height="55" rx="6" fill="#0b0f15" stroke="#1e293b"/>
+    <text x="35" y="92" class="label">Vazão de Entrada</text>
+    <text x="175" y="94" class="safe-text" text-anchor="end">45.0 L/s</text>
+    <text x="35" y="112" class="label">Vazão de Saída</text>
+    <text x="175" y="114" class="alert-text" text-anchor="end">78.5 L/s</text>
+
+    <!-- Resultado Vazão Líquida -->
+    <rect x="20" y="140" width="180" height="65" rx="6" fill="#1b1216" stroke="#e35d6a" stroke-width="1"/>
+    <text x="35" y="165" class="label">Vazão Líquida (Saída - Ent.)</text>
+    <text x="110" y="190" class="alert-text" font-size="16" text-anchor="middle">+33.5 L/s (~120 m³/h)</text>
+
+    <text x="110" y="235" class="label" font-size="11" text-anchor="middle">Velocidade de Drenagem</text>
+    <text x="110" y="252" class="value" font-size="12" fill="#f1f5f9" text-anchor="middle">2.4% do reservatório / hora</text>
+  </g>
+
+  <!-- 4. Bloco Direito: Projeção de Tempo (Autonomia) -->
+  <g transform="translate(520, 165)">
+    <rect width="240" height="275" class="card"/>
+    <text x="20" y="30" class="title" font-size="15">Projeção &amp; Autonomia</text>
+    <text x="20" y="48" class="label">Horizontes de Alerta Baseados em Tempo</text>
+
+    <!-- Limite Atenção -->
+    <rect x="20" y="70" width="200" height="60" rx="6" fill="#0b0f15" stroke="#d7a52b" stroke-width="1"/>
+    <text x="35" y="92" font-family="Inter" font-weight="600" fill="#d7a52b" font-size="12">⚠️ Meta Atenção (&lt; 40%)</text>
+    <text x="35" y="114" class="value" font-size="13">Atinge em: <span style="color: #d7a52b;">~ 0.8 horas</span></text>
+
+    <!-- Limite Crítico -->
+    <rect x="20" y="140" width="200" height="60" rx="6" fill="#1b1216" stroke="#e35d6a" stroke-width="1"/>
+    <text x="35" y="162" font-family="Inter" font-weight="600" fill="#e35d6a" font-size="12">🔴 Meta Crítico (&lt; 30%)</text>
+    <text x="35" y="184" class="value" font-size="13">Atinge em: <span style="color: #e35d6a;">~ 2.4 horas</span></text>
+
+    <!-- Conclusão CCO -->
+    <text x="120" y="235" class="alert-text" font-size="12" text-anchor="middle">Ação Necessária do CCO</text>
+    <text x="120" y="252" class="label" font-size="11" text-anchor="middle">Manobrar bomba/registro preventivamente</text>
+  </g>
+
+</svg>

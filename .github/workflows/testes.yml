@@ -1,0 +1,36 @@
+name: Testes
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificar sintaxe JavaScript
+        run: |
+          for arquivo in src/*.js testes/*.js e2e/*.js playwright.config.js; do
+            node --check "$arquivo"
+          done
+
+      - name: Instalar Chromium para Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Executar testes automatizados
+        run: npm test
+
+      - name: Executar testes ponta a ponta
+        run: npm run test:e2e

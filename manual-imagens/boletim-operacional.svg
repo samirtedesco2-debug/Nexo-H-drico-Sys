@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" role="img" aria-labelledby="title desc">
+  <title id="title">Ilustração do boletim operacional</title>
+  <desc id="desc">Resumo de monitoramento com aviso de desenvolvimento, seletores de indicador e comparação, categorias de status e qualidade dos dados.</desc>
+  <rect width="1000" height="500" rx="18" fill="#101216"/>
+  <rect x="24" y="20" width="952" height="460" rx="16" fill="#191d22" stroke="#2b3138"/>
+  <text x="52" y="57" fill="#4bb7f2" font-family="Arial,sans-serif" font-size="12" font-weight="700" letter-spacing="2">RESUMO DO MONITORAMENTO</text>
+  <text x="52" y="89" fill="#f4f7fa" font-family="Arial,sans-serif" font-size="25" font-weight="700">Boletim operacional da madrugada</text>
+  <text x="52" y="115" fill="#aab4bf" font-family="Arial,sans-serif" font-size="14">Dados de DD/MM/AAAA. Consulte a data e os critérios antes de avaliar.</text>
+  <rect x="52" y="136" width="896" height="48" rx="7" fill="#382b18" stroke="#9b6a22"/>
+  <text x="68" y="166" fill="#f4c978" font-family="Arial,sans-serif" font-size="14" font-weight="700">Atenção: Visão operacional ainda em desenvolvimento — valide com os procedimentos da equipe.</text>
+  <rect x="52" y="204" width="420" height="66" rx="8" fill="#14171b" stroke="#343b43"/>
+  <text x="68" y="228" fill="#aab4bf" font-family="Arial,sans-serif" font-size="12" font-weight="700">INDICADORES EXIBIDOS</text>
+  <text x="68" y="253" fill="#63bdf0" font-family="Arial,sans-serif" font-size="15">Nível e vazão</text>
+  <path d="m438 239 7 7 7-7" fill="none" stroke="#63bdf0" stroke-width="2"/>
+  <rect x="492" y="204" width="456" height="66" rx="8" fill="#14171b" stroke="#343b43"/>
+  <text x="508" y="228" fill="#aab4bf" font-family="Arial,sans-serif" font-size="12" font-weight="700">BASE DE COMPARAÇÃO</text>
+  <text x="508" y="253" fill="#63bdf0" font-family="Arial,sans-serif" font-size="15">Mesmo dia da semana (últimas 4 semanas)</text>
+  <path d="m916 239 7 7 7-7" fill="none" stroke="#63bdf0" stroke-width="2"/>
+  <g font-family="Arial,sans-serif">
+    <rect x="52" y="292" width="210" height="108" rx="9" fill="#202a34" stroke="#34414d"/>
+    <text x="72" y="329" fill="#cbd5df" font-size="16" font-weight="700">Normais</text>
+    <text x="72" y="375" fill="#f4f7fa" font-size="34" font-weight="700">12</text>
+    <rect x="278" y="292" width="210" height="108" rx="9" fill="#382b18" stroke="#9b6a22"/>
+    <text x="298" y="329" fill="#f4c978" font-size="16" font-weight="700">Atenção</text>
+    <text x="298" y="375" fill="#f4f7fa" font-size="34" font-weight="700">3</text>
+    <rect x="504" y="292" width="210" height="108" rx="9" fill="#3b2023" stroke="#a83b45"/>
+    <text x="524" y="329" fill="#ff9ba0" font-size="16" font-weight="700">Críticos</text>
+    <text x="524" y="375" fill="#f4f7fa" font-size="34" font-weight="700">1</text>
+    <rect x="730" y="292" width="218" height="108" rx="9" fill="#382b18" stroke="#9b6a22"/>
+    <text x="750" y="329" fill="#f4c978" font-size="16" font-weight="700">Incompletos</text>
+    <text x="750" y="375" fill="#f4f7fa" font-size="34" font-weight="700">2</text>
+  </g>
+  <text x="52" y="442" fill="#aab4bf" font-family="Arial,sans-serif" font-size="14">Qualidade dos dados: leituras esperadas ausentes e reservatórios sem registro.</text>
+</svg>

@@ -1,0 +1,44 @@
+{
+  "ALM-NIV-01": {
+    "codigo": "ALM-NIV-01",
+    "categoria": "Nível Crítico",
+    "severidade": "Crítico",
+    "template": "Nível Crítico"
+  },
+  "ALM-NIV-02": {
+    "codigo": "ALM-NIV-02",
+    "categoria": "Nível de Atenção",
+    "severidade": "Atenção",
+    "template": "Nível de Atenção"
+  },
+  "ALM-VAZ-01": {
+    "codigo": "ALM-VAZ-01",
+    "categoria": "Vazão Baixa",
+    "severidade": "Atenção",
+    "template": "Vazão Baixa"
+  },
+  "ALM-VAZ-02": {
+    "codigo": "ALM-VAZ-02",
+    "categoria": "Vazão Alta",
+    "severidade": "Crítico",
+    "template": "Vazão Alta"
+  },
+  "ALM-DAT-01": {
+    "codigo": "ALM-DAT-01",
+    "categoria": "Sem Comunicação",
+    "severidade": "Inconsistente",
+    "template": "Sem Comunicação"
+  },
+  "ALM-DAT-02": {
+    "codigo": "ALM-DAT-02",
+    "categoria": "Leitura Inválida",
+    "severidade": "Inconsistente",
+    "template": "Leitura Inválida"
+  },
+  "ALM-FLP-01": {
+    "codigo": "ALM-FLP-01",
+    "categoria": "Alarme Intermitente",
+    "severidade": "Inconsistente",
+    "template": "Alarme Intermitente"
+  }
+}
