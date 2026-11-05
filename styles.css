@@ -54,8 +54,9 @@ body {
   flex-direction: column;
   background-color: var(--page-bg);
   color: var(--text-color);
-  padding: 20px;
-  min-height: 100vh;
+  padding: 12px;
+  height: 100vh;
+  overflow: hidden;
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
@@ -66,13 +67,13 @@ body {
    ========================================================================== */
 header {
   display: grid;
-  gap: 22px;
+  gap: 12px;
   background-color: var(--surface-bg);
-  padding: 24px 28px;
+  padding: 14px 20px;
   border-radius: 12px;
   border: 1px solid var(--border-color);
   border-top: 3px solid var(--accent-color);
-  margin-bottom: 28px;
+  margin-bottom: 14px;
   box-shadow: 0 4px 12px var(--shadow-color);
 }
 
@@ -103,8 +104,8 @@ header {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  min-height: 116px;
-  padding: 22px 24px;
+  min-height: 75px;
+  padding: 12px 18px;
   overflow: hidden;
   border: 1px solid var(--border-color);
   border-radius: 10px;
@@ -277,6 +278,10 @@ header h1 {
   align-items: end;
   gap: 14px;
   margin-bottom: 16px;
+}
+
+.operational-global-controls[hidden] {
+  display: none !important;
 }
 
 .focused-view-actions {
@@ -2668,11 +2673,16 @@ header h1 {
 }
 
 .footer {
-  padding: 10px 0px 0px 0px;
+  padding: 4px 0px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted-color);
 }
 
 footer {
   margin-top: auto;
+  flex-shrink: 0;
+  padding: 4px 0;
 }
 
 /* ==========================================================================
@@ -3083,6 +3093,15 @@ footer {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px dashed var(--border-color);
+}
+
+body.is-cco-fullscreen-active,
+body.is-cco-investigation-active,
+body.is-view-window-active,
+body.is-config-window-active {
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: 100vh !important;
 }
 
 body.is-cco-fullscreen-active header,

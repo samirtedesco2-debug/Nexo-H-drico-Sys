@@ -20,18 +20,20 @@
       <div class="header-top">
         <div class="header-brand">
           <div class="header-brand-copy">
-            <img
-              class="header-brand-logo"
-              src="manual-imagens/nexo-hidrico-logo.jpg"
-              alt="Logo Nexo Hídrico"
-            >
-            <p class="brand-tagline">Inteligência Operacional</p>
-            <div id="logged-user-container" style="display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 0.82rem;">
-              <span id="logged-username-display" style="color: var(--text-color); font-weight: 600;" title="Usuário conectado">---</span>
-              <button type="button" id="btn-global-logout" title="Sair da sessão" style="background: none; border: none; color: var(--status-critical-color); cursor: pointer; padding: 2px 4px; display: flex; align-items: center;" aria-label="Sair">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-              </button>
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <img
+                class="header-brand-logo"
+                src="manual-imagens/nexo-hidrico-logo.jpg"
+                alt="Logo Nexo Hídrico"
+              >
+              <div id="logged-user-container" style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem;">
+                <span id="logged-username-display" style="color: var(--text-color); font-weight: 600;" title="Usuário conectado">---</span>
+                <button type="button" id="btn-global-logout" title="Sair da sessão" style="background: none; border: none; color: var(--status-critical-color); cursor: pointer; padding: 2px 4px; display: flex; align-items: center;" aria-label="Sair">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
+              </div>
             </div>
+            <p class="brand-tagline">Inteligência Operacional</p>
           </div>
         </div>
         <div class="header-right">
@@ -351,6 +353,17 @@
               <option value="global">Histórico global</option>
             </select>
           </div>
+          <div class="operational-comparison-control" style="display: flex; align-items: flex-end;">
+            <button
+              type="button"
+              id="btn-toggle-grid-reservatorios"
+              class="btn-copiar-resumo"
+              style="height: 42px; margin-left: 0;"
+              title="Mostrar ou ocultar cards de reservatórios"
+            >
+              <span>👁️ Mostrar Cards de Reservatórios</span>
+            </button>
+          </div>
         </div>
         <div
           id="global-predictive-banner"
@@ -370,7 +383,7 @@
         ></section>
         <p id="operational-data-quality" class="operational-data-quality"></p>
       </section>
-      <div class="dashboard-grid" id="grid-reservatorios"></div>
+      <div class="dashboard-grid" id="grid-reservatorios" hidden></div>
       <section
         class="reservoir-analysis-view"
         id="analise-grafico-reservatorio"

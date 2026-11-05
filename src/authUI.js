@@ -19,7 +19,11 @@ class AuthUI {
       backdrop-filter: blur(4px);
       display: flex; justify-content: center; align-items: center; z-index: 99999;
       font-family: inherit; color: #fff;
+      overflow: hidden;
     `;
+    if (typeof document !== 'undefined' && document.body && document.body.style) {
+      document.body.style.overflow = "hidden";
+    }
     return overlay;
   }
 
@@ -56,10 +60,10 @@ class AuthUI {
 
     overlay.innerHTML = `
       <div style="
-        background: rgba(17, 24, 39, 0.82); backdrop-filter: blur(20px);
+        background: rgba(17, 24, 39, 0.88); backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px;
-        padding: 40px; width: 100%; max-width: 420px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-        display: flex; flex-direction: column; gap: 20px; text-align: center;
+        padding: 26px 32px; width: 100%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        display: flex; flex-direction: column; gap: 14px; text-align: center;
       ">
         <div>
           <img
@@ -68,25 +72,25 @@ class AuthUI {
             alt="Logo Nexo Hídrico"
           >
           <p class="auth-brand-tagline">Inteligência Operacional</p>
-          <h2 style="color: #f8fafc; margin: 0 0 6px 0; font-size: 1.6rem; font-weight: 700;">Acesso ao Sistema</h2>
-          <p style="color: #94a3b8; margin: 0; font-size: 0.9rem;">Insira suas credenciais para continuar</p>
+          <h2 style="color: #f8fafc; margin: 0 0 4px 0; font-size: 1.4rem; font-weight: 700;">Acesso ao Sistema</h2>
+          <p style="color: #94a3b8; margin: 0; font-size: 0.85rem;">Insira suas credenciais para continuar</p>
         </div>
 
-        <form id="nexo-login-form" style="display: flex; flex-direction: column; gap: 16px; text-align: left;">
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label for="login-username" style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;">Usuário</label>
+        <form id="nexo-login-form" style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label for="login-username" style="font-size: 0.8rem; color: #cbd5e1; font-weight: 600;">Usuário</label>
             <input type="text" id="login-username" autocomplete="username" required placeholder="Ex: admin.nexo" style="
               background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.12); color: #fff;
-              padding: 12px; border-radius: 8px; font-size: 0.95rem; outline: none;
+              padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; outline: none;
             ">
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label for="login-password" style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;">Senha</label>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label for="login-password" style="font-size: 0.8rem; color: #cbd5e1; font-weight: 600;">Senha</label>
             <div class="login-password-input-wrap">
               <input type="password" id="login-password" autocomplete="current-password" required placeholder="••••••••" style="
                 background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.12); color: #fff;
-                width: 100%; padding: 12px 88px 12px 12px; border-radius: 8px; font-size: 0.95rem; outline: none;
+                width: 100%; padding: 10px 88px 10px 12px; border-radius: 8px; font-size: 0.9rem; outline: none;
               ">
               <button
                 type="button"
@@ -160,6 +164,9 @@ class AuthUI {
         }
 
         localStorage.setItem("nexo_hidrico_session", JSON.stringify({ username: user.username, role: user.role }));
+        if (typeof document !== 'undefined' && document.body && document.body.style) {
+          document.body.style.overflow = "";
+        }
         overlay.remove();
         window.RBACManager.aplicarPermissoes();
         window.location.reload();
@@ -224,6 +231,9 @@ class AuthUI {
       try {
         await window.AuthRepository.atualizarSenha(user.username, novaSenha);
         localStorage.setItem("nexo_hidrico_session", JSON.stringify({ username: user.username, role: user.role }));
+        if (typeof document !== 'undefined' && document.body && document.body.style) {
+          document.body.style.overflow = "";
+        }
         overlay.remove();
         window.RBACManager.aplicarPermissoes();
         window.location.reload();
@@ -313,6 +323,9 @@ class AuthUI {
       try {
         await window.AuthRepository.atualizarSenha(user.username, novaSessionSenha);
         localStorage.setItem("nexo_hidrico_session", JSON.stringify({ username: user.username, role: user.role }));
+        if (typeof document !== 'undefined' && document.body && document.body.style) {
+          document.body.style.overflow = "";
+        }
         overlay.remove();
         window.RBACManager.aplicarPermissoes();
         window.location.reload();

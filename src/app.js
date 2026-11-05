@@ -5,6 +5,7 @@ let graficosAnaliticos = {};
 let graficosEngenharia = {};
 let categoriaBoletimAtiva = null;
 let analiseReservatorioAberta = false;
+let gridReservatoriosAberto = false;
 let graficoAnaliseComMedias = false;
 let graficoAnaliseComHistorico = false;
 const seriesAnaliseOcultas = new Set();
@@ -582,6 +583,18 @@ function inicializarDashboard() {
   seletorBaseComparacao.addEventListener("change", renderizarDashboard);
   seletorEscopo.addEventListener("change", renderizarDashboard);
 
+  const btnToggleGrid = document.getElementById("btn-toggle-grid-reservatorios");
+  const gridReservatorios = document.getElementById("grid-reservatorios");
+  if (btnToggleGrid && gridReservatorios) {
+    btnToggleGrid.addEventListener("click", () => {
+      gridReservatoriosAberto = !gridReservatoriosAberto;
+      renderizarDashboard();
+      btnToggleGrid.querySelector("span").textContent = gridReservatoriosAberto
+        ? "👁️ Ocultar Cards de Reservatórios"
+        : "👁️ Mostrar Cards de Reservatórios";
+    });
+  }
+
   const btnCopiarResumo = document.getElementById("btn-copiar-resumo");
   const btnCopiarPlantaoCCO = document.getElementById("btn-copiar-plantao-cco");
 
@@ -812,11 +825,7 @@ function inicializarNavegacao() {
   window.nexoViewWindows = window.nexoViewWindows || {};
 
   function ativarAba(abaAtiva) {
-    const viewAtual = new URLSearchParams(window.location.search).get("view");
-    document.body.classList.toggle(
-      "is-view-window-active",
-      viewAtual === viewsPorAba[abaAtiva.id],
-    );
+    document.body.classList.add("is-view-window-active");
     document.body.classList.toggle("is-cco-fullscreen-active", abaAtiva.id === "tab-exceccoes");
     if (abaAtiva.id !== "tab-operacional") {
       document.body.classList.remove("is-cco-investigation-active");
@@ -854,6 +863,7 @@ function inicializarNavegacao() {
   const btnVoltarPrincipal = document.getElementById("btn-voltar-tela-principal");
   if (btnVoltarPrincipal) {
     btnVoltarPrincipal.addEventListener("click", () => {
+      document.body.classList.remove("is-view-window-active", "is-cco-fullscreen-active");
       try {
         window.close();
       } catch (e) {}
@@ -863,7 +873,10 @@ function inicializarNavegacao() {
   }
 
   document.querySelectorAll(".btn-close-view-window").forEach((botao) => {
-    botao.addEventListener("click", () => window.close());
+    botao.addEventListener("click", () => {
+      document.body.classList.remove("is-view-window-active", "is-cco-fullscreen-active");
+      try { window.close(); } catch (e) {}
+    });
   });
 
   function atualizarRelogioCCO() {
@@ -1145,8 +1158,13 @@ async function renderizarDashboard() {
     analiseReservatorioAberta = false;
   }
 
+  const eInvestigacaoReservatorio = filtroSelecionado.startsWith("reservatorio:");
+  const globalControls = document.querySelector(".operational-global-controls");
+  if (globalControls) {
+    globalControls.hidden = eInvestigacaoReservatorio;
+  }
   containerGrid.hidden =
-    categoriaBoletimAtiva !== null || analiseReservatorioAberta;
+    (!gridReservatoriosAberto && !eInvestigacaoReservatorio) || categoriaBoletimAtiva !== null || analiseReservatorioAberta;
   resumoOperacional.hidden = analiseReservatorioAberta;
   painelAnaliseReservatorio.hidden = !analiseReservatorioAberta;
   containerGrid.classList.toggle(
