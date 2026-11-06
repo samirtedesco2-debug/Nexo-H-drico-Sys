@@ -114,5 +114,14 @@ Este documento registra o histórico cronológico de melhorias, refatorações e
 * **Agora:** Os identificadores de contas, bancos IndexedDB, chaves `localStorage`, variáveis globais, elementos de autenticação e canal entre janelas usam a identidade Nexo Hídrico. A inicialização migra as contas `admin.samae` e `agent.samae` para `admin.nexo` e `operador.nexo`, preservando credenciais, papéis, bloqueios, tentativas, sessões e dados operacionais; as bases e chaves antigas permanecem intactas como cópia de segurança.
 * **Validação:** Teste E2E cobre migração de contas, auditoria, sessões, configurações, notificações, reconhecimentos, logs e handles de arquivo.
 
+### 19. Otimização de Performance, Abertura de Janelas e Anti-Flicker (CCO)
+* **Data:** 6 de Novembro de 2026
+* **Agora:** 
+  - **Sincronização Zero-Fetch (`BroadcastChannel`)**: Janelas secundárias de visão (`?view=...`) solicitam o banco de dados diretamente da janela principal em memória, evitando re-fetches de arquivos JSON e reduzindo drasticamente o tempo de abertura.
+  - **Anti-Flicker e Early View Binding**: Inclusão de script síncrono no cabeçalho de `index.html` e regras CSS antecipadas (`data-active-view`) para pintar a visão correta no primeiro frame, eliminando qualquer transição visível da tela principal.
+  - **Manifesto PWA (`manifest.json`)**: Configurado com `background_color` escuro para que o S.O. pinte a janela nativa sem o clarão branco inicial (*white flash*).
+  - **Debounce no Loader (`NexoLoader`)**: Adicionado atraso de 1000ms para evitar piscadas do loader em operações rápidas.
+* **Validação:** Testes unitários e suíte E2E do Playwright (`100% aprovados`).
+
 ---
 *Nexo Hídrico — Centro de Controle Operacional*
