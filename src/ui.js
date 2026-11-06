@@ -2852,3 +2852,46 @@ window.mostrarToast = function(mensagem, tipo = "sucesso") {
 
   setTimeout(fechar, 4000);
 };
+
+window.NexoLoader = {
+  mostrar(mensagem = "Processando inteligência operacional...") {
+    let overlay = document.getElementById("nexo-video-loader-overlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "nexo-video-loader-overlay";
+      overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 999999; font-family: inherit; color: #fff;
+      `;
+      overlay.innerHTML = `
+        <div style="
+          background: rgba(17, 24, 39, 0.95); border: 1px solid rgba(14, 165, 233, 0.3);
+          border-radius: 16px; padding: 24px 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+          display: flex; flex-direction: column; align-items: center; gap: 16px; max-width: 340px; text-align: center;
+        ">
+          <video autoplay muted loop playsinline style="
+            width: 100px; height: 100px; border-radius: 12px; object-fit: cover;
+            border: 2px solid rgba(14, 165, 233, 0.5); box-shadow: 0 0 20px rgba(14,165,233,0.3);
+          ">
+            <source src="manual-imagens/gemini_generated_video_d4201eb6.mp4" type="video/mp4">
+            Seu navegador não suporta vídeos.
+          </video>
+          <div id="nexo-loader-msg" style="font-size: 0.95rem; font-weight: 600; color: #f8fafc; letter-spacing: 0.02em;">${mensagem}</div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    } else {
+      const msgEl = overlay.querySelector("#nexo-loader-msg");
+      if (msgEl) msgEl.textContent = mensagem;
+      overlay.style.display = "flex";
+    }
+  },
+  esconder() {
+    const overlay = document.getElementById("nexo-video-loader-overlay");
+    if (overlay) {
+      overlay.style.display = "none";
+    }
+  }
+};

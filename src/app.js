@@ -825,6 +825,16 @@ function inicializarNavegacao() {
   window.nexoViewWindows = window.nexoViewWindows || {};
 
   function ativarAba(abaAtiva) {
+    const nomesAbas = {
+      "tab-operacional": "Carregando Visão Operacional...",
+      "tab-analitico": "Carregando Visão Analítica...",
+      "tab-engenharia": "Carregando Visão de Engenharia...",
+      "tab-exceccoes": "Carregando Mural de Alertas CCO...",
+    };
+    if (window.NexoLoader) {
+      window.NexoLoader.mostrar(nomesAbas[abaAtiva.id] || "Carregando sistema...");
+    }
+
     document.body.classList.add("is-view-window-active");
     document.body.classList.toggle("is-cco-fullscreen-active", abaAtiva.id === "tab-exceccoes");
     if (abaAtiva.id !== "tab-operacional") {
@@ -844,6 +854,10 @@ function inicializarNavegacao() {
       window.veioDeAlertasCCO = false;
       renderizarDashboardExceccoes();
     }
+
+    setTimeout(() => {
+      if (window.NexoLoader) window.NexoLoader.esconder();
+    }, 350);
   }
 
   abas.forEach((aba) => {
