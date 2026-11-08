@@ -2032,8 +2032,8 @@ function atualizarBadgeAlarmes() {
   const totalExceccoes = exceccoes.length;
 
   const badge = document.getElementById("badge-alarmes-ativos");
-  const countTab = document.getElementById("count-tab-exceccoes");
-  const tabExceccoes = document.getElementById("tab-exceccoes");
+  const countTab = document.getElementById("count-tab-alarmes");
+  const tabAlarmes = document.getElementById("tab-alarmes");
   if (badge) {
     badge.textContent = totalExceccoes;
     badge.style.display = totalExceccoes > 0 ? "inline-block" : "none";
@@ -2041,8 +2041,8 @@ function atualizarBadgeAlarmes() {
   if (countTab) {
     countTab.textContent = totalExceccoes;
   }
-  if (tabExceccoes) {
-    tabExceccoes.classList.toggle("animar-pulso-tab", totalExceccoes > 0);
+  if (tabAlarmes) {
+    tabAlarmes.classList.toggle("animar-pulso-tab", totalExceccoes > 0);
   }
 }
 
@@ -2170,8 +2170,8 @@ function obterTempoRespostaMs(chave) {
 function renderizarDashboardExceccoes() {
   const banco = window.bancoDeDados;
   const seletorData = document.getElementById("seletor-data");
-  const gridExceccoes = document.getElementById("grid-exceccoes");
-  if (!banco || !banco.historico || !seletorData || !gridExceccoes) return;
+  const gridAlarmes = document.getElementById("grid-alarmes");
+  if (!banco || !banco.historico || !seletorData || !gridAlarmes) return;
 
   window.ccoReconhecidos = window.ccoReconhecidos || new Map();
   window.ccoAlarmStartTimes = window.ccoAlarmStartTimes || new Map();
@@ -2179,7 +2179,7 @@ function renderizarDashboardExceccoes() {
   const dataSelecionada = seletorData.value;
   const dadosDoDia = banco.historico[dataSelecionada];
   if (!dadosDoDia) return;
-  gridExceccoes.innerHTML = "";
+  gridAlarmes.innerHTML = "";
 
   const exceccoes = obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada);
   atualizarBadgeAlarmes();
@@ -2335,7 +2335,7 @@ function renderizarDashboardExceccoes() {
   });
 
   if (exceccoesFiltradas.length === 0) {
-    gridExceccoes.style.display = "grid";
+    gridAlarmes.style.display = "grid";
     const buscaSemResultado = Boolean(searchQuery);
     const nenhumAlarmeAtivo = exceccoes.length === 0;
     const tituloVazio = buscaSemResultado
@@ -2353,14 +2353,14 @@ function renderizarDashboardExceccoes() {
       : !nenhumAlarmeAtivo && window.ccoFiltroAtual !== "TODOS"
         ? `<button type="button" class="mural-empty-action" data-action="show-all">Ver todos os alarmes</button>`
         : "";
-    gridExceccoes.innerHTML = `
+    gridAlarmes.innerHTML = `
       <div class="mural-empty-state">
         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--status-normal-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
         <h3>${tituloVazio}</h3>
         <p>${mensagemVazia}</p>
         ${acaoVazia}
       </div>`;
-    const acaoBotaoVazio = gridExceccoes.querySelector(".mural-empty-action");
+    const acaoBotaoVazio = gridAlarmes.querySelector(".mural-empty-action");
     if (acaoBotaoVazio) {
       acaoBotaoVazio.addEventListener("click", () => {
         if (acaoBotaoVazio.dataset.action === "clear-search" && searchInput) {
@@ -2391,10 +2391,10 @@ function renderizarDashboardExceccoes() {
   });
 
   if (window.ccoMuralModoVisualizacao === "kanban") {
-    gridExceccoes.style.display = "grid";
-    gridExceccoes.style.gridTemplateColumns = "repeat(auto-fit, minmax(280px, 1fr))";
-    gridExceccoes.style.gap = "20px";
-    gridExceccoes.innerHTML = "";
+    gridAlarmes.style.display = "grid";
+    gridAlarmes.style.gridTemplateColumns = "repeat(auto-fit, minmax(280px, 1fr))";
+    gridAlarmes.style.gap = "20px";
+    gridAlarmes.innerHTML = "";
 
     const colunasDef = [
       { titulo: "🔴 Críticos", severidade: "Crítico", corBorda: "var(--status-critical-color)", bgHeader: "rgba(227,93,106,0.15)" },
@@ -2471,14 +2471,14 @@ function renderizarDashboardExceccoes() {
       }
 
       colDiv.appendChild(cardsContainer);
-      gridExceccoes.appendChild(colDiv);
+      gridAlarmes.appendChild(colDiv);
     });
     return;
   }
 
   if (window.ccoMuralModoVisualizacao === "tabela") {
-    gridExceccoes.style.display = "block";
-    gridExceccoes.innerHTML = `
+    gridAlarmes.style.display = "block";
+    gridAlarmes.innerHTML = `
       <div class="engineering-table-wrap" style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow-x: auto;">
         <table class="comparison-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
           <thead>
@@ -2516,7 +2516,7 @@ function renderizarDashboardExceccoes() {
         </table>
       </div>
     `;
-    gridExceccoes.querySelectorAll(".mural-table-row").forEach((row) => {
+    gridAlarmes.querySelectorAll(".mural-table-row").forEach((row) => {
       const chave = row.dataset.reservatorio;
       row.addEventListener("click", (event) => {
         if (event.target.closest("button")) return;
@@ -2532,7 +2532,7 @@ function renderizarDashboardExceccoes() {
     return;
   }
 
-  gridExceccoes.style.display = "grid";
+  gridAlarmes.style.display = "grid";
   exceccoesFiltradas.forEach(({ chave, nome, severidade, cor, bg, mensagens, predicao }) => {
     const card = document.createElement("article");
     const ackDet = obterDetalhesAck(chave);
@@ -2591,7 +2591,7 @@ function renderizarDashboardExceccoes() {
       </div>
     `;
 
-    gridExceccoes.append(card);
+    gridAlarmes.append(card);
 
     const btnFooterAck = card.querySelector(`#${CSS.escape(btnFooterId)}`);
     if (btnFooterAck) {
@@ -2774,11 +2774,6 @@ function atualizarHeaderEnxutoInvestigacao(
         <p class="cco-investigation-metadata"><strong>Data investigada:</strong> <span id="cco-investigation-date"></span></p>
         <p class="cco-investigation-metadata"><strong>Última atualização dos dados:</strong> <span id="cco-investigation-updated-at"></span></p>
       </div>
-      <div>
-        <button type="button" id="btn-voltar-mural-alarmes" class="btn-guardar-config" style="padding: 8px 14px; font-size: 0.82rem; background: var(--accent-color); color: #fff; border: none; cursor: pointer; border-radius: 7px;">
-          ← Voltar para Alertas CCO
-        </button>
-      </div>
     `;
 
     headerEnxuto.setAttribute("aria-labelledby", "cco-investigation-title");
@@ -2790,15 +2785,6 @@ function atualizarHeaderEnxutoInvestigacao(
         : "";
     headerEnxuto.querySelector("#cco-investigation-updated-at").textContent =
       ultimaAtualizacao || "Não informada";
-
-    const btnVoltar = headerEnxuto.querySelector("#btn-voltar-mural-alarmes");
-    if (btnVoltar) {
-      btnVoltar.onclick = () => {
-        window.veioDeAlertasCCO = false;
-        const tabExceccoes = document.getElementById("tab-exceccoes");
-        if (tabExceccoes) tabExceccoes.click();
-      };
-    }
   } else {
     document.body.classList.remove("is-cco-investigation-active");
     if (headerEnxuto) headerEnxuto.hidden = true;

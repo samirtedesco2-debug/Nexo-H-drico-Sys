@@ -74,7 +74,7 @@ test("login válido cria sessão e abre o painel", async ({ page }) => {
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
   await loginReload;
   await expect(page.locator(".view-launcher")).toBeVisible();
-  await expect(page.locator("#tab-exceccoes")).toBeVisible();
+  await expect(page.locator("#tab-alarmes")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Escolha uma visão" })).toBeVisible();
   await expect(page.locator(".header-brand-logo")).toBeVisible();
   await expect(page.locator(".header-brand-logo")).toHaveAttribute(
@@ -112,7 +112,7 @@ test("visualizações abrem em janelas focadas reutilizáveis", async ({ page })
     { aba: "tab-operacional", view: "operacional", painel: "painel-operacional" },
     { aba: "tab-analitico", view: "analitico", painel: "painel-analitico" },
     { aba: "tab-engenharia", view: "engenharia", painel: "painel-engenharia" },
-    { aba: "tab-exceccoes", view: "exceccoes", painel: "painel-exceccoes" },
+    { aba: "tab-alarmes", view: "exceccoes", painel: "painel-alarmes" },
   ];
 
   for (const visualizacao of visualizacoes) {
@@ -170,7 +170,7 @@ test("clique no mural abre o reservatório direto na investigação", async ({ p
       "R01-A": { nivelAtencao: 101, nivelCritico: 100, alertaNivelAtivo: true }
     }));
   });
-  await page.goto("/?view=exceccoes");
+  await page.goto("/?view=alarmes");
   await page.getByLabel("Usuário").fill("admin.nexo");
   await page.locator("#login-password").fill("Admin@2026");
   const loginReload = page.waitForEvent("load");
@@ -178,8 +178,8 @@ test("clique no mural abre o reservatório direto na investigação", async ({ p
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
   await loginReload;
 
-  await expect(page.locator("#painel-exceccoes")).toBeVisible({ timeout: 15_000 });
-  const alarme = page.locator("#grid-exceccoes .mural-alarm-card").filter({ hasText: "R01-A" }).first();
+  await expect(page.locator("#painel-alarmes")).toBeVisible({ timeout: 15_000 });
+  const alarme = page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: "R01-A" }).first();
   await expect(alarme).toBeVisible({ timeout: 15_000 });
   const investigacaoPromise = page.waitForEvent("popup");
   await alarme.click();
@@ -459,10 +459,10 @@ test("reconhecimento do alarme persiste e sincroniza entre janelas", async ({ pa
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
   await loginReload;
 
-  await page.goto("/?view=exceccoes");
-  await expect(page.locator("#painel-exceccoes")).toBeVisible({ timeout: 15_000 });
+  await page.goto("/?view=alarmes");
+  await expect(page.locator("#painel-alarmes")).toBeVisible({ timeout: 15_000 });
 
-  const alarme = page.locator("#grid-exceccoes .mural-alarm-card").filter({ hasText: "R01-A" }).first();
+  const alarme = page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: "R01-A" }).first();
   await expect(alarme).toBeVisible({ timeout: 15_000 });
   await alarme.getByRole("button", { name: /Reconhecer/ }).click();
   await expect(alarme.locator("button").filter({ hasText: "✓" })).toBeVisible();
@@ -471,11 +471,11 @@ test("reconhecimento do alarme persiste e sincroniza entre janelas", async ({ pa
   ).toBe("Atenção");
 
   const segundaJanela = await context.newPage();
-  await segundaJanela.goto("/?view=exceccoes");
+  await segundaJanela.goto("/?view=alarmes");
   await expect(segundaJanela.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
-  await expect(segundaJanela.locator("#painel-exceccoes")).toBeVisible({ timeout: 15_000 });
+  await expect(segundaJanela.locator("#painel-alarmes")).toBeVisible({ timeout: 15_000 });
   const alarmeSegundaJanela = segundaJanela
-    .locator("#grid-exceccoes .mural-alarm-card")
+    .locator("#grid-alarmes .mural-alarm-card")
     .filter({ hasText: "R01-A" })
     .first();
   await expect(alarmeSegundaJanela.locator("button").filter({ hasText: "✓" })).toBeVisible({ timeout: 15_000 });
@@ -485,8 +485,8 @@ test("reconhecimento do alarme persiste e sincroniza entre janelas", async ({ pa
 
   await page.reload();
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
-  await expect(page.locator("#painel-exceccoes")).toBeVisible({ timeout: 15_000 });
-  const alarmePersistido = page.locator("#grid-exceccoes .mural-alarm-card").filter({ hasText: "R01-A" }).first();
+  await expect(page.locator("#painel-alarmes")).toBeVisible({ timeout: 15_000 });
+  const alarmePersistido = page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: "R01-A" }).first();
   await expect(alarmePersistido.locator("button").filter({ hasText: "✓" })).toBeVisible({ timeout: 15_000 });
   await expect.poll(() =>
     page.evaluate(async () => {

@@ -38,9 +38,9 @@ window.CcoSync = {
   },
 
   abrirMuralSingleton() {
-    const tabExceccoes = document.getElementById("tab-exceccoes");
-    if (tabExceccoes) {
-      tabExceccoes.click();
+    const tabAlarmes = document.getElementById("tab-alarmes");
+    if (tabAlarmes) {
+      tabAlarmes.click();
     }
   },
 
@@ -78,8 +78,8 @@ window.CcoSync = {
           if (document.documentElement.requestFullscreen) {
             document.documentElement.requestFullscreen().catch(() => {});
           }
-          const tabExceccoes = document.getElementById("tab-exceccoes");
-          if (tabExceccoes) tabExceccoes.click();
+          const tabAlarmes = document.getElementById("tab-alarmes");
+          if (tabAlarmes) tabAlarmes.click();
         } else {
           if (document.exitFullscreen && document.fullscreenElement) {
             document.exitFullscreen().catch(() => {});

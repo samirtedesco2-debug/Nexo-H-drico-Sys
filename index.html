@@ -223,12 +223,12 @@
           <span class="view-tab-arrow" aria-hidden="true">&#8599;</span>
         </button>
         <button
-          id="tab-exceccoes"
+          id="tab-alarmes"
           class="view-tab view-tab-alerts"
           type="button"
           role="tab"
           aria-selected="false"
-          aria-controls="painel-exceccoes"
+          aria-controls="painel-alarmes"
           aria-label="Mural de Alarmes CCO: alarmes ativos"
           tabindex="-1"
         >
@@ -236,7 +236,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>
           </span>
           <span class="view-tab-copy">
-            <span class="view-tab-title">Mural de Alarmes CCO <span class="view-tab-count" id="count-tab-exceccoes">0</span></span>
+            <span class="view-tab-title">Mural de Alarmes CCO <span class="view-tab-count" id="count-tab-alarmes">0</span></span>
             <span class="view-tab-description">Alarmes ativos e reconhecimentos</span>
           </span>
           <span class="view-tab-arrow" aria-hidden="true">&#8599;</span>
@@ -272,7 +272,7 @@
         <button type="button" class="btn-operacional-quadrado btn-view-mode-cco" title="Modo CCO" aria-label="Ativar modo CCO">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h20"/><path d="M20 5H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z"/><path d="M12 18v4"/><path d="M8 22h8"/></svg>
         </button>
-        <button type="button" class="btn-operacional-quadrado btn-close-view-window" title="Fechar visualização" aria-label="Fechar visualização">×</button>
+
       </div>
       <div class="operational-global-controls">
         <div class="control-group">
@@ -392,12 +392,12 @@
       ></section>
     </main>
 
-    <!-- Painel do Dashboard de Exceções (Mural de Alertas Ativos) -->
+    <!-- Painel do Dashboard de Alarmes (Mural de Alertas Ativos) -->
     <main
       class="exceptions-view view-panel"
-      id="painel-exceccoes"
+      id="painel-alarmes"
       role="tabpanel"
-      aria-labelledby="tab-exceccoes"
+      aria-labelledby="tab-alarmes"
       hidden
     >
       <div class="analysis-intro" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; position: relative; padding-top: 4px; padding-right: 48px;">
@@ -421,17 +421,7 @@
           <p class="cco-filter-count-note">Contagens de alarmes ativos, incluindo os já reconhecidos.</p>
         </div>
 
-        <!-- Botão Fechar Minimalista sem Borda no Canto Superior Direito -->
-        <button
-          type="button"
-          id="btn-voltar-tela-principal"
-          title="Fechar Mural"
-          style="position: absolute; top: -4px; right: 0; background: none; border: none; font-size: 1.1rem; font-weight: 700; color: var(--muted-color); cursor: pointer; padding: 2px 6px; z-index: 10; transition: color 0.2s;"
-          onmouseover="this.style.color='var(--status-critical-color)'"
-          onmouseout="this.style.color='var(--muted-color)'"
-        >
-          ✕
-        </button>
+
 
         <!-- Controles Operacionais (Modos de Visualização, Classificação por Horário e CCO) -->
         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
@@ -500,7 +490,7 @@
           <button type="button" id="btn-exportar-html"></button>
         </div>
       </div>
-      <div id="grid-exceccoes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 10px;">
+      <div id="grid-alarmes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 10px;">
         <!-- Injetado dinamicamente via ui.js -->
       </div>
     </main>
@@ -516,7 +506,7 @@
         <button type="button" class="btn-operacional-quadrado btn-view-mode-cco" title="Modo CCO" aria-label="Ativar modo CCO">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h20"/><path d="M20 5H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z"/><path d="M12 18v4"/><path d="M8 22h8"/></svg>
         </button>
-        <button type="button" class="btn-operacional-quadrado btn-close-view-window" title="Fechar visualização" aria-label="Fechar visualização">×</button>
+
       </div>
       <div class="analysis-intro">
         <div>
@@ -641,7 +631,7 @@
         <button type="button" class="btn-operacional-quadrado btn-view-mode-cco" title="Modo CCO" aria-label="Ativar modo CCO">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h20"/><path d="M20 5H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z"/><path d="M12 18v4"/><path d="M8 22h8"/></svg>
         </button>
-        <button type="button" class="btn-operacional-quadrado btn-close-view-window" title="Fechar visualização" aria-label="Fechar visualização">×</button>
+
       </div>
       <div class="analysis-intro">
         <div>

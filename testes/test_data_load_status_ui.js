@@ -42,7 +42,7 @@ function executarTesteEstadoInicialNavegacao() {
   assert.ok(!html.includes('class="view-tab is-active"'), "Ao abrir, nenhuma aba deve estar ativa.");
   assert.ok(!html.includes('aria-selected="true"'), "Nenhuma aba deve iniciar marcada como selecionada.");
   assert.ok(html.includes('id="tab-operacional"'), "A aba operacional deve continuar existindo.");
-  assert.ok(html.includes('id="tab-exceccoes"'), "A opção do Mural deve permanecer presente na página inicial.");
+  assert.ok(html.includes('id="tab-alarmes"'), "A opção do Mural deve permanecer presente na página inicial.");
   assert.ok(html.includes('class="view-launcher"'), "A tela inicial deve apresentar cartões de visualização.");
   assert.ok(html.includes("Escolha uma visão"), "O título da área de escolha deve estar disponível.");
 

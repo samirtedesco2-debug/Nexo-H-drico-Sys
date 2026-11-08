@@ -136,14 +136,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && window.veioDeAlertasCCO) {
-      const btnVoltar = document.getElementById("btn-voltar-mural-alarmes");
-      if (btnVoltar) {
-        btnVoltar.click();
-      } else {
-        window.veioDeAlertasCCO = false;
-        const tabExceccoes = document.getElementById("tab-exceccoes");
-        if (tabExceccoes) tabExceccoes.click();
-      }
+      window.veioDeAlertasCCO = false;
+      const tabAlarmes = document.getElementById("tab-alarmes");
+      if (tabAlarmes) tabAlarmes.click();
     }
   });
 
@@ -565,7 +560,8 @@ function inicializarDashboard() {
     operacional: "tab-operacional",
     analitico: "tab-analitico",
     engenharia: "tab-engenharia",
-    exceccoes: "tab-exceccoes",
+    alarmes: "tab-alarmes",
+    exceccoes: "tab-alarmes",
   };
   const viewInicial = new URLSearchParams(window.location.search).get("view");
   document.getElementById(viewsPorAba[viewInicial])?.click();
@@ -931,19 +927,19 @@ function inicializarNavegacao() {
     "tab-operacional": document.getElementById("painel-operacional"),
     "tab-analitico": document.getElementById("painel-analitico"),
     "tab-engenharia": document.getElementById("painel-engenharia"),
-    "tab-exceccoes": document.getElementById("painel-exceccoes"),
+    "tab-alarmes": document.getElementById("painel-alarmes"),
   };
   const viewsPorAba = {
     "tab-operacional": "operacional",
     "tab-analitico": "analitico",
     "tab-engenharia": "engenharia",
-    "tab-exceccoes": "exceccoes",
+    "tab-alarmes": "alarmes",
   };
   window.nexoViewWindows = window.nexoViewWindows || {};
 
   function ativarAba(abaAtiva) {
     document.body.classList.add("is-view-window-active");
-    document.body.classList.toggle("is-cco-fullscreen-active", abaAtiva.id === "tab-exceccoes");
+    document.body.classList.toggle("is-cco-fullscreen-active", abaAtiva.id === "tab-alarmes");
     if (abaAtiva.id !== "tab-operacional") {
       document.body.classList.remove("is-cco-investigation-active");
     }
@@ -957,7 +953,7 @@ function inicializarNavegacao() {
 
     if (abaAtiva.id === "tab-analitico") renderizarAnalises();
     if (abaAtiva.id === "tab-engenharia") renderizarEngenharia();
-    if (abaAtiva.id === "tab-exceccoes") {
+    if (abaAtiva.id === "tab-alarmes") {
       window.veioDeAlertasCCO = false;
       renderizarDashboardExceccoes();
     }
@@ -977,24 +973,7 @@ function inicializarNavegacao() {
     });
   }
 
-  const btnVoltarPrincipal = document.getElementById("btn-voltar-tela-principal");
-  if (btnVoltarPrincipal) {
-    btnVoltarPrincipal.addEventListener("click", () => {
-      document.body.classList.remove("is-view-window-active", "is-cco-fullscreen-active");
-      try {
-        window.close();
-      } catch (e) {}
-      const tabOp = document.getElementById("tab-operacional");
-      if (tabOp) tabOp.click();
-    });
-  }
 
-  document.querySelectorAll(".btn-close-view-window").forEach((botao) => {
-    botao.addEventListener("click", () => {
-      document.body.classList.remove("is-view-window-active", "is-cco-fullscreen-active");
-      try { window.close(); } catch (e) {}
-    });
-  });
 
   function atualizarRelogioCCO() {
     const relogio = document.getElementById("cco-clock-display");
@@ -1019,7 +998,7 @@ function inicializarNavegacao() {
         e.preventDefault();
         const url = new URL(window.location.href);
         url.searchParams.set("view", view);
-        if (aba.id === "tab-exceccoes") {
+        if (aba.id === "tab-alarmes") {
           if (window.ccoMuralWindow && !window.ccoMuralWindow.closed) {
             window.ccoMuralWindow.focus();
           } else {

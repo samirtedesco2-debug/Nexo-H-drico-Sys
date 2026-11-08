@@ -20,6 +20,7 @@ O histórico cronológico de melhorias, com contexto de antes/depois, motivos e 
    - [Visão Geral & Arquitetura](./arquitetura/visao-geral.md)
    - [Mapa Técnico do DOM (IDs e Classes)](./arquitetura/mapa-dom.md)
    - [Interface e Estilos (`index.html` & `styles.css`)](./arquitetura/estilos-interface.md)
+   - [Fluxo de Navegação & Sitemap](./arquitetura/fluxo-navegacao.md)
 
 2. **Módulos do Sistema (`modulos/`)**:
    - [Orquestrador Principal (`app.js`)](./modulos/app.md)
@@ -53,4 +54,4 @@ O histórico cronológico de melhorias, com contexto de antes/depois, motivos e 
 - Os testes de navegador usam contas e dados locais de demonstração. Não reutilize credenciais reais; o ensaio manual com operadores deve ocorrer em ambiente de teste, sem provocar alarmes reais.
 
 ---
-*Nexo Hídrico — Centro de Controle Operacional*
+*Nexo Hídrico — Inteligência Operacional*
