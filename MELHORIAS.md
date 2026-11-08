@@ -123,5 +123,15 @@ Este documento registra o histórico cronológico de melhorias, refatorações e
   - **Debounce no Loader (`NexoLoader`)**: Adicionado atraso de 1000ms para evitar piscadas do loader em operações rápidas.
 * **Validação:** Testes unitários e suíte E2E do Playwright (`100% aprovados`).
 
+### 20. Padronização para Inteligência Operacional, Redesenho do Nexo Loader e Modal de Notificações com Download
+* **Data:** 8 de Novembro de 2026
+* **Agora:** 
+  - **Padronização Terminológica**: Substituição completa do termo "Centro de Controle Operacional" por **"Inteligência Operacional"** em títulos, rodapés, eyebrows e relatórios do sistema.
+  - **Redesenho do Nexo Loader**: Remoção do card externo de fundo, apresentando um vídeo ampliado (`320x320px`) com sombra difusa, brilho imersivo e texto flutuante limpo.
+  - **Navegação Instantânea de Abas**: Remoção do loader automático de 350ms na troca de abas (`ativarAba`), tornando a transição de visões instantânea e sem piscadas.
+  - **Correção da Central de Notificações**: Alteração do popover de notificações para `position: fixed`, evitando que ficasse preso ou cortado dentro do header.
+  - **Modal Detalhado de Notificações & Download de TXT**: Adição de modal com fundo desfocado (`backdrop-filter`) para leitura completa de comunicados longos, tipos traduzidos para o português (`Atualização`, `Manutenção`, `Comunicado`, `Sistema`), notificação longa de teste automática (`notif-long`) e botão para baixar o comunicado em formato de texto (`.txt`).
+* **Validação:** Todos os testes automatizados da suíte (`npm test`) executados e aprovados com sucesso.
+
 ---
-*Nexo Hídrico — Centro de Controle Operacional*
+*Nexo Hídrico — Inteligência Operacional*

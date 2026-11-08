@@ -2769,7 +2769,7 @@ function atualizarHeaderEnxutoInvestigacao(
     headerEnxuto.hidden = false;
     headerEnxuto.innerHTML = `
       <div>
-        <span style="font-size: 0.7rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">Centro de Controle Operacional · Investigação de Alarme</span>
+        <span style="font-size: 0.7rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">Inteligência Operacional · Investigação de Alarme</span>
         <h2 id="cco-investigation-title" style="font-size: 1.25rem; color: var(--heading-color); margin-top: 4px;">${nomeRes}</h2>
         <p class="cco-investigation-metadata"><strong>Data investigada:</strong> <span id="cco-investigation-date"></span></p>
         <p class="cco-investigation-metadata"><strong>Última atualização dos dados:</strong> <span id="cco-investigation-updated-at"></span></p>
@@ -2867,18 +2867,16 @@ window.NexoLoader = {
       `;
       overlay.innerHTML = `
         <div style="
-          background: rgba(17, 24, 39, 0.95); border: 1px solid rgba(14, 165, 233, 0.3);
-          border-radius: 16px; padding: 24px 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-          display: flex; flex-direction: column; align-items: center; gap: 16px; max-width: 340px; text-align: center;
+          display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center;
         ">
           <video autoplay muted loop playsinline style="
-            width: 100px; height: 100px; border-radius: 12px; object-fit: cover;
-            border: 2px solid rgba(14, 165, 233, 0.5); box-shadow: 0 0 20px rgba(14,165,233,0.3);
+            width: 320px; height: 320px; border-radius: 24px; object-fit: cover;
+            border: 2px solid rgba(14, 165, 233, 0.6); box-shadow: 0 0 40px rgba(14,165,233,0.4), 0 20px 40px rgba(0,0,0,0.8);
           ">
             <source src="manual-imagens/gemini_generated_video_d4201eb6.mp4" type="video/mp4">
             Seu navegador não suporta vídeos.
           </video>
-          <div id="nexo-loader-msg" style="font-size: 0.95rem; font-weight: 600; color: #f8fafc; letter-spacing: 0.02em;">${mensagem}</div>
+          <div id="nexo-loader-msg" style="font-size: 1.1rem; font-weight: 600; color: #f8fafc; letter-spacing: 0.03em; text-shadow: 0 2px 10px rgba(0,0,0,0.8);">${mensagem}</div>
         </div>
       `;
       document.body.appendChild(overlay);

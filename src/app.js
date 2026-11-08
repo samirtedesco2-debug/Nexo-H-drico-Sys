@@ -206,18 +206,11 @@ function inicializarNotificacoesExternas() {
   if (!window.nexoExternalNotifications) {
     try {
       const salvos = localStorage.getItem("nexo_hidrico_external_notifications");
+      let notifs = [];
       if (salvos) {
-        window.nexoExternalNotifications = JSON.parse(salvos);
+        notifs = JSON.parse(salvos);
       } else {
-        window.nexoExternalNotifications = [
-          {
-            id: 'notif-1',
-            tipo: 'UPDATE',
-            titulo: 'Atualização do Sistema CCO',
-            mensagem: 'Painel CCO v2.6 atualizado com Central de Notificações externa e Mural Singleton.',
-            timestamp: new Date().toISOString(),
-            lida: false
-          },
+        notifs = [
           {
             id: 'notif-2',
             tipo: 'MAINTENANCE',
@@ -235,8 +228,22 @@ function inicializarNotificacoesExternas() {
             lida: false
           }
         ];
-        localStorage.setItem("nexo_hidrico_external_notifications", JSON.stringify(window.nexoExternalNotifications));
       }
+
+      const longExists = notifs.find(n => n.id === 'notif-long');
+      if (!longExists) {
+        notifs.push({
+          id: 'notif-long',
+          tipo: 'UPDATE',
+          titulo: '📢 Nota Técnica: Relatório Detalhado de Evolução e Inteligência Operacional',
+          mensagem: 'Esta é uma mensagem de teste longa desenvolvida especificamente para validar a capacidade de rolagem (scroll) e legibilidade do novo modal detalhado de notificações do Nexo Hídrico.\n\nO sistema de Inteligência Operacional passou por grandes evoluções arquiteturais e visuais:\n\n1. Otimização de Performance: A troca de abas agora é totalmente instantânea, sem o uso de overlays bloqueantes desnecessários.\n2. Identidade Visual Atualizada: Rodapés, títulos, cabeçalhos e relatórios agora utilizam uniformemente o padrão de Inteligência Operacional.\n3. Novo Modal de Notificações: Clicar em qualquer notificação na central abre um painel modal centralizado com desfoque de fundo (backdrop-filter), garantindo que comunicados e atualizações longas sejam lidos com total conforto visual e sem restrições de espaço.\n\nRecomenda-se a todos os operadores que revisem os relatórios de plantão, verifiquem os status dos reservatórios e utilizem os novos recursos de sincronização multi-janela.',
+          timestamp: new Date().toISOString(),
+          lida: false
+        });
+      }
+
+      window.nexoExternalNotifications = notifs;
+      localStorage.setItem("nexo_hidrico_external_notifications", JSON.stringify(window.nexoExternalNotifications));
     } catch (e) {
       window.nexoExternalNotifications = [];
     }
@@ -328,20 +335,130 @@ function atualizarListaNotificacoes() {
   };
 
   lista.innerHTML = notifs.slice(-15).reverse().map(n => `
-    <div class="notificacao-item" style="border-left-color: ${corPorTipo[n.tipo] || 'var(--accent-color)'}; opacity: ${n.lida ? '0.7' : '1'}; background: var(--surface-inset); padding: 10px; border-radius: 6px; border-left-width: 4px; display: flex; flex-direction: column; gap: 4px;">
+    <div class="notificacao-item" onclick="abrirModalDetalhesNotificacao('${n.id}')" style="border-left-color: ${corPorTipo[n.tipo] || 'var(--accent-color)'}; opacity: ${n.lida ? '0.7' : '1'}; background: var(--surface-inset); padding: 10px; border-radius: 6px; border-left-width: 4px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: transform 0.15s ease;" title="Clique para ler a mensagem completa">
       <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <span style="font-weight: 700; color: var(--text-color); font-size: 0.85rem;">${iconePorTipo[n.tipo] || '📌'} ${n.titulo}</span>
         <span style="font-size: 0.7rem; color: var(--muted-color);">${new Date(n.timestamp).toLocaleTimeString("pt-BR", {hour: '2-digit', minute:'2-digit'})}</span>
       </div>
-      <p style="margin: 0; color: var(--muted-color); font-size: 0.8rem; line-height: 1.3;">${n.mensagem}</p>
-      <div style="display: flex; justify-content: flex-end; margin-top: 2px;">
-        <button type="button" onclick="marcarNotificacaoLida('${n.id}')" style="background: none; border: none; font-size: 0.75rem; color: var(--accent-color); cursor: pointer; padding: 0; font-weight: 600;">
+      <p style="margin: 0; color: var(--muted-color); font-size: 0.8rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${n.mensagem}</p>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+        <span style="font-size: 0.7rem; color: var(--accent-color); font-weight: 600;">🔍 Ler mensagem completa</span>
+        <button type="button" onclick="event.stopPropagation(); marcarNotificacaoLida('${n.id}')" style="background: none; border: none; font-size: 0.75rem; color: var(--accent-color); cursor: pointer; padding: 0; font-weight: 600;">
           ${n.lida ? '✓ Lida' : 'Marcar como lida'}
         </button>
       </div>
     </div>
   `).join("");
 }
+
+window.abrirModalDetalhesNotificacao = function(id) {
+  if (!window.nexoExternalNotifications) return;
+  const n = window.nexoExternalNotifications.find(item => item.id === id);
+  if (!n) return;
+
+  if (!n.lida) {
+    n.lida = true;
+    try {
+      localStorage.setItem("nexo_hidrico_external_notifications", JSON.stringify(window.nexoExternalNotifications));
+    } catch(e) {}
+    atualizarListaNotificacoes();
+  }
+
+  let modal = document.getElementById("modal-detalhe-notificacao");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modal-detalhe-notificacao";
+    modal.style.cssText = "position: fixed; inset: 0; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); z-index: 100000; display: flex; align-items: center; justify-content: center; padding: 20px;";
+    document.body.appendChild(modal);
+
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.remove();
+    };
+  }
+
+  const iconePorTipo = {
+    UPDATE: '🔄',
+    MAINTENANCE: '🛠️',
+    ANNOUNCE: '📢',
+    SYSTEM: '📡'
+  };
+
+  const rotuloTipo = {
+    UPDATE: 'Atualização',
+    MAINTENANCE: 'Manutenção',
+    ANNOUNCE: 'Comunicado',
+    SYSTEM: 'Sistema'
+  };
+
+  modal.innerHTML = `
+    <div style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 28px; width: 100%; max-width: 520px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px; color: var(--text-color);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.5rem;">${iconePorTipo[n.tipo] || '📌'}</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.15rem; color: var(--heading-color);">${n.titulo}</h3>
+            <span style="font-size: 0.75rem; color: var(--muted-color);">${new Date(n.timestamp).toLocaleString("pt-BR")}</span>
+          </div>
+        </div>
+        <button type="button" id="fechar-modal-notif" style="background: transparent; border: none; font-size: 1.4rem; cursor: pointer; color: var(--muted-color);">&times;</button>
+      </div>
+      <div style="font-size: 0.95rem; line-height: 1.6; color: var(--text-color); max-height: 350px; overflow-y: auto; padding-right: 4px; white-space: pre-wrap;">
+        ${n.mensagem}
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 12px; flex-wrap: wrap; gap: 10px;">
+        <span style="font-size: 0.8rem; font-weight: 600; color: var(--accent-color);">Tipo: ${rotuloTipo[n.tipo] || n.tipo}</span>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" onclick="baixarComunicadoNotificacao('${n.id}')" style="background: var(--surface-inset); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">📥 Baixar TXT</button>
+          <button type="button" id="btn-fechar-acao" style="background: var(--accent-color); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Fechar</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  modal.style.display = "flex";
+  modal.querySelector("#fechar-modal-notif").onclick = () => modal.remove();
+  modal.querySelector("#btn-fechar-acao").onclick = () => modal.remove();
+};
+
+window.baixarComunicadoNotificacao = function(id) {
+  if (!window.nexoExternalNotifications) return;
+  const n = window.nexoExternalNotifications.find(item => item.id === id);
+  if (!n) return;
+
+  const rotuloTipo = {
+    UPDATE: 'Atualização',
+    MAINTENANCE: 'Manutenção',
+    ANNOUNCE: 'Comunicado',
+    SYSTEM: 'Sistema'
+  };
+
+  const conteudo = [
+    `==================================================`,
+    `COMUNICADO OFICIAL - INTELIGÊNCIA OPERACIONAL`,
+    `==================================================`,
+    `ID: ${n.id}`,
+    `Título: ${n.titulo}`,
+    `Tipo: ${rotuloTipo[n.tipo] || n.tipo}`,
+    `Data/Hora: ${new Date(n.timestamp).toLocaleString("pt-BR")}`,
+    `Status: ${n.lida ? 'Lida' : 'Não lida'}`,
+    `--------------------------------------------------`,
+    `MENSAGEM:`,
+    ``,
+    n.mensagem,
+    ``,
+    `==================================================`,
+    `Emitido por Nexo Hídrico - Inteligência Operacional`,
+    `==================================================`
+  ].join("\n");
+
+  const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `comunicado_${n.id}_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
 
 window.marcarNotificacaoLida = function(id) {
   if (!window.nexoExternalNotifications) return;
@@ -757,7 +874,7 @@ function inicializarDashboard() {
 </style>
 </head>
 <body>
-  <h1>Centro de Controle Operacional - Relatório de Alertas Ativos</h1>
+  <h1>Inteligência Operacional - Relatório de Alertas Ativos</h1>
   <p><strong>Data de Referência:</strong> ${dataSelecionada}</p>
   <p><strong>Total de Ocorrências:</strong> ${exceccoes.length}</p>
   <table>
@@ -825,16 +942,6 @@ function inicializarNavegacao() {
   window.nexoViewWindows = window.nexoViewWindows || {};
 
   function ativarAba(abaAtiva) {
-    const nomesAbas = {
-      "tab-operacional": "Carregando Visão Operacional...",
-      "tab-analitico": "Carregando Visão Analítica...",
-      "tab-engenharia": "Carregando Visão de Engenharia...",
-      "tab-exceccoes": "Carregando Mural de Alertas CCO...",
-    };
-    if (window.NexoLoader) {
-      window.NexoLoader.mostrar(nomesAbas[abaAtiva.id] || "Carregando sistema...");
-    }
-
     document.body.classList.add("is-view-window-active");
     document.body.classList.toggle("is-cco-fullscreen-active", abaAtiva.id === "tab-exceccoes");
     if (abaAtiva.id !== "tab-operacional") {
@@ -854,10 +961,6 @@ function inicializarNavegacao() {
       window.veioDeAlertasCCO = false;
       renderizarDashboardExceccoes();
     }
-
-    setTimeout(() => {
-      if (window.NexoLoader) window.NexoLoader.esconder();
-    }, 350);
   }
 
   abas.forEach((aba) => {
@@ -3298,7 +3401,7 @@ window.baixarLogsFiltradosPDF = function(dados) {
 </style>
 </head>
 <body>
-  <h1>Centro de Controle Operacional - Trilha de Auditoria & Segurança</h1>
+  <h1>Inteligência Operacional - Trilha de Auditoria & Segurança</h1>
   <div class="meta">
     <p><strong>Emitido em:</strong> ${new Date().toLocaleString("pt-BR")}</p>
     <p><strong>Total de Registros no Relatório:</strong> ${dados.length}</p>

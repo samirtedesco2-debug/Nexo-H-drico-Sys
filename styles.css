@@ -3265,16 +3265,16 @@ body[data-view-scale="large-tv"] .kpi-box {
 
 /* Central de Notificações Popover */
 .notificacoes-popover {
-  position: absolute;
-  top: 55px;
-  right: 0;
-  width: 320px;
+  position: fixed;
+  top: 75px;
+  right: 24px;
+  width: 360px;
   background: var(--surface-bg);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-  z-index: 1000;
-  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  z-index: 99999;
+  padding: 16px;
   font-size: 0.85rem;
 }
 
