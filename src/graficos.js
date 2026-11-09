@@ -371,11 +371,54 @@ function renderizarGrafico(
     });
   }
 
+  // Limiares Operacionais de Referência (Parametrizados por Reservatório)
+  const configRes = typeof obterConfiguracaoReservatorio === 'function' ? obterConfiguracaoReservatorio(nomeReservatorio) : { nivelAtencao: 60, nivelCritico: 50 };
+  const limAtencao = configRes.nivelAtencao;
+  const limCritico = configRes.nivelCritico;
+
+  datasets.push(
+    {
+      label: `Lim. Atenção (${limAtencao}%)`,
+      data: horarios.map(() => limAtencao),
+      borderColor: "rgba(234, 179, 8, 0.7)",
+      backgroundColor: "transparent",
+      borderWidth: 1.5,
+      borderDash: [3, 3],
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      pointHitRadius: 0,
+      fill: false,
+      yAxisID: "yNivel",
+      tension: 0,
+    },
+    {
+      label: `Lim. Crítico (${limCritico}%)`,
+      data: horarios.map(() => limCritico),
+      borderColor: "rgba(239, 68, 68, 0.7)",
+      backgroundColor: "transparent",
+      borderWidth: 1.5,
+      borderDash: [2, 2],
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      pointHitRadius: 0,
+      fill: false,
+      yAxisID: "yNivel",
+      tension: 0,
+    }
+  );
+
+  const metricaFiltro = typeof graficoAnaliseMetrica !== 'undefined' ? graficoAnaliseMetrica : "all";
+  const datasetsFiltrados = datasets.filter(d => {
+    if (metricaFiltro === "nivel") return d.yAxisID === "yNivel";
+    if (metricaFiltro === "vazao") return d.yAxisID === "yVazao";
+    return true;
+  });
+
   const chart = new Chart(ctx, {
     type: "line",
     data: {
       labels: horarios,
-      datasets,
+      datasets: datasetsFiltrados,
     },
     options: {
       responsive: true,
@@ -450,6 +493,7 @@ function renderizarGrafico(
         },
         yNivel: {
           type: "linear",
+          display: metricaFiltro !== "vazao",
           position: "left",
           min: 0,
           max: estatisticasHistoricas
@@ -472,10 +516,11 @@ function renderizarGrafico(
         },
         yVazao: {
           type: "linear",
+          display: metricaFiltro !== "nivel",
           position: "right",
           title: { display: true, text: "Vazão (L/s)", color: "#ff780a" },
           ticks: { color: obterVariavelCSS("--muted-color") },
-          grid: { drawOnChartArea: false },
+          grid: { drawOnChartArea: metricaFiltro === "all" ? false : true, color: obterVariavelCSS("--border-color") },
         },
       },
     },

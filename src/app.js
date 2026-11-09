@@ -6,8 +6,9 @@ let graficosEngenharia = {};
 let categoriaBoletimAtiva = null;
 let analiseReservatorioAberta = false;
 let gridReservatoriosAberto = false;
-let graficoAnaliseComMedias = false;
 let graficoAnaliseComHistorico = false;
+let graficoAnaliseMetrica = "all";
+let graficoAnaliseBaseComparacao = "same-weekday-4";
 const seriesAnaliseOcultas = new Set();
 const TAMANHO_PAGINA_ENGENHARIA = 100;
 const MINIMO_DIAS_HISTORICOS_PARA_ESPERAR_DADO = 4;
@@ -607,7 +608,6 @@ function inicializarDashboard() {
       e.preventDefault();
       e.stopPropagation();
       analiseReservatorioAberta = true;
-      graficoAnaliseComMedias = false;
       graficoAnaliseComHistorico = false;
       seriesAnaliseOcultas.clear();
       renderizarDashboard();
@@ -633,13 +633,6 @@ function inicializarDashboard() {
       });
       return;
     }
-    const botaoModo = e.target.closest("[data-analysis-chart-mode]");
-    if (botaoModo) {
-      graficoAnaliseComMedias =
-        botaoModo.dataset.analysisChartMode === "averages";
-      renderizarDashboard();
-      return;
-    }
     const opcaoHistorico = e.target.closest("[data-analysis-history]");
     if (opcaoHistorico) {
       graficoAnaliseComHistorico = opcaoHistorico.checked;
@@ -648,6 +641,20 @@ function inicializarDashboard() {
   });
 
   painelAnaliseReservatorio.addEventListener("change", (e) => {
+    const seletorBase = e.target.closest("[data-analysis-base-filter]");
+    if (seletorBase) {
+      graficoAnaliseBaseComparacao = seletorBase.value;
+      renderizarDashboard();
+      return;
+    }
+
+    const seletorMetrica = e.target.closest("[data-analysis-metric-filter]");
+    if (seletorMetrica) {
+      graficoAnaliseMetrica = seletorMetrica.value;
+      renderizarDashboard();
+      return;
+    }
+
     const controleSerie = e.target.closest("[data-analysis-series]");
     if (!controleSerie) return;
 
@@ -2347,13 +2354,19 @@ function obterEstatisticasHistoricasPorHorario(
   banco,
   chaveReservatorio,
   horarios,
+  dataSelecionada,
+  baseComparacao,
 ) {
   const amostras = {
     nivel: horarios.map(() => []),
     vazao: horarios.map(() => []),
   };
 
-  banco.datasDisponiveis.forEach((data) => {
+  const datasHistoricas = dataSelecionada && baseComparacao
+    ? obterDatasBaseComparacao(banco, dataSelecionada, baseComparacao)
+    : banco.datasDisponiveis;
+
+  datasHistoricas.forEach((data) => {
     const dadosDoDia = banco.historico[data];
     const leituras = dadosDoDia?.reservatorios?.[chaveReservatorio]?.leituras;
     if (!leituras) return;

@@ -240,9 +240,10 @@ function criarCardHTML(
           ? "↑ Subiu"
           : "Estável";
 
+  const rotuloBase = typeof obterRotuloBaseComparacao === 'function' ? obterRotuloBaseComparacao(baseComparacao) : baseComparacao;
   const comparacaoHTML = `<div class="card-comparison">
       <div class="card-comparison-heading">
-        <span>Comparação</span>
+        <span>📊 Balanço Comparativo · ${rotuloBase}</span>
       </div>
       <div class="card-comparison-grid">
         <div class="card-comparison-metric ${obterClasseStatus(statusNivel)}">
@@ -373,7 +374,8 @@ function criarCardHTML(
       aria-label="Selecionar KPIs de ${res.nome}, grupo ${res.grupo}"
     >
       <div class="card-header">
-        <span class="card-title">${obterIdentificacaoReservatorio(chave)}</span>
+        <span class="${selecionado ? "investigation-section-title" : "card-title"}">${selecionado ? "Indicadores & Gráficos" : obterIdentificacaoReservatorio(chave)}</span>
+        ${selecionado ? "" : `
         <span class="card-statuses">
           <span class="badge-status ${statusClass}">Nível: ${statusNivel}</span>
           <span class="badge-status ${obterClasseStatus(alertaVazao.status)}${
@@ -386,7 +388,7 @@ function criarCardHTML(
             ${vazaoSemComparacao ? "Vazão: N/A" : `Vazão: ${alertaVazao.status}`}
           </span>
           ${leiturasAusentes > 0 ? `<span class="badge-status status-sem-dados" title="Falha de telemetria / ${leiturasAusentes} leitura(s) ausente(s)">Inconsistente</span>` : ""}
-        </span>
+        </span>`}
       </div>
 
       ${kpiHTML}
@@ -412,7 +414,8 @@ function criarPainelInformativoAlarme(
 
   const titulo = document.createElement("h3");
   titulo.id = "reservoir-alarm-info-title";
-  titulo.textContent = "Informativo do alarme";
+  titulo.className = "investigation-section-title";
+  titulo.textContent = "Informativo do Alarme";
   const cabecalho = document.createElement("div");
   cabecalho.className = "reservoir-alarm-info-heading";
   cabecalho.append(titulo);
@@ -429,10 +432,7 @@ function criarPainelInformativoAlarme(
     cabecalho.append(fechar);
   }
 
-  const identificacao = document.createElement("p");
-  identificacao.className = "reservoir-alarm-info-id";
-  identificacao.textContent = `${obterIdentificacaoReservatorio(chave)} · ${dataSelecionada}`;
-  painel.append(cabecalho, identificacao);
+  painel.append(cabecalho);
 
   const comparacaoNivel = obterComparacaoNivel(
     banco,
@@ -627,10 +627,9 @@ function criarPainelAutonomiaPreditiva(
   painel.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
       <div>
-        <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-color); display: flex; align-items: center; gap: 8px;">
-          <span>📊</span> Autonomia Preditiva & Alertas Baseados em Tempo
+        <h3 class="investigation-section-title" style="margin: 0;">
+          Balanço Hidráulico &amp; Projeções
         </h3>
-        <div style="margin: 4px 0 0 28px; font-size: 0.95rem; font-weight: 600; color: var(--accent-color);">${reservatorio?.nome || chave}</div>
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
         <span style="font-size: 0.85rem; padding: 4px 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 12px; color: ${corConf}; font-weight: 600;" title="Confiabilidade baseada na densidade de leituras válidas">
@@ -1190,11 +1189,14 @@ function renderizarAnaliseGraficoReservatorio(
     filtrarLeiturasVazaoValidas(reservatorio.leituras?.vazao),
     horarios,
   );
+  const baseAnalise = typeof graficoAnaliseBaseComparacao !== 'undefined' ? graficoAnaliseBaseComparacao : "same-weekday-4";
   const estatisticasHistoricas = graficoAnaliseComHistorico
     ? obterEstatisticasHistoricasPorHorario(
         window.bancoDeDados,
         chave,
         horarios,
+        data,
+        baseAnalise,
       )
     : null;
 
@@ -1228,28 +1230,44 @@ function renderizarAnaliseGraficoReservatorio(
   graficoCabecalho.className = "reservoir-analysis-chart-heading";
   const graficoTitulo = document.createElement("h3");
   graficoTitulo.textContent = "Leituras da madrugada";
-  const modosGrafico = document.createElement("div");
-  modosGrafico.className = "reservoir-analysis-chart-modes";
-  modosGrafico.setAttribute("role", "group");
-  modosGrafico.setAttribute("aria-label", "Modo de visualização do gráfico");
-  [
-    { modo: "readings", rotulo: "Leituras" },
-    { modo: "averages", rotulo: "Com médias" },
-  ].forEach(({ modo, rotulo }) => {
-    const botao = document.createElement("button");
-    botao.type = "button";
-    botao.className = "reservoir-analysis-mode";
-    botao.dataset.analysisChartMode = modo;
-    botao.textContent = rotulo;
-    botao.setAttribute(
-      "aria-pressed",
-      String(graficoAnaliseComMedias === (modo === "averages")),
-    );
-    modosGrafico.append(botao);
-  });
   const controlesGrafico = document.createElement("div");
   controlesGrafico.className = "reservoir-analysis-chart-controls";
-  controlesGrafico.append(modosGrafico);
+
+  const seletorMetrica = document.createElement("select");
+  seletorMetrica.className = "reservoir-analysis-metric-select";
+  seletorMetrica.dataset.analysisMetricFilter = "";
+  seletorMetrica.setAttribute("aria-label", "Filtrar métrica exibida no gráfico");
+  [
+    { valor: "all", rotulo: "Todas as métricas" },
+    { valor: "nivel", rotulo: "Apenas Nível (%)" },
+    { valor: "vazao", rotulo: "Apenas Vazão (L/s)" },
+  ].forEach(({ valor, rotulo }) => {
+    const opt = document.createElement("option");
+    opt.value = valor;
+    opt.textContent = rotulo;
+    if (typeof graficoAnaliseMetrica !== 'undefined' && graficoAnaliseMetrica === valor) opt.selected = true;
+    seletorMetrica.append(opt);
+  });
+  controlesGrafico.append(seletorMetrica);
+
+  const seletorBaseGrafico = document.createElement("select");
+  seletorBaseGrafico.className = "reservoir-analysis-metric-select";
+  seletorBaseGrafico.dataset.analysisBaseFilter = "";
+  seletorBaseGrafico.setAttribute("aria-label", "Base de comparação do histórico do gráfico");
+  [
+    { valor: "same-weekday-4", rotulo: "Base: Mesmo dia (4 sem.)" },
+    { valor: "7d-calendar", rotulo: "Base: Últimos 7 dias" },
+    { valor: "30d-calendar", rotulo: "Base: Últimos 30 dias" },
+    { valor: "global", rotulo: "Base: Histórico global" },
+  ].forEach(({ valor, rotulo }) => {
+    const opt = document.createElement("option");
+    opt.value = valor;
+    opt.textContent = rotulo;
+    if (typeof graficoAnaliseBaseComparacao !== 'undefined' && graficoAnaliseBaseComparacao === valor) opt.selected = true;
+    seletorBaseGrafico.append(opt);
+  });
+  controlesGrafico.append(seletorBaseGrafico);
+
   const rotuloHistorico = document.createElement("label");
   rotuloHistorico.className = "reservoir-analysis-history-toggle";
   const controleHistorico = document.createElement("input");
@@ -1272,7 +1290,7 @@ function renderizarAnaliseGraficoReservatorio(
   const grafico = document.createElement("div");
   grafico.className = "reservoir-analysis-chart";
   const canvas = document.createElement("canvas");
-  const sufixoGrafico = graficoAnaliseComMedias ? "-medias" : "";
+  const sufixoGrafico = "";
   canvas.id = `chart-${reservatorio.nome.replace(/[^a-zA-Z0-9]/g, "_")}${sufixoGrafico}`;
   canvas.setAttribute("role", "img");
   canvas.setAttribute(
@@ -1431,7 +1449,7 @@ function renderizarAnaliseGraficoReservatorio(
     reservatorio.nome,
     horarios,
     reservatorio.leituras,
-    graficoAnaliseComMedias,
+    false,
     estatisticasHistoricas,
     data,
   );
@@ -2767,6 +2785,14 @@ function atualizarHeaderEnxutoInvestigacao(
     const res = reservatorios[chave];
     const nomeRes = res ? (res.nome || chave) : chave;
 
+    const exceccoes = typeof obterReservatoriosComAlertaOuExcecao === 'function' ? obterReservatoriosComAlertaOuExcecao(window.bancoDeDados, dataSelecionada) : [];
+    const excObj = exceccoes.find(e => e.chave === chave);
+    const severidade = excObj ? excObj.severidade : "Normal";
+    const bg = excObj ? excObj.bg : "var(--surface-inset)";
+    const cor = excObj ? excObj.cor : "var(--text-color)";
+    const ackDet = typeof obterDetalhesAck === 'function' ? obterDetalhesAck(chave) : { reconhecido: false, texto: '🚨 Reconhecer', titulo: 'Reconhecer alarme' };
+    const btnAckId = `btn-ack-investigation-${chave.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
     if (resumoOperacional) resumoOperacional.hidden = true;
 
     if (!headerEnxuto) {
@@ -2778,11 +2804,25 @@ function atualizarHeaderEnxutoInvestigacao(
     }
     headerEnxuto.hidden = false;
     headerEnxuto.innerHTML = `
-      <div>
-        <span style="font-size: 0.7rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">Inteligência Operacional · Investigação de Alarme</span>
-        <h2 id="cco-investigation-title" style="font-size: 1.25rem; color: var(--heading-color); margin-top: 4px;">${nomeRes}</h2>
-        <p class="cco-investigation-metadata"><strong>Data investigada:</strong> <span id="cco-investigation-date"></span></p>
-        <p class="cco-investigation-metadata"><strong>Última atualização dos dados:</strong> <span id="cco-investigation-updated-at"></span></p>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; width: 100%;">
+        <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-size: 0.7rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">Inteligência Operacional · Investigação de Alarme</span>
+            <span style="background: ${bg}; color: ${cor}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${severidade}</span>
+          </div>
+          <div>
+            <h2 id="cco-investigation-title" style="font-size: 1.25rem; color: var(--heading-color); margin: 0;">${nomeRes}</h2>
+          </div>
+          <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.82rem; color: var(--muted-color);">
+            <span><strong>Data investigada:</strong> <span id="cco-investigation-date"></span></span>
+            <span><strong>Última atualização dos dados:</strong> <span id="cco-investigation-updated-at"></span></span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; flex: 0 0 auto;">
+          <button type="button" id="${btnAckId}" title="${ackDet.titulo}" style="padding: 8px 18px; background: ${ackDet.reconhecido ? 'rgba(115,191,105,0.2)' : 'var(--accent-color)'}; color: ${ackDet.reconhecido ? 'var(--status-normal-color)' : '#fff'}; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px var(--shadow-color);">
+            ${ackDet.reconhecido ? ackDet.texto : '🚨 Reconhecer'}
+          </button>
+        </div>
       </div>
     `;
 
@@ -2795,6 +2835,17 @@ function atualizarHeaderEnxutoInvestigacao(
         : "";
     headerEnxuto.querySelector("#cco-investigation-updated-at").textContent =
       ultimaAtualizacao || "Não informada";
+
+    setTimeout(() => {
+      const btnAck = headerEnxuto.querySelector(`#${CSS.escape(btnAckId)}`);
+      if (btnAck && !btnAck.dataset.bound) {
+        btnAck.dataset.bound = "true";
+        btnAck.addEventListener("click", async () => {
+          await toggleAckMural(chave, severidade, nomeRes);
+          atualizarHeaderEnxutoInvestigacao(painelOperacional, filtroSelecionado, reservatorios, dataSelecionada, dadosDoDia);
+        });
+      }
+    }, 0);
   } else {
     document.body.classList.remove("is-cco-investigation-active");
     if (headerEnxuto) headerEnxuto.hidden = true;

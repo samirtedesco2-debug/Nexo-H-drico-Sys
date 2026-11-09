@@ -1025,6 +1025,15 @@ header h1 {
   box-shadow: 0 4px 6px var(--shadow-color);
 }
 
+.investigation-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--heading-color);
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
 .reservoir-alarm-info-heading {
   display: flex;
   align-items: center;
@@ -1327,11 +1336,14 @@ header h1 {
 }
 
 .card-comparison-heading {
-  color: var(--muted-color);
-  font-size: 0.68rem;
-  font-weight: 600;
+  color: var(--accent-color);
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .card-comparison-grid {
