@@ -185,14 +185,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (seletorRelatorios) {
     seletorRelatorios.addEventListener("change", (e) => {
       const val = e.target.value;
+      e.target.value = "";
       if (val === "copiar-plantao") {
-        document.getElementById("btn-copiar-plantao-cco")?.click();
+        document.getElementById("btn-copiar-plantao-cco")?.click() || document.getElementById("btn-copiar-resumo")?.click();
+      } else if (val === "baixar-txt") {
+        document.getElementById("btn-baixar-txt-plantao")?.click();
+      } else if (val === "exportar-html") {
+        document.getElementById("btn-baixar-html-plantao")?.click() || document.getElementById("btn-exportar-html")?.click();
       } else if (val === "exportar-csv") {
         document.getElementById("btn-exportar-csv")?.click();
-      } else if (val === "exportar-html") {
-        document.getElementById("btn-exportar-html")?.click();
+      } else if (val === "imprimir-pdf") {
+        document.getElementById("btn-imprimir-pdf-plantao")?.click() || document.getElementById("btn-exportar-html")?.click();
       }
-      e.target.value = "";
     });
   }
 });
@@ -710,15 +714,15 @@ function inicializarDashboard() {
 
   const btnCopiarResumo = document.getElementById("btn-copiar-resumo");
   const btnCopiarPlantaoCCO = document.getElementById("btn-copiar-plantao-cco");
+  const btnBaixarTxtPlantao = document.getElementById("btn-baixar-txt-plantao");
+  const btnBaixarHtmlPlantao = document.getElementById("btn-baixar-html-plantao");
+  const btnImprimirPdfPlantao = document.getElementById("btn-imprimir-pdf-plantao");
 
-  const executarCopiaResumo = (botaoAlvo) => {
-    const dataSelecionada = document.getElementById("seletor-data").value;
+  const gerarDadosResumoPlantao = () => {
+    const dataSelecionada = document.getElementById("seletor-data")?.value;
     const banco = window.bancoDeDados;
     const dadosDoDia = banco?.historico?.[dataSelecionada];
-    if (!dadosDoDia) {
-      alert("Nenhum dado carregado para gerar o resumo.");
-      return;
-    }
+    if (!dadosDoDia) return null;
 
     const baseComparacao = document.getElementById("seletor-base-vazao")?.value || "same-weekday-4";
     const escopoOperacional = document.getElementById("seletor-escopo-operacional")?.value || "ambos";
@@ -769,39 +773,49 @@ function inicializarDashboard() {
       const diagTexto = statusNivel === "Crítico" ? `Nível Crítico (${nivelAtual !== null ? nivelAtual + '%' : 'N/A'})` : statusNivel === "Atenção" ? `Nível Atenção (${nivelAtual !== null ? nivelAtual + '%' : 'N/A'})` : `Vazão: ${alertaVazao?.status}`;
       const info = `- ${rotuloFormatado}: Nível ${nivelAtual !== null ? nivelAtual + '%' : 'N/A'} [Diagnóstico: ${diagTexto}]`;
 
-      if (statusGeral === "Crítico") criticos.push(info);
-      else if (statusGeral === "Atenção") atencao.push(info);
+      if (statusGeral === "Crítico") criticos.push({ rotuloFormatado, nivelAtual, diagTexto, info });
+      else if (statusGeral === "Atenção") atencao.push({ rotuloFormatado, nivelAtual, diagTexto, info });
 
       if (qualidade.nivelAusente > 0 || qualidade.vazaoAusente > 0 || statusNivel === "Sem Dados" || statusNivel === "Inconsistente") {
         const razaoIncompleto = statusNivel === "Inconsistente" ? "leitura(s) inconsistente(s)" : `${qualidade.nivelAusente + qualidade.vazaoAusente} leitura(s) ausente(s)`;
-        incompletos.push(`- ${rotuloFormatado}: ${razaoIncompleto} [Falha de Telemetria / Sem Dados]`);
+        incompletos.push({ rotuloFormatado, razaoIncompleto, info: `- ${rotuloFormatado}: ${razaoIncompleto} [Falha de Telemetria / Sem Dados]` });
       }
     });
 
-    let textoResumo = `📋 RESUMO DE PASSAGEM DE PLANTÃO - CCO SAMAE\n`;
+    let textoResumo = `📋 RESUMO DE PASSAGEM DE PLANTÃO - NEXO HÍDRICO\n`;
     textoResumo += `📅 Boletim: ${dataSelecionada} (${dadosDoDia.ultimaAtualizacao || '05:15'})\n\n`;
 
     if (criticos.length > 0) {
-      textoResumo += `🔴 CRÍTICOS (${criticos.length}):\n` + criticos.join("\n") + `\n\n`;
+      textoResumo += `🔴 CRÍTICOS (${criticos.length}):\n` + criticos.map(c => c.info).join("\n") + `\n\n`;
     } else {
       textoResumo += `🔴 CRÍTICOS: Nenhum\n\n`;
     }
 
     if (atencao.length > 0) {
-      textoResumo += `🟡 ATENÇÃO (${atencao.length}):\n` + atencao.join("\n") + `\n\n`;
+      textoResumo += `🟡 ATENÇÃO (${atencao.length}):\n` + atencao.map(a => a.info).join("\n") + `\n\n`;
     } else {
       textoResumo += `🟡 ATENÇÃO: Nenhum\n\n`;
     }
 
     if (incompletos.length > 0) {
-      textoResumo += `⚠️ INCOMPLETOS / AUSENTES (${incompletos.length}):\n` + incompletos.join("\n") + `\n\n`;
+      textoResumo += `⚠️ INCOMPLETOS / AUSENTES (${incompletos.length}):\n` + incompletos.map(i => i.info).join("\n") + `\n\n`;
     } else {
       textoResumo += `⚠️ INCOMPLETOS: Nenhum\n\n`;
     }
 
     textoResumo += `*(Gerado automaticamente pelo Sistema de Monitoramento CCO)*`;
 
-    navigator.clipboard.writeText(textoResumo).then(() => {
+    return { dataSelecionada, ultimaAtualizacao: dadosDoDia.ultimaAtualizacao || '05:15', criticos, atencao, incompletos, textoResumo };
+  };
+
+  const executarCopiaResumo = (botaoAlvo) => {
+    const dados = gerarDadosResumoPlantao();
+    if (!dados) {
+      alert("Nenhum dado carregado para gerar o resumo.");
+      return;
+    }
+
+    navigator.clipboard.writeText(dados.textoResumo).then(() => {
       const alvo = botaoAlvo || btnCopiarResumo;
       if (!alvo) return;
       const textoOriginal = alvo.innerHTML;
@@ -815,11 +829,254 @@ function inicializarDashboard() {
     });
   };
 
+  const executarBaixarTxtPlantao = () => {
+    const dados = gerarDadosResumoPlantao();
+    if (!dados) {
+      alert("Nenhum dado carregado para gerar o TXT de plantão.");
+      return;
+    }
+    const blob = new Blob([dados.textoResumo], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `resumo_plantao_${dados.dataSelecionada}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const executarBaixarHtmlPlantao = () => {
+    const dados = gerarDadosResumoPlantao();
+    if (!dados) {
+      alert("Nenhum dado carregado para gerar o relatório de plantão.");
+      return;
+    }
+
+    let usuarioLogado = 'Operador CCO';
+    try {
+      const sessao = localStorage.getItem("nexo_hidrico_session");
+      if (sessao) {
+        const parsed = JSON.parse(sessao);
+        usuarioLogado = parsed.username || 'Operador CCO';
+      }
+    } catch (e) {}
+
+    const htmlContent = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório de Passagem de Plantão - ${dados.dataSelecionada}</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 30px; color: #111; background: #fff; }
+  .header-institucional { border-bottom: 3px solid #0877b9; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .logo-title { font-size: 1.2rem; font-weight: bold; color: #0877b9; text-transform: uppercase; }
+  .meta-info { font-size: 0.85rem; color: #555; line-height: 1.4; }
+  .sumario-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center; }
+  .sumario-item { font-size: 0.85rem; color: #475569; }
+  .sumario-val { font-size: 1.3rem; font-weight: bold; color: #0877b9; margin-top: 4px; }
+  .secao-titulo { font-size: 1rem; font-weight: bold; color: #0f172a; margin-top: 20px; margin-bottom: 10px; border-left: 4px solid #0877b9; padding-left: 8px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { padding: 8px 12px; margin-bottom: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; background: #f8fafc; }
+  .critico-li { border-left: 4px solid #b42318; background: rgba(242,73,73,0.05); }
+  .atencao-li { border-left: 4px solid #d7a52b; background: rgba(255,153,0,0.05); }
+  .incompleto-li { border-left: 4px solid #3b82f6; background: rgba(59,130,246,0.05); }
+  footer { margin-top: 40px; font-size: 0.75rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+  <div class="header-institucional">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <svg width="48" height="48" viewBox="0 0 116 116" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="108" height="108" rx="26" fill="#f8fafc"/>
+        <path d="M58 10C46 27 25 48 25 70a33 33 0 0 0 66 0c0-22-21-43-33-60Z" fill="#0ea5e9" stroke="#38bdf8" stroke-width="3"/>
+        <path d="M40 69c0 11 8 20 19 22" stroke="#e0f2fe" stroke-width="5" fill="none"/>
+        <path d="M48 54 68 45l13 17-17 19-24-2" stroke="#e0f2fe" stroke-width="3.5" fill="none"/>
+      </svg>
+      <div>
+        <div class="logo-title">Nexo Hídrico — CCO</div>
+        <div style="font-size: 0.9rem; font-weight: 600; color: #333;">Relatório Oficial de Passagem de Plantão</div>
+      </div>
+    </div>
+    <div class="meta-info" style="text-align: right;">
+      Data do Boletim: <strong>${dados.dataSelecionada} (${dados.ultimaAtualizacao})</strong><br>
+      Emitido em: ${new Date().toLocaleString("pt-BR")}<br>
+      Operador Responsável: <strong>${usuarioLogado}</strong>
+    </div>
+  </div>
+
+  <div class="sumario-box">
+    <div class="sumario-item">Críticos<div class="sumario-val" style="color: #b42318;">${dados.criticos.length}</div></div>
+    <div class="sumario-item">Atenção<div class="sumario-val" style="color: #8a4b00;">${dados.atencao.length}</div></div>
+    <div class="sumario-item">Incompletos / Ausentes<div class="sumario-val" style="color: #1d4ed8;">${dados.incompletos.length}</div></div>
+  </div>
+
+  <div class="secao-titulo" style="color: #b42318;">🔴 Alertas Críticos (${dados.criticos.length})</div>
+  <ul>
+    ${dados.criticos.length > 0 ? dados.criticos.map(c => `<li class="critico-li"><strong>${c.rotuloFormatado}</strong> — ${c.diagTexto}</li>`).join("") : '<li>Nenhum alarme crítico registrado no plantão.</li>'}
+  </ul>
+
+  <div class="secao-titulo" style="color: #8a4b00;">🟡 Alertas de Atenção (${dados.atencao.length})</div>
+  <ul>
+    ${dados.atencao.length > 0 ? dados.atencao.map(a => `<li class="atencao-li"><strong>${a.rotuloFormatado}</strong> — ${a.diagTexto}</li>`).join("") : '<li>Nenhum alarme de atenção registrado no plantão.</li>'}
+  </ul>
+
+  <div class="secao-titulo" style="color: #1d4ed8;">⚠️ Registros Incompletos / Falhas de Telemetria (${dados.incompletos.length})</div>
+  <ul>
+    ${dados.incompletos.length > 0 ? dados.incompletos.map(i => `<li class="incompleto-li"><strong>${i.rotuloFormatado}</strong> — ${i.razaoIncompleto}</li>`).join("") : '<li>Nenhuma falha de telemetria registrada no plantão.</li>'}
+  </ul>
+
+  <footer>
+    <span>Nexo Hídrico — Documento Oficial de Passagem de Plantão CCO</span>
+    <span>Página 1 de 1</span>
+  </footer>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `relatorio_plantao_${dados.dataSelecionada}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const executarImprimirPdfPlantao = () => {
+    const dados = gerarDadosResumoPlantao();
+    if (!dados) {
+      alert("Nenhum dado carregado para gerar a impressão em PDF.");
+      return;
+    }
+
+    let usuarioLogado = 'Operador CCO';
+    try {
+      const sessao = localStorage.getItem("nexo_hidrico_session");
+      if (sessao) {
+        const parsed = JSON.parse(sessao);
+        usuarioLogado = parsed.username || 'Operador CCO';
+      }
+    } catch (e) {}
+
+    const win = window.open('', '_blank', 'width=1000,height=800');
+    if (!win) {
+      alert("Permita pop-ups no navegador para gerar o PDF.");
+      return;
+    }
+
+    win.document.write(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório Oficial de Passagem de Plantão - ${dados.dataSelecionada}</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 30px; color: #111; background: #fff; }
+  .header-institucional { border-bottom: 3px solid #0877b9; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .logo-title { font-size: 1.2rem; font-weight: bold; color: #0877b9; text-transform: uppercase; }
+  .meta-info { font-size: 0.85rem; color: #555; line-height: 1.4; }
+  .sumario-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center; }
+  .sumario-item { font-size: 0.85rem; color: #475569; }
+  .sumario-val { font-size: 1.3rem; font-weight: bold; color: #0877b9; margin-top: 4px; }
+  .secao-titulo { font-size: 1rem; font-weight: bold; color: #0f172a; margin-top: 20px; margin-bottom: 10px; border-left: 4px solid #0877b9; padding-left: 8px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { padding: 8px 12px; margin-bottom: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; background: #f8fafc; }
+  .critico-li { border-left: 4px solid #b42318; background: rgba(242,73,73,0.05); }
+  .atencao-li { border-left: 4px solid #d7a52b; background: rgba(255,153,0,0.05); }
+  .incompleto-li { border-left: 4px solid #3b82f6; background: rgba(59,130,246,0.05); }
+  footer { margin-top: 40px; font-size: 0.75rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; }
+  @media print {
+    body { margin: 10px; }
+    footer { position: fixed; bottom: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <div class="header-institucional">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <svg width="48" height="48" viewBox="0 0 116 116" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="108" height="108" rx="26" fill="#f8fafc"/>
+        <path d="M58 10C46 27 25 48 25 70a33 33 0 0 0 66 0c0-22-21-43-33-60Z" fill="#0ea5e9" stroke="#38bdf8" stroke-width="3"/>
+        <path d="M40 69c0 11 8 20 19 22" stroke="#e0f2fe" stroke-width="5" fill="none"/>
+        <path d="M48 54 68 45l13 17-17 19-24-2" stroke="#e0f2fe" stroke-width="3.5" fill="none"/>
+      </svg>
+      <div>
+        <div class="logo-title">Nexo Hídrico — CCO</div>
+        <div style="font-size: 0.9rem; font-weight: 600; color: #333;">Relatório Oficial de Passagem de Plantão</div>
+      </div>
+    </div>
+    <div class="meta-info" style="text-align: right;">
+      Data do Boletim: <strong>${dados.dataSelecionada} (${dados.ultimaAtualizacao})</strong><br>
+      Emitido em: ${new Date().toLocaleString("pt-BR")}<br>
+      Operador Responsável: <strong>${usuarioLogado}</strong>
+    </div>
+  </div>
+
+  <div class="sumario-box">
+    <div class="sumario-item">Críticos<div class="sumario-val" style="color: #b42318;">${dados.criticos.length}</div></div>
+    <div class="sumario-item">Atenção<div class="sumario-val" style="color: #8a4b00;">${dados.atencao.length}</div></div>
+    <div class="sumario-item">Incompletos / Ausentes<div class="sumario-val" style="color: #1d4ed8;">${dados.incompletos.length}</div></div>
+  </div>
+
+  <div class="secao-titulo" style="color: #b42318;">🔴 Alertas Críticos (${dados.criticos.length})</div>
+  <ul>
+    ${dados.criticos.length > 0 ? dados.criticos.map(c => `<li class="critico-li"><strong>${c.rotuloFormatado}</strong> — ${c.diagTexto}</li>`).join("") : '<li>Nenhum alarme crítico registrado no plantão.</li>'}
+  </ul>
+
+  <div class="secao-titulo" style="color: #8a4b00;">🟡 Alertas de Atenção (${dados.atencao.length})</div>
+  <ul>
+    ${dados.atencao.length > 0 ? dados.atencao.map(a => `<li class="atencao-li"><strong>${a.rotuloFormatado}</strong> — ${a.diagTexto}</li>`).join("") : '<li>Nenhum alarme de atenção registrado no plantão.</li>'}
+  </ul>
+
+  <div class="secao-titulo" style="color: #1d4ed8;">⚠️ Registros Incompletos / Falhas de Telemetria (${dados.incompletos.length})</div>
+  <ul>
+    ${dados.incompletos.length > 0 ? dados.incompletos.map(i => `<li class="incompleto-li"><strong>${i.rotuloFormatado}</strong> — ${i.razaoIncompleto}</li>`).join("") : '<li>Nenhuma falha de telemetria registrada no plantão.</li>'}
+  </ul>
+
+  <footer>
+    <span>Nexo Hídrico — Documento Oficial de Passagem de Plantão CCO</span>
+    <span>Página 1 de 1</span>
+  </footer>
+  <script>
+    window.onload = function() {
+      setTimeout(() => { window.print(); }, 300);
+    };
+  </script>
+</body>
+</html>`);
+    win.document.close();
+  };
+
   if (btnCopiarResumo) {
     btnCopiarResumo.addEventListener("click", () => executarCopiaResumo(btnCopiarResumo));
   }
   if (btnCopiarPlantaoCCO) {
     btnCopiarPlantaoCCO.addEventListener("click", () => executarCopiaResumo(btnCopiarPlantaoCCO));
+  }
+  if (btnBaixarTxtPlantao) {
+    btnBaixarTxtPlantao.addEventListener("click", executarBaixarTxtPlantao);
+  }
+  if (btnBaixarHtmlPlantao) {
+    btnBaixarHtmlPlantao.addEventListener("click", executarBaixarHtmlPlantao);
+  }
+  if (btnImprimirPdfPlantao) {
+    btnImprimirPdfPlantao.addEventListener("click", executarImprimirPdfPlantao);
+  }
+
+  const seletorPlantao = document.getElementById("seletor-relatorios-plantao");
+  if (seletorPlantao) {
+    seletorPlantao.addEventListener("change", (e) => {
+      const val = e.target.value;
+      e.target.value = "";
+      if (val === "copiar-plantao") {
+        executarCopiaResumo(btnCopiarResumo);
+      } else if (val === "baixar-txt") {
+        executarBaixarTxtPlantao();
+      } else if (val === "exportar-html") {
+        executarBaixarHtmlPlantao();
+      } else if (val === "exportar-csv") {
+        document.getElementById("btn-exportar-csv")?.click();
+      } else if (val === "imprimir-pdf") {
+        executarImprimirPdfPlantao();
+      }
+    });
   }
 
   const btnExportarCSV = document.getElementById("btn-exportar-csv");
@@ -852,51 +1109,110 @@ function inicializarDashboard() {
       const dataSelecionada = document.getElementById("seletor-data").value;
       const exceccoes = typeof obterReservatoriosComAlertaOuExcecao === 'function' ? obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) : [];
 
+      let usuarioLogado = 'Operador CCO';
+      try {
+        const sessao = localStorage.getItem("nexo_hidrico_session");
+        if (sessao) {
+          const parsed = JSON.parse(sessao);
+          usuarioLogado = parsed.username || 'Operador CCO';
+        }
+      } catch (e) {}
+
+      const totalOcorrencias = exceccoes.length;
+      const criticosCount = exceccoes.filter(e => e.severidade === 'Crítico').length;
+      const atencaoCount = exceccoes.filter(e => e.severidade === 'Atenção').length;
+      
+      window.ccoReconhecidos = window.ccoReconhecidos || new Map();
+      const reconhecidosCount = exceccoes.filter(e => window.ccoReconhecidos.has(e.chave) || (typeof obterDetalhesAck === 'function' && obterDetalhesAck(e.chave).reconhecido)).length;
+
       const htmlContent = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório de Alertas CCO - ${dataSelecionada}</title>
+<title>Relatório Corporativo de Alertas CCO - ${dataSelecionada}</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; color: #333; background: #fff; }
-  h1 { color: #0877b9; border-bottom: 2px solid #0877b9; padding-bottom: 8px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-  th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 0.9rem; }
-  th { background: #f4f6f8; color: #17212b; }
-  .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; }
+  body { font-family: Arial, sans-serif; margin: 30px; color: #111; background: #fff; }
+  .header-institucional { border-bottom: 3px solid #0877b9; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .logo-title { font-size: 1.2rem; font-weight: bold; color: #0877b9; text-transform: uppercase; }
+  .meta-info { font-size: 0.85rem; color: #555; line-height: 1.4; }
+  .sumario-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; text-align: center; }
+  .sumario-item { font-size: 0.85rem; color: #475569; }
+  .sumario-val { font-size: 1.3rem; font-weight: bold; color: #0877b9; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+  th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; font-size: 0.8rem; }
+  th { background: #f1f5f9; color: #0f172a; font-weight: bold; }
+  tr:nth-child(even) { background: #f8fafc; }
+  .badge { padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 0.7rem; text-transform: uppercase; }
   .critico { background: rgba(242,73,73,0.2); color: #b42318; border: 1px solid #b42318; }
   .atencao { background: rgba(255,153,0,0.2); color: #8a4b00; border: 1px solid #8a4b00; }
   .incompleto { background: rgba(59,130,246,0.2); color: #1d4ed8; border: 1px solid #1d4ed8; }
+  footer { margin-top: 40px; font-size: 0.75rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; }
 </style>
 </head>
 <body>
-  <h1>Inteligência Operacional - Relatório de Alertas Ativos</h1>
-  <p><strong>Data de Referência:</strong> ${dataSelecionada}</p>
-  <p><strong>Total de Ocorrências:</strong> ${exceccoes.length}</p>
+  <div class="header-institucional">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <svg width="48" height="48" viewBox="0 0 116 116" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="108" height="108" rx="26" fill="#f8fafc"/>
+        <path d="M58 10C46 27 25 48 25 70a33 33 0 0 0 66 0c0-22-21-43-33-60Z" fill="#0ea5e9" stroke="#38bdf8" stroke-width="3"/>
+        <path d="M40 69c0 11 8 20 19 22" stroke="#e0f2fe" stroke-width="5" fill="none"/>
+        <path d="M48 54 68 45l13 17-17 19-24-2" stroke="#e0f2fe" stroke-width="3.5" fill="none"/>
+      </svg>
+      <div>
+        <div class="logo-title">Nexo Hídrico — CCO</div>
+        <div style="font-size: 0.9rem; font-weight: 600; color: #333;">Relatório Oficial de Exceções e Auditoria</div>
+      </div>
+    </div>
+    <div class="meta-info" style="text-align: right;">
+      Data de Referência: <strong>${dataSelecionada}</strong><br>
+      Emitido em: ${new Date().toLocaleString("pt-BR")}<br>
+      Operador Responsável: <strong>${usuarioLogado}</strong>
+    </div>
+  </div>
+
+  <div class="sumario-box">
+    <div class="sumario-item">Total de Alertas<div class="sumario-val">${totalOcorrencias}</div></div>
+    <div class="sumario-item">Críticos<div class="sumario-val" style="color: #b42318;">${criticosCount}</div></div>
+    <div class="sumario-item">Atenção<div class="sumario-val" style="color: #8a4b00;">${atencaoCount}</div></div>
+    <div class="sumario-item">Reconhecidos (ACK)<div class="sumario-val" style="color: #16a34a;">${reconhecidosCount} / ${totalOcorrencias}</div></div>
+  </div>
+
   <table>
     <thead>
       <tr>
         <th>TAG / Reservatório</th>
-        <th>Chave</th>
         <th>Severidade</th>
+        <th>Acionado em</th>
         <th>Diagnósticos e Mensagens</th>
+        <th>Status / Nota de ACK</th>
         <th>Tendência</th>
       </tr>
     </thead>
     <tbody>
-      ${exceccoes.map(exc => `
-        <tr>
-          <td><strong>${exc.nome}</strong></td>
-          <td>${exc.chave}</td>
-          <td><span class="badge ${exc.severidade === 'Crítico' ? 'critico' : exc.severidade === 'Atenção' ? 'atencao' : 'incompleto'}">${exc.severidade}</span></td>
-          <td>${(exc.mensagens || []).join("<br>")}</td>
-          <td>${exc.predicao?.tendencia || 'N/A'} (${exc.predicao?.iconeTendencia || '→'})</td>
-        </tr>
-      `).join("")}
+      ${exceccoes.map(exc => {
+        const triggerKey = `${dataSelecionada}_${exc.chave}`;
+        const triggerTime = window.ccoAlarmTriggerTimes?.get(triggerKey) || window.ccoAlarmTriggerTimes?.get(exc.chave) || '—';
+        const ackDet = typeof obterDetalhesAck === 'function' ? obterDetalhesAck(exc.chave) : { reconhecido: false };
+        const statusAck = ackDet.reconhecido 
+          ? `<span style="color: #16a34a; font-weight: bold;">✓ Reconhecido</span>${ackDet.nota ? '<br><em>Nota: ' + ackDet.nota + '</em>' : ''}<br><small>Por: ${ackDet.operador || 'Operador'} (${ackDet.timestamp || '—'})</small>`
+          : `<span style="color: #b42318; font-weight: bold;">Pendente</span>`;
+        return `
+          <tr>
+            <td><strong>${exc.nome}</strong><br><small>${exc.chave}</small></td>
+            <td><span class="badge ${exc.severidade === 'Crítico' ? 'critico' : exc.severidade === 'Atenção' ? 'atencao' : 'incompleto'}">${exc.severidade}</span></td>
+            <td>${triggerTime}</td>
+            <td>${(exc.mensagens || []).join("<br>")}</td>
+            <td>${statusAck}</td>
+            <td>${exc.predicao?.tendencia || 'N/A'} (${exc.predicao?.iconeTendencia || '→'})</td>
+          </tr>
+        `;
+      }).join("")}
     </tbody>
   </table>
-  <footer style="margin-top: 30px; font-size: 0.8rem; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
-    Gerado automaticamente pelo Sistema CCO SAMAE - Data/Hora: ${new Date().toLocaleString("pt-BR")}
+
+  <footer>
+    <span>Nexo Hídrico — Documento Oficial de Auditoria Interna e Conformidade CCO</span>
+    <span>Página 1 de 1</span>
   </footer>
 </body>
 </html>`;
@@ -905,7 +1221,7 @@ function inicializarDashboard() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `relatorio_cco_${dataSelecionada}.html`;
+      a.download = `relatorio_corporativo_cco_${dataSelecionada}.html`;
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -2589,7 +2905,7 @@ function renderizarFormularioCriacaoUsuario() {
       </div>
 
       <p style="color: var(--muted-color); font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5;">
-        Cadastre novos operadores ou administradores no sistema CCO SAMAE. <strong>O preenchimento do e-mail corporativo é obrigatório.</strong> A senha inicial provisória será gerada automaticamente como o primeiro nome em minúsculas, exigindo a alteração no primeiro acesso.
+        Cadastre novos operadores ou administradores no Nexo Hídrico. <strong>O preenchimento do e-mail corporativo é obrigatório.</strong> A senha inicial provisória será gerada automaticamente como o primeiro nome em minúsculas, exigindo a alteração no primeiro acesso.
       </p>
 
       <form id="form-cadastrar-usuario" style="display: flex; flex-direction: column; gap: 18px;">
@@ -3367,7 +3683,7 @@ window.baixarLogsFiltradosPDF = function(dados) {
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório de Trilha de Auditoria - CCO SAMAE</title>
+<title>Relatório de Trilha de Auditoria - Nexo Hídrico</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 30px; color: #222; background: #fff; }
   h1 { color: #0877b9; border-bottom: 2px solid #0877b9; padding-bottom: 8px; font-size: 1.4rem; }
@@ -3406,7 +3722,7 @@ window.baixarLogsFiltradosPDF = function(dados) {
     </tbody>
   </table>
   <footer>
-    Sistema CCO SAMAE - Documento Oficial de Auditoria Interna
+    Nexo Hídrico - Documento Oficial de Auditoria Interna
   </footer>
   <script>
     window.onload = function() {

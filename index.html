@@ -306,32 +306,25 @@
               ></p>
             </details>
           </div>
-          <button
-            type="button"
-            id="btn-copiar-resumo"
-            class="btn-copiar-resumo"
-            title="Copiar Resumo de Plantão (Atenção e Críticos)"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
-              <path
-                d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
-              />
-              <path d="M9 14h6" />
-              <path d="M12 11v6" />
-            </svg>
-            <span>Copiar Resumo de Plantão</span>
-          </button>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <label for="seletor-relatorios-plantao" style="font-size: 0.78rem; font-weight: 700; color: var(--muted-color); text-transform: uppercase;">Relatórios:</label>
+            <select id="seletor-relatorios-plantao" style="padding: 8px 12px; font-size: 0.82rem; border: 1px solid var(--border-color); border-radius: 6px; background: var(--surface-inset); color: var(--text-color); outline: none; cursor: pointer;">
+              <option value="" disabled selected>📑 Selecionar Relatório...</option>
+              <option value="copiar-plantao">📋 Copiar Resumo de Plantão</option>
+              <option value="baixar-txt">📥 Baixar Resumo em TXT</option>
+              <option value="exportar-html">📄 Baixar Relatório Corporativo (HTML)</option>
+              <option value="exportar-csv">📊 Exportar Excel/CSV</option>
+              <option value="imprimir-pdf">🖨️ Salvar como PDF / Imprimir</option>
+            </select>
+          </div>
+          <!-- Botões de suporte mantidos ocultos para compatibilidade com scripts -->
+          <div style="display: none;">
+            <button type="button" id="btn-copiar-resumo"></button>
+            <button type="button" id="btn-baixar-txt-plantao"></button>
+            <button type="button" id="btn-baixar-html-plantao"></button>
+            <button type="button" id="btn-imprimir-pdf-plantao"></button>
+            <button type="button" id="btn-exportar-csv"></button>
+          </div>
         </div>
         <div class="operational-filter-controls">
           <div class="operational-comparison-control">
@@ -478,9 +471,11 @@
           <label for="seletor-relatorios-cco" style="font-size: 0.78rem; font-weight: 700; color: var(--muted-color); text-transform: uppercase;">Relatórios:</label>
           <select id="seletor-relatorios-cco" style="padding: 8px 12px; font-size: 0.82rem; border: 1px solid var(--border-color); border-radius: 6px; background: var(--surface-inset); color: var(--text-color); outline: none; cursor: pointer;">
             <option value="" disabled selected>📑 Selecionar Relatório...</option>
-            <option value="copiar-plantao">📋 Copiar Resumo de Plantão (Ativos)</option>
+            <option value="copiar-plantao">📋 Copiar Resumo de Plantão</option>
+            <option value="baixar-txt">📥 Baixar Resumo em TXT</option>
+            <option value="exportar-html">📄 Baixar Relatório Corporativo (HTML)</option>
             <option value="exportar-csv">📊 Exportar Excel/CSV</option>
-            <option value="exportar-html">🖨️ Baixar Relatório HTML</option>
+            <option value="imprimir-pdf">🖨️ Salvar como PDF / Imprimir</option>
           </select>
         </div>
         <!-- Botões de suporte mantidos ocultos para compatibilidade com scripts -->

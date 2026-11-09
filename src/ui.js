@@ -2145,14 +2145,16 @@ function obterDetalhesAck(chave) {
       reconhecido: true,
       timestamp: meta.timestamp || '',
       operador: meta.operador || 'Operador',
+      nota: meta.nota || '',
       texto: `✓ (${meta.timestamp || ''} - ${meta.operador || ''})`,
-      titulo: `Reconhecido em ${meta.timestamp || '—'} por ${meta.operador || 'Operador'}. Apenas ADMIN pode revogar.`
+      titulo: `Reconhecido em ${meta.timestamp || '—'} por ${meta.operador || 'Operador'}${meta.nota ? ' | Nota: ' + meta.nota : ''}. Apenas ADMIN pode revogar.`
     };
   }
   return {
     reconhecido: true,
     timestamp: '',
     operador: 'Operador',
+    nota: '',
     texto: '✓ Reconhecido',
     titulo: 'Reconhecido. Apenas ADMIN pode revogar.'
   };
@@ -2450,6 +2452,7 @@ function renderizarDashboardExceccoes() {
             <div style="font-size: 0.75rem; color: var(--muted-color);">Acionado em: <strong>${triggerTime}</strong></div>
             <div style="font-size: 0.8rem; color: var(--muted-color); display: flex; flex-direction: column; gap: 2px;">
               ${mensagens.map(m => `<div>• ${m}</div>`).join("")}
+              ${ackDet.nota ? `<div style="font-style: italic; color: var(--accent-color); margin-top: 2px;">📝 ${ackDet.nota}</div>` : ''}
             </div>
             <div style="display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid var(--border-color); padding-top: 8px;">
               <button type="button" id="${btnFooterId}" title="${ackDet.titulo}" style="padding: 4px 10px; background: ${reconhecido ? 'rgba(115,191,105,0.2)' : 'var(--accent-color)'}; color: ${reconhecido ? 'var(--status-normal-color)' : '#fff'}; border: none; border-radius: 4px; font-size: 0.7rem; font-weight: 700; cursor: pointer;">
@@ -2503,7 +2506,10 @@ function renderizarDashboardExceccoes() {
                       <button type="button" class="mural-row-open" onclick="abrirReservatorioMural('${chave}')" aria-label="Abrir detalhes de ${nome} (${chave})">${nome}</button>
                     </td>
                     <td style="padding: 12px;"><span style="background: ${bg}; color: ${cor}; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${severidade}</span></td>
-                    <td style="padding: 12px; color: var(--text-color);">${mensagens.join(" | ")}</td>
+                    <td style="padding: 12px; color: var(--text-color);">
+                      ${mensagens.join(" | ")}
+                      ${ackDet.nota ? `<br><span style="font-style: italic; color: var(--accent-color); font-size: 0.8rem;">📝 Nota: ${ackDet.nota}</span>` : ''}
+                    </td>
                     <td style="padding: 12px; text-align: center;">
                     <button type="button" onclick="toggleAckMural('${chave}', '${severidade}')" title="${ackDet.titulo}" style="padding: 6px 12px; background: ${reconhecido ? 'rgba(115,191,105,0.2)' : 'var(--accent-color)'}; color: ${reconhecido ? 'var(--status-normal-color)' : '#fff'}; border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
                       ${ackDet.reconhecido ? ackDet.texto : '🚨 Reconhecer'}
@@ -2583,6 +2589,7 @@ function renderizarDashboardExceccoes() {
       <div style="font-size: 0.8rem; color: var(--muted-color);">Acionado em: <strong>${triggerTime}</strong></div>
       <div style="font-size: 0.85rem; color: var(--muted-color); display: flex; flex-direction: column; gap: 4px;">
         ${mensagens.map(m => `<div>• ${m}</div>`).join("")}
+        ${ackDet.nota ? `<div style="font-style: italic; color: var(--accent-color); margin-top: 2px;">📝 ${ackDet.nota}</div>` : ''}
       </div>
       <div style="display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px;">
         <button type="button" id="${btnFooterId}" title="${ackDet.titulo}" style="padding: 6px 14px; background: ${reconhecido ? 'rgba(115,191,105,0.2)' : 'var(--accent-color)'}; color: ${reconhecido ? 'var(--status-normal-color)' : '#fff'}; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
@@ -2660,6 +2667,7 @@ window.toggleAckMural = async function(chave, severidade, nome) {
     metadadosAnteriores = window.ccoAckMetadata.get(chave);
     window.ccoAckMetadata.delete(chave);
   } else {
+    const nota = prompt("Insira uma nota descritiva opcional para o reconhecimento (ex: Válvula manobrada pela equipe):", "") || "";
     const agora = new Date();
     const dataHoraAck = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
     window.ccoReconhecidos.set(chave, severidade || 'Crítico');
@@ -2667,7 +2675,8 @@ window.toggleAckMural = async function(chave, severidade, nome) {
     metadadosAnteriores = window.ccoAckMetadata.get(chave);
     window.ccoAckMetadata.set(chave, {
       timestamp: dataHoraAck,
-      operador: session.username || 'Operador'
+      operador: session.username || 'Operador',
+      nota: nota.trim()
     });
   }
 
@@ -2677,6 +2686,7 @@ window.toggleAckMural = async function(chave, severidade, nome) {
     nome,
     severidade,
     acao: reconhecido ? 'Revogado' : 'Reconhecido',
+    nota: !reconhecido ? (window.ccoAckMetadata.get(chave)?.nota || '') : '',
     tempoRespostaMs
   };
   window.nexoIncidentsLog.push(incidente);
