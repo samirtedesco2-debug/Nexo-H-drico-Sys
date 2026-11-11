@@ -49,16 +49,19 @@ Em análises sem edição, apresente primeiro a conclusão; depois, evidências 
 
 Em planos para mudanças ainda não autorizadas, liste objetivo, estratégia, arquivos previstos, riscos e testes/validações, e pare para aguardar autorização. Após implementar um escopo autorizado, informe alterações, testes executados e resultados, além de limitações e próximos passos relevantes.
 
-# Interação com o Sub-agente Operacional (operador-cco)
-Você coordena um sub-agente especialista em operação de CCO (`operador-cco`). Para manter o fluxo de desenvolvimento ágil e evitar burocracia desnecessária, acione-o **somente sob demanda**, respeitando os seguintes gatilhos:
+# Coordenação de Sub-agentes Especialistas
+Você coordena uma equipe de sub-agentes especialistas para apoiar o desenvolvimento do Nexo Hídrico. Acione-os **somente sob demanda** e dentro dos respectivos escopos:
 
-**QUANDO DELEGAR/ACIONAR O CCO (Obrigatório):**
-- **Layout e Ergonomia:** Mudanças de HTML/CSS, cores, tamanho de fontes, contraste ou disposição de painéis.
-- **Regras de Negócio e Alarmes:** Alterações em `regrasNegocio.js`, `alarmTiming.js`, limiares de nível ou cálculos de autonomia dos reservatórios.
-- **Comportamento Multi-tela:** Ajustes na sincronização de telas (`ccoSync.js`) ou no comportamento de janelas abertas via `window.open` para os monitores da CCO.
-- **Novas Features de Interface:** Inclusão de novos gráficos, modais ou indicadores visuais.
+### 1. Sub-agente Operacional (`operador-cco`)
+- **Quando acionar:** Mudanças de layout/ergonomia, regras de negócio/alarmes em `regrasNegocio.js` ou `alarmTiming.js`, comportamento multi-tela (`ccoSync.js` / `window.open`) e novas features visuais.
+- **Quando não acionar:** Scripts de ETL Python, infraestrutura e testes automatizados.
 
-**QUANDO ATUAR SOZINHO (Não acionar o CCO):**
-- **Scripts e ETL:** Atualizações nos scripts Python que extraem dados das planilhas Excel. O operador foca apenas no resultado final.
-- **Infraestrutura e Testes:** Configuração do Node.js (`http-server`), atualizações no `package.json` ou ajustes técnicos na suíte de testes E2E do Playwright.
-- **Refatoração de Código:** Melhorias de sintaxe estrutural, modularização de arquivos (JS) ou otimizações de performance que não alterem a regra matemática nem o visual da aplicação.
+### 2. Sub-agente de Qualidade e Testes (`especialista-qa`)
+- **Quando acionar:** Desenho de cenários de teste complexos, análise de cobertura para novas funcionalidades, investigação de falhas em testes E2E (`playwright`) ou testes unitários (`testes/run_tests.js`).
+- **Quando não acionar:** Alterações visuais diretas ou refatorações de código puras que não envolvam estratégia de teste.
+
+### 3. Sub-agente de Engenharia de Dados (`especialista-dados`)
+- **Quando acionar:** Alterações nos scripts de extração Python (`python/`), estruturação de arquivos JSON em `dados_historicos/`, índices temporais (`indice_datas.json`) ou planejamento de contratos para futura telemetria em tempo real.
+- **Quando não acionar:** Ajustes puramente de interface visual ou componentes de UI.
+
+*(Nota: Todos os sub-agentes seguem a regra estrita de delegar a escrita e modificação de código ao Engenheiro de Software).*
