@@ -569,7 +569,28 @@ function inicializarDashboard() {
     exceccoes: "tab-alarmes",
   };
   const viewInicial = new URLSearchParams(window.location.search).get("view");
-  document.getElementById(viewsPorAba[viewInicial])?.click();
+  if (viewInicial === "investigacao" && reservatorioInvestigado) {
+    document.body.classList.add("is-view-window-active", "is-cco-investigation-active");
+    const mainHeader = document.querySelector("header");
+    if (mainHeader) mainHeader.hidden = true;
+    const viewTabs = document.querySelector(".view-tabs");
+    if (viewTabs) viewTabs.hidden = true;
+
+    ["painel-operacional", "painel-analitico", "painel-engenharia", "painel-alarmes"].forEach(id => {
+      const p = document.getElementById(id);
+      if (p) p.hidden = true;
+    });
+
+    const painelInvestigacao = document.getElementById("painel-investigacao-alarme");
+    if (painelInvestigacao) {
+      painelInvestigacao.hidden = false;
+      if (typeof window.renderizarPainelInvestigacaoDedicado === "function") {
+        window.renderizarPainelInvestigacaoDedicado(reservatorioInvestigado, ultimaDataDoBanco, banco);
+      }
+    }
+  } else {
+    document.getElementById(viewsPorAba[viewInicial])?.click();
+  }
   inicializarAnalises();
   inicializarEngenharia();
   inicializarConfiguracoes();

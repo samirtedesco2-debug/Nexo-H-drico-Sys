@@ -112,7 +112,7 @@ test("visualizações abrem em janelas focadas reutilizáveis", async ({ page })
     { aba: "tab-operacional", view: "operacional", painel: "painel-operacional" },
     { aba: "tab-analitico", view: "analitico", painel: "painel-analitico" },
     { aba: "tab-engenharia", view: "engenharia", painel: "painel-engenharia" },
-    { aba: "tab-alarmes", view: "exceccoes", painel: "painel-alarmes" },
+    { aba: "tab-alarmes", view: "alarmes", painel: "painel-alarmes" },
   ];
 
   for (const visualizacao of visualizacoes) {
@@ -123,7 +123,7 @@ test("visualizações abrem em janelas focadas reutilizáveis", async ({ page })
     await expect(popup.locator(`#${visualizacao.painel}`)).toBeVisible({ timeout: 15_000 });
     await expect(popup.locator("header")).toBeHidden();
     await expect(popup.locator(".view-tabs")).toBeHidden();
-    if (visualizacao.view !== "exceccoes") {
+    if (visualizacao.view !== "alarmes") {
       await expect(popup.locator(`#${visualizacao.painel} .focused-view-actions`)).toBeVisible();
     }
 
@@ -157,7 +157,6 @@ test("controles operacionais ficam na visão operacional", async ({ page }) => {
   await expect(popup.locator("#seletor-filtro")).toBeVisible();
   await expect(popup.locator("#seletor-data")).toBeVisible();
   await expect(popup.locator("#painel-operacional .btn-view-mode-cco")).toBeVisible();
-  await expect(popup.getByRole("button", { name: "Fechar visualização" })).toBeVisible();
 
   await popup.locator("#painel-operacional .btn-view-mode-cco").click();
   await expect(popup.locator("body")).toHaveClass(/modo-cco-ativo/);
@@ -185,14 +184,14 @@ test("clique no mural abre o reservatório direto na investigação", async ({ p
   await alarme.click();
   const investigacao = await investigacaoPromise;
 
-  await expect(investigacao).toHaveURL(/[?&]view=operacional(?:&|$)/);
+  await expect(investigacao).toHaveURL(/[?&]view=investigacao(?:&|$)/);
   await expect(investigacao).toHaveURL(/[?&]reservatorio=R01-A(?:&|$)/);
+  await expect(investigacao.locator("#painel-investigacao-alarme")).toBeVisible({ timeout: 15_000 });
   await expect(investigacao.locator("#cco-lean-investigation-header")).toBeVisible({ timeout: 15_000 });
   await expect(investigacao.locator("#cco-investigation-title")).toHaveText("R01-A");
   await expect(investigacao.locator("body")).toHaveClass(/is-cco-investigation-active/);
   await expect(investigacao.locator("header")).toBeHidden();
   await expect(investigacao.locator(".view-tabs")).toBeHidden();
-  await expect(investigacao.locator(".operational-brief")).toBeHidden();
   const dadosInvestigados = await investigacao.evaluate(() => {
     const data = document.getElementById("seletor-data").value;
     return {

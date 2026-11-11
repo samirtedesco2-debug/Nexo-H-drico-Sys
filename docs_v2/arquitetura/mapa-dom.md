@@ -60,7 +60,10 @@ Este documento fornece um mapa completo de todos os elementos estruturais (`head
   - `#operational-data-quality` (class: `.operational-data-quality`): Indicador de qualidade de dados.
 - `#grid-reservatorios` (class: `.dashboard-grid`): **Grid principal onde os cards dos reservatórios são injetados.**
 - `#analise-grafico-reservatorio` (class: `.reservoir-analysis-view`): Visão de gráfico detalhado por reservatório.
-- `#cco-lean-investigation-header` (class: `.cco-lean-investigation-header`): Cabeçalho contextual exibido ao filtrar um reservatório; quando a investigação é aberta pelo Mural, substitui visualmente o cabeçalho global e as abas, identifica o reservatório e apresenta `#cco-investigation-date` e `#cco-investigation-updated-at`. O botão `#btn-voltar-mural-alarmes` retorna ao Mural.
+
+### Visão Dedicada de Investigação de Alarme (`#painel-investigacao-alarme` / `main.view-panel`)
+- `#cco-lean-investigation-header` (class: `.cco-lean-investigation-header`): Cabeçalho contextual da investigação dedicada, exibindo severidade, nome do reservatório, datas e botões de retorno ao Mural ("Voltar ao Mural") e reconhecimento (ACK).
+- `#container-investigacao-alarme`: Container onde o painel informativo do alarme (`reservoir-alarm-info`) é injetado exclusivamente.
 
 ### Visão Analítica (`#painel-analitico`)
 - **`.focused-view-actions`**: Ações da janela focada, com modo CCO e fechamento.

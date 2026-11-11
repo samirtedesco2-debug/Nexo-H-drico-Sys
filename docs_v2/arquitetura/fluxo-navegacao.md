@@ -76,9 +76,9 @@ Este documento descreve o mapa de navegação (*Sitemap*) e os fluxos de intera�
 1. **Origem no Mural de Alarmes (`tab-alarmes`):**
    - O operador visualiza um alarme ativo (ex: reservatório `R-01`).
 2. **Ação de Clique no Card/Linha:**
-   - Ao clicar no card ou item do mural, o sistema abre diretamente a **Visão Operacional focada na investigação do reservatório** (`?view=operacional&origem=mural&reservatorio=R01-A`).
-3. **Modo Investigação & Retorno:**
-   - O painel exibe um cabeçalho enxuto de investigação com os dados específicos do reservatório.
+   - Ao clicar no card ou item do mural, o sistema abre diretamente a **Visão Dedicada de Investigação de Alarme** (`?view=investigacao&reservatorio=R01-A&origem=mural`), completamente isolada da Visão Operacional.
+3. **Painel Exclusivo & Retorno:**
+   - A tela exibe exclusivamente o cabeçalho CCO lean e o painel informativo do alarme (`reservoir-alarm-info`) com taxonomia, dados da leitura violada e tempo de resposta, sem poluição visual.
    - O operador pode retornar rapidamente ao Mural de Alarmes clicando no botão **"Voltar ao Mural"** ou pressionando a tecla **[Esc]**, restaurando o contexto operacional anterior sem perda de estado.
 
 ---

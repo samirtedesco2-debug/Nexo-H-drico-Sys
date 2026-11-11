@@ -2630,23 +2630,23 @@ function renderizarDashboardExceccoes() {
 
 window.abrirReservatorioMural = function(chave) {
   const url = new URL(window.location.href);
-  url.searchParams.set("view", "operacional");
+  url.searchParams.set("view", "investigacao");
   url.searchParams.set("reservatorio", chave);
   url.searchParams.set("origem", "mural");
 
-  const janelaExistente = window.nexoViewWindows?.operacional;
+  const janelaExistente = window.nexoViewWindows?.investigacao;
   if (janelaExistente && !janelaExistente.closed) {
     janelaExistente.location.href = url.href;
     janelaExistente.focus();
   } else {
     const janela = window.open(
       url.href,
-      "nexoViewWindow_operacional",
+      "nexoViewWindow_investigacao",
       "width=1200,height=800",
     );
     if (janela) {
       window.nexoViewWindows = window.nexoViewWindows || {};
-      window.nexoViewWindows.operacional = janela;
+      window.nexoViewWindows.investigacao = janela;
     }
   }
 };
@@ -2938,5 +2938,84 @@ window.NexoLoader = {
     if (overlay) {
       overlay.style.display = "none";
     }
+  }
+};
+
+window.renderizarPainelInvestigacaoDedicado = function(chave, dataSelecionada, banco) {
+  const dadosDoDia = banco.historico[dataSelecionada];
+  if (!dadosDoDia || !dadosDoDia.reservatorios) return;
+  const reservatorio = dadosDoDia.reservatorios[chave];
+  if (!reservatorio) return;
+
+  const painelInvestigacao = document.getElementById("painel-investigacao-alarme");
+  if (!painelInvestigacao) return;
+
+  const headerEnxuto = painelInvestigacao.querySelector("#cco-lean-investigation-header");
+  const containerAlarme = painelInvestigacao.querySelector("#container-investigacao-alarme");
+
+  const exceccoes = typeof obterReservatoriosComAlertaOuExcecao === 'function' ? obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) : [];
+  const excObj = exceccoes.find(e => e.chave === chave);
+  const severidade = excObj ? excObj.severidade : "Normal";
+  const bg = excObj ? excObj.bg : "var(--surface-inset)";
+  const cor = excObj ? excObj.cor : "var(--text-color)";
+  const ackDet = typeof obterDetalhesAck === 'function' ? obterDetalhesAck(chave) : { reconhecido: false, texto: '🚨 Reconhecer', titulo: 'Reconhecer alarme' };
+  const btnAckId = `btn-ack-dedicated-${chave.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const nomeRes = reservatorio.nome || chave;
+
+  if (headerEnxuto) {
+    headerEnxuto.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; width: 100%;">
+        <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-size: 0.7rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">Inteligência Operacional · Investigação de Alarme Dedicada</span>
+            <span style="background: ${bg}; color: ${cor}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${severidade}</span>
+          </div>
+          <div>
+            <h2 id="cco-investigation-title" style="font-size: 1.25rem; color: var(--heading-color); margin: 0;">${nomeRes}</h2>
+          </div>
+          <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.82rem; color: var(--muted-color);">
+            <span><strong>Data investigada:</strong> <span id="cco-investigation-date">${dataSelecionada}</span></span>
+            <span><strong>Última atualização dos dados:</strong> <span id="cco-investigation-updated-at">${dadosDoDia.ultimaAtualizacao || 'Não informada'}</span></span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; flex: 0 0 auto;">
+          <button type="button" id="btn-voltar-mural-investigacao" style="padding: 8px 16px; background: var(--surface-inset); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">
+            ← Voltar ao Mural
+          </button>
+          <button type="button" id="${btnAckId}" title="${ackDet.titulo}" style="padding: 8px 18px; background: ${ackDet.reconhecido ? 'rgba(115,191,105,0.2)' : 'var(--accent-color)'}; color: ${ackDet.reconhecido ? 'var(--status-normal-color)' : '#fff'}; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px var(--shadow-color);">
+            ${ackDet.reconhecido ? ackDet.texto : '🚨 Reconhecer'}
+          </button>
+        </div>
+      </div>
+    `;
+
+    const btnVoltar = headerEnxuto.querySelector("#btn-voltar-mural-investigacao");
+    if (btnVoltar) {
+      btnVoltar.addEventListener("click", () => {
+        window.close();
+      });
+    }
+
+    const btnAck = headerEnxuto.querySelector(`#${CSS.escape(btnAckId)}`);
+    if (btnAck) {
+      btnAck.addEventListener("click", async () => {
+        await toggleAckMural(chave, severidade, nomeRes);
+        window.renderizarPainelInvestigacaoDedicado(chave, dataSelecionada, banco);
+      });
+    }
+  }
+
+  if (containerAlarme) {
+    containerAlarme.innerHTML = "";
+    const baseComparacao = document.getElementById("seletor-base-vazao")?.value || "dia_anterior";
+    const painelAlarme = criarPainelInformativoAlarme(
+      reservatorio,
+      chave,
+      dadosDoDia.horarios || [],
+      banco,
+      dataSelecionada,
+      baseComparacao
+    );
+    containerAlarme.appendChild(painelAlarme);
   }
 };

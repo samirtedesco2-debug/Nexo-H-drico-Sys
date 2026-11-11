@@ -118,6 +118,11 @@ Este documento registra o histórico cronológico de melhorias, refatorações e
 * **Data:** 6 de Novembro de 2026
 * **Agora:** 
   - **Sincronização Zero-Fetch (`BroadcastChannel`)**: Janelas secundárias de visão (`?view=...`) solicitam o banco de dados diretamente da janela principal em memória, evitando re-fetches de arquivos JSON e reduzindo drasticamente o tempo de abertura.
+
+### 20. Visão Dedicada de Investigação de Alarme (`?view=investigacao`)
+* **Data:** 11 de Novembro de 2026
+* **Agora:** Criação de uma aba/visão dedicada (`?view=investigacao&reservatorio=...&origem=mural`) para a investigação de alarmes, separando-a da Visão Operacional padrão. A tela exibe exclusivamente o cabeçalho CCO lean e o painel informativo do alarme (`reservoir-alarm-info`) com taxonomia, dados da leitura violada e tempo de resposta, sem poluição visual com cartões operacionais ou gráficos analíticos.
+* **Validação:** Suíte de testes unitários e testes E2E do Playwright (`clique no mural abre o reservatório direto na investigação`) aprovados com 100% de sucesso.
   - **Anti-Flicker e Early View Binding**: Inclusão de script síncrono no cabeçalho de `index.html` e regras CSS antecipadas (`data-active-view`) para pintar a visão correta no primeiro frame, eliminando qualquer transição visível da tela principal.
   - **Manifesto PWA (`manifest.json`)**: Configurado com `background_color` escuro para que o S.O. pinte a janela nativa sem o clarão branco inicial (*white flash*).
   - **Debounce no Loader (`NexoLoader`)**: Adicionado atraso de 1000ms para evitar piscadas do loader em operações rápidas.
