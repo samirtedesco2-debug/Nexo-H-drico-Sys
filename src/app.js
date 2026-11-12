@@ -2591,6 +2591,29 @@ function inicializarConfiguracoes() {
 
 let configFileHandle = null;
 
+// Lê o JSON atual do arquivo vinculado. Lança erro se o conteúdo não for um objeto válido:
+// nunca sobrescrevemos um arquivo que não conseguimos interpretar.
+async function lerConfiguracaoDoArquivoVinculado() {
+  const arquivo = await configFileHandle.getFile();
+  const texto = await arquivo.text();
+  if (!texto.trim()) return {};
+  const dados = JSON.parse(texto);
+  if (!dados || typeof dados !== "object" || Array.isArray(dados)) {
+    throw new Error("o conteúdo do arquivo vinculado não é um objeto de configurações");
+  }
+  return dados;
+}
+
+// Regrava o arquivo vinculado a partir do conteúdo ATUAL dele, preservando os reservatórios e as
+// chaves (como _estado_plantao) que este navegador não conhece. Se a leitura falhar, nada é gravado.
+async function atualizarArquivoVinculado(montarNovoConteudo) {
+  const existente = await lerConfiguracaoDoArquivoVinculado();
+  const novoConteudo = montarNovoConteudo(existente);
+  const writable = await configFileHandle.createWritable();
+  await writable.write(JSON.stringify(novoConteudo, null, 2));
+  await writable.close();
+}
+
 async function salvarHandleNoIndexedDB(handle) {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open("NexoHandlesDB", 1);
@@ -3429,8 +3452,23 @@ async function salvarConfiguracaoReservatorio(chave) {
   const emManutencao = document.getElementById("cfg-manutencao").checked;
   const possuiMedicaoVazao = document.getElementById("cfg-possui-vazao").checked;
 
+  const camposVazios = [
+    ["cfg-nivel-atencao", "nível – atenção"],
+    ["cfg-nivel-critico", "nível – crítico"],
+    ["cfg-nivel-medio-atencao", "nível médio – atenção"],
+    ["cfg-nivel-medio-critico", "nível médio – crítico"],
+    ["cfg-vazao-entrada-atencao", "vazão de entrada – atenção"],
+    ["cfg-vazao-entrada-critico", "vazão de entrada – crítico"],
+    ["cfg-vazao-saida-atencao", "vazão de saída – atenção"],
+    ["cfg-vazao-saida-critico", "vazão de saída – crítico"],
+    ["cfg-vazao-media-atencao", "vazão média – atenção"],
+    ["cfg-vazao-media-critico", "vazão média – crítico"],
+  ]
+    .filter(([id]) => document.getElementById(id)?.value === "")
+    .map(([, rotulo]) => rotulo);
+
   const salvos = JSON.parse(localStorage.getItem("nexo_hidrico_reservatorios_config") || "{}");
-  salvos[chave] = {
+  const novaConfig = {
     capacidadeUtil,
     nivelAtencao: nivelAtencao !== "" ? Number(nivelAtencao) : 60,
     nivelCritico: nivelCritico !== "" ? Number(nivelCritico) : 50,
@@ -3455,26 +3493,47 @@ async function salvarConfiguracaoReservatorio(chave) {
     nivelAlertaTempoCritico: nivelAlertaTempoCritico !== "" ? Number(nivelAlertaTempoCritico) : 30
   };
 
+  const msg = document.getElementById("configuracao-mensagem");
+  const mostrarMensagem = (texto, comAviso, duracaoMs) => {
+    if (!msg) return;
+    msg.textContent = texto;
+    msg.classList.toggle("has-alerts", comAviso);
+    setTimeout(() => {
+      msg.textContent = "";
+    }, duracaoMs);
+  };
+
+  const problemas = validarConfiguracaoReservatorio(novaConfig);
+  if (problemas.length > 0) {
+    mostrarMensagem(`Configuração NÃO guardada. ${problemas.join(" ")}`, true, 12000);
+    return;
+  }
+
+  salvos[chave] = novaConfig;
   localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify(salvos));
 
+  let erroArquivo = null;
   if (configFileHandle) {
     try {
-      const writable = await configFileHandle.createWritable();
-      await writable.write(JSON.stringify(salvos, null, 2));
-      await writable.close();
+      await atualizarArquivoVinculado((existente) => ({ ...existente, [chave]: novaConfig }));
     } catch (err) {
-      console.error("Erro ao gravar diretamente no arquivo vinculado:", err);
+      console.error("Erro ao gravar no arquivo vinculado:", err);
+      erroArquivo = err instanceof Error ? err.message : String(err);
     }
   }
 
-  const msg = document.getElementById("configuracao-mensagem");
-  if (msg) {
-    msg.textContent = `Configuração do reservatório ${chave} guardada${configFileHandle ? ' e salva no arquivo' : ''} com sucesso!`;
-    msg.classList.remove("has-alerts");
-    setTimeout(() => {
-      msg.textContent = "";
-    }, 4000);
+  const avisos = [];
+  if (!configFileHandle) {
+    avisos.push("Guardada apenas neste navegador: outros computadores só verão estas alterações com o arquivo config_reservatorios.json vinculado.");
   }
+  if (erroArquivo) {
+    avisos.push(`NÃO foi gravada no arquivo vinculado (${erroArquivo}); o arquivo não foi alterado.`);
+  }
+  if (camposVazios.length > 0) {
+    avisos.push(`Campos vazios usaram o valor padrão: ${camposVazios.join(", ")}.`);
+  }
+  const base = `Configuração do reservatório ${chave} guardada${configFileHandle && !erroArquivo ? " e salva no arquivo" : ""}.`;
+  mostrarMensagem(avisos.length > 0 ? `${base} ${avisos.join(" ")}` : base, avisos.length > 0, avisos.length > 0 ? 12000 : 4000);
 }
 
 window.sincronizarEstadoAlarmesNoArquivo = async function() {
@@ -3487,15 +3546,18 @@ window.sincronizarEstadoAlarmesNoArquivo = async function() {
     const reconhecidosArr = window.ccoReconhecidos ? Array.from(window.ccoReconhecidos.entries()) : [];
     const logsArr = window.nexoIncidentsLog || [];
 
-    salvos._estado_plantao = {
+    const estadoPlantao = {
       reconhecidos: reconhecidosArr,
       logsIncidentes: logsArr,
       timestampAtualizacao: new Date().toISOString()
     };
 
-    const writable = await configFileHandle.createWritable();
-    await writable.write(JSON.stringify(salvos, null, 2));
-    await writable.close();
+    // Mescla com o conteúdo atual do arquivo: reservatórios que este navegador não conhece são preservados.
+    await atualizarArquivoVinculado((existente) => ({
+      ...existente,
+      ...salvos,
+      _estado_plantao: estadoPlantao,
+    }));
   } catch (err) {
     console.warn("Aviso ao sincronizar estado de alarmes no arquivo vinculado:", err);
   }

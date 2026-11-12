@@ -157,6 +157,51 @@ function obterConfiguracaoReservatorio(idReservatorio) {
   }
 }
 
+/**
+ * Valida os limites de uma configuração de reservatório antes de guardar.
+ * Devolve a lista de problemas em texto; vazia quando está tudo certo.
+ * - Nível e "nível de alerta de tempo": 0 a 100% e crítico MENOR que atenção (nível mais baixo é pior).
+ * - Desvios (nível médio e vazões): valores não negativos e crítico MAIOR que atenção (desvio maior é pior).
+ * - Pares ligados a um alerta só são verificados quando esse alerta está ativo.
+ */
+function validarConfiguracaoReservatorio(config) {
+  const problemas = [];
+  const numero = (valor) => typeof valor === "number" && Number.isFinite(valor);
+
+  const verificarNivel = (rotulo, atencao, critico) => {
+    if (!numero(atencao) || !numero(critico) || atencao < 0 || atencao > 100 || critico < 0 || critico > 100) {
+      problemas.push(`${rotulo}: informe limites numéricos entre 0 e 100%.`);
+    } else if (critico >= atencao) {
+      problemas.push(`${rotulo}: o limite crítico (${critico}%) deve ser menor que o de atenção (${atencao}%).`);
+    }
+  };
+  const verificarDesvio = (rotulo, atencao, critico) => {
+    if (!numero(atencao) || !numero(critico) || atencao < 0 || critico < 0) {
+      problemas.push(`${rotulo}: informe desvios numéricos não negativos.`);
+    } else if (critico <= atencao) {
+      problemas.push(`${rotulo}: o desvio crítico (${critico}%) deve ser maior que o de atenção (${atencao}%).`);
+    }
+  };
+
+  if (config.alertaNivelAtivo) {
+    verificarNivel("Nível", config.nivelAtencao, config.nivelCritico);
+  }
+  verificarNivel("Nível de alerta por tempo", config.nivelAlertaTempoAtencao, config.nivelAlertaTempoCritico);
+  if (config.alertaNivelMedioAtivo) {
+    verificarDesvio("Nível médio", config.nivelMedioAtencao, config.nivelMedioCritico);
+  }
+  if (config.alertaVazaoEntradaAtivo) {
+    verificarDesvio("Vazão de entrada", config.vazaoEntradaAtencao, config.vazaoEntradaCritico);
+  }
+  if (config.alertaVazaoSaidaAtivo) {
+    verificarDesvio("Vazão de saída", config.vazaoSaidaAtencao, config.vazaoSaidaCritico);
+  }
+  if (config.alertaVazaoMediaAtivo) {
+    verificarDesvio("Vazão média", config.vazaoMediaAtencao, config.vazaoMediaCritico);
+  }
+  return problemas;
+}
+
 function obterUltimaLeituraValida(valores) {
   if (!Array.isArray(valores)) return null;
   for (let i = valores.length - 1; i >= 0; i--) {

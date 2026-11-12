@@ -147,6 +147,36 @@ function executarTestesStatusNivel() {
   assert.strictEqual(comMedia.avaliarStatusNivel(serie, 'R-X', 80), 'Normal');
 }
 
+function executarTestesValidacaoConfiguracao() {
+  const { validarConfiguracaoReservatorio } = carregarRegrasNegocio();
+  const valida = {
+    alertaNivelAtivo: true, nivelAtencao: 60, nivelCritico: 50,
+    nivelAlertaTempoAtencao: 40, nivelAlertaTempoCritico: 30,
+    alertaNivelMedioAtivo: true, nivelMedioAtencao: 15, nivelMedioCritico: 25,
+    alertaVazaoEntradaAtivo: true, vazaoEntradaAtencao: 20, vazaoEntradaCritico: 35,
+    alertaVazaoSaidaAtivo: true, vazaoSaidaAtencao: 20, vazaoSaidaCritico: 35,
+    alertaVazaoMediaAtivo: true, vazaoMediaAtencao: 20, vazaoMediaCritico: 35,
+  };
+  const problemas = (alteracoes) => Array.from(validarConfiguracaoReservatorio({ ...valida, ...alteracoes }));
+
+  assert.deepStrictEqual(problemas({}), []);
+  // nível: crítico deve ser menor que atenção, ambos entre 0 e 100
+  assert.strictEqual(problemas({ nivelAtencao: 40, nivelCritico: 50 }).length, 1);
+  assert.strictEqual(problemas({ nivelAtencao: 50, nivelCritico: 50 }).length, 1);
+  assert.strictEqual(problemas({ nivelAtencao: 120, nivelCritico: 50 }).length, 1);
+  assert.strictEqual(problemas({ nivelCritico: -1 }).length, 1);
+  assert.strictEqual(problemas({ nivelAtencao: NaN }).length, 1);
+  // desvios: crítico deve ser maior que atenção
+  assert.strictEqual(problemas({ vazaoMediaAtencao: 40, vazaoMediaCritico: 35 }).length, 1);
+  assert.strictEqual(problemas({ nivelMedioAtencao: 25, nivelMedioCritico: 25 }).length, 1);
+  assert.strictEqual(problemas({ vazaoEntradaAtencao: -5 }).length, 1);
+  // vários erros viram várias mensagens
+  assert.strictEqual(problemas({ nivelAtencao: 40, nivelCritico: 50, vazaoSaidaAtencao: 50 }).length, 2);
+  // alerta desligado: o par correspondente não é exigido
+  assert.deepStrictEqual(problemas({ alertaNivelAtivo: false, nivelAtencao: 10, nivelCritico: 90 }), []);
+  assert.deepStrictEqual(problemas({ alertaVazaoMediaAtivo: false, vazaoMediaAtencao: 90, vazaoMediaCritico: 10 }), []);
+}
+
 function executarTestesRegras() {
   console.log("-> Executando testes de Regras de Negócio e Roteamento de Configuração...");
   
@@ -171,6 +201,7 @@ function executarTestesRegras() {
   
   executarTestesClassificacaoAlarmes();
   executarTestesStatusNivel();
+  executarTestesValidacaoConfiguracao();
 
   console.log("✓ Regras de Negócio e Roteamento: Todos os testes passaram!");
 }

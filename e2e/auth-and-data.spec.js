@@ -500,3 +500,82 @@ test("reconhecimento do alarme persiste e sincroniza entre janelas", async ({ pa
     })
   ).toBe("admin.nexo");
 });
+
+test("configuração por reservatório valida os limites e preserva o arquivo vinculado", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto("/?view=configuracoes");
+  await page.getByLabel("Usuário").fill("admin.nexo");
+  await page.locator("#login-password").fill("Admin@2026");
+  const loginReload = page.waitForEvent("load");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
+  await loginReload;
+  await aguardarBancoDisponivel(page);
+
+  // Arquivo vinculado falso: guarda o conteúdo em memória, como o arquivo real faria.
+  const original = JSON.stringify({
+    "R01-A": { nivelAtencao: 70, nivelCritico: 55 },
+    "R02": { nivelAtencao: 65, nivelCritico: 45 },
+    "_estado_plantao": { reconhecidos: [["R09", "Crítico"]] }
+  });
+  await page.evaluate((conteudoInicial) => {
+    window.__arquivoFalso = { conteudo: conteudoInicial };
+    configFileHandle = {
+      getFile: async () => ({ text: async () => window.__arquivoFalso.conteudo }),
+      createWritable: async () => {
+        let texto = "";
+        return {
+          write: async (valor) => { texto = valor; },
+          close: async () => { window.__arquivoFalso.conteudo = texto; }
+        };
+      }
+    };
+    localStorage.removeItem("nexo_hidrico_reservatorios_config");
+    document.getElementById("painel-configuracoes").hidden = false;
+    renderizarPainelConfiguracoes();
+    const banco = window.bancoDeDados;
+    const dia = banco.datasDisponiveis[banco.datasDisponiveis.length - 1];
+    renderizarFormularioConfiguracao("R01-A", banco.historico[dia].reservatorios["R01-A"]);
+  }, original);
+
+  const guardar = () => page.locator("#form-config-reservatorio button[type=submit]").click();
+  const mensagem = page.locator("#configuracao-mensagem");
+  const lerArquivo = () => page.evaluate(() => window.__arquivoFalso.conteudo);
+  const lerSalvoNoNavegador = () =>
+    page.evaluate(() => localStorage.getItem("nexo_hidrico_reservatorios_config"));
+
+  // 1) Crítico maior que atenção: não guarda nem no navegador nem no arquivo.
+  await page.locator("#cfg-nivel-atencao").fill("40");
+  await page.locator("#cfg-nivel-critico").fill("50");
+  await guardar();
+  await expect(mensagem).toContainText("NÃO guardada");
+  await expect(mensagem).toContainText("deve ser menor que o de atenção");
+  expect(await lerArquivo()).toBe(original);
+  expect(await lerSalvoNoNavegador()).toBeNull();
+
+  // 2) Valores válidos: atualiza só o R01-A e preserva o R02 e o estado de plantão do arquivo.
+  await page.locator("#cfg-nivel-atencao").fill("65");
+  await page.locator("#cfg-nivel-critico").fill("40");
+  await guardar();
+  await expect(mensagem).toContainText("guardada e salva no arquivo");
+  const gravado = JSON.parse(await lerArquivo());
+  expect(gravado["R01-A"].nivelAtencao).toBe(65);
+  expect(gravado["R01-A"].nivelCritico).toBe(40);
+  expect(gravado["R02"]).toEqual({ nivelAtencao: 65, nivelCritico: 45 });
+  expect(gravado["_estado_plantao"]).toEqual({ reconhecidos: [["R09", "Crítico"]] });
+
+  // 3) Arquivo ilegível: a configuração fica no navegador, o arquivo não é sobrescrito e há aviso.
+  await page.evaluate(() => { window.__arquivoFalso.conteudo = "{conteudo quebrado"; });
+  await page.locator("#cfg-nivel-atencao").fill("62");
+  await guardar();
+  await expect(mensagem).toContainText("NÃO foi gravada no arquivo vinculado");
+  expect(await lerArquivo()).toBe("{conteudo quebrado");
+  expect(JSON.parse(await lerSalvoNoNavegador())["R01-A"].nivelAtencao).toBe(62);
+
+  // 4) Sem arquivo vinculado: avisa que vale só neste navegador; campo vazio usa o padrão e é informado.
+  await page.evaluate(() => { configFileHandle = null; });
+  await page.locator("#cfg-vazao-media-atencao").fill("");
+  await guardar();
+  await expect(mensagem).toContainText("apenas neste navegador");
+  await expect(mensagem).toContainText("vazão média – atenção");
+});
