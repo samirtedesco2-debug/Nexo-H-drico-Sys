@@ -1953,7 +1953,7 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
     const statusVazao = alertaVazao.status;
     const vazaoAtual = obterUltimaLeitura(filtrarLeiturasVazaoValidas(leituras?.vazao));
     const variacaoVazao = alertaVazao.indicadores?.[0]?.variacao ?? null;
-    const direcaoVazao = alertaVazao.indicadores?.[0]?.direcao ?? "estável";
+    const direcaoVazao = obterDirecaoDesvioVazao(alertaVazao);
 
     const nivelAtivo = escopoOperacional !== "vazao";
     const vazaoAtiva = escopoOperacional !== "nivel";
@@ -1999,31 +1999,33 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
         bg = "rgba(59, 130, 246, 0.15)";
       }
 
-      const mensagens = [];
-      if (statusNivel === "Crítico") {
-        const msg = obterMensagemTaxonomia("ALM-NIV-01", { nome, valorAtual: nivelAtual });
-        mensagens.push(msg || `Nível crítico em ${nivelAtual}%`);
-      } else if (statusNivel === "Atenção") {
-        const msg = obterMensagemTaxonomia("ALM-NIV-02", { nome, valorAtual: nivelAtual });
-        mensagens.push(msg || `Nível de atenção em ${nivelAtual}%`);
-      }
-      if (statusNivel === "Inconsistente" || statusNivel === "Sem Dados") {
-        const msg = obterMensagemTaxonomia("ALM-DAT-02", { nome, valorAtual: nivelAtual ?? "N/A" });
-        mensagens.push(msg || "Leituras de nível inconsistentes ou fora da faixa válida (0-110%)");
-      }
-      if (statusVazao === "Crítico" || statusVazao === "Atenção") {
-        const varAbs = variacaoVazao !== null ? Math.abs(variacaoVazao).toFixed(0) : "";
-        const codigoVazao = direcaoVazao === "alta" ? "ALM-VAZ-02" : "ALM-VAZ-01";
-        const msg = obterMensagemTaxonomia(codigoVazao, { nome, valorAtual: vazaoAtual, variacao: varAbs });
-        mensagens.push(msg || `Vazão atual (${vazaoAtual} L/s) está desviada (${statusVazao})`);
-      }
+      const alarmes = classificarAlarmesAtivos({
+        statusNivel,
+        statusVazao,
+        direcaoVazao,
+        possuiLeiturasAusentes: isIncompleto && ausentesSelecionadas.length > 0,
+      });
+      const varAbs = variacaoVazao !== null ? Math.abs(variacaoVazao).toFixed(0) : "";
+      const textoAlarme = (alarme) => {
+        switch (alarme.codigo) {
+          case "ALM-NIV-01":
+            return obterMensagemTaxonomia(alarme.codigo, { nome, valorAtual: nivelAtual }) || `Nível crítico em ${nivelAtual}%`;
+          case "ALM-NIV-02":
+            return obterMensagemTaxonomia(alarme.codigo, { nome, valorAtual: nivelAtual }) || `Nível de atenção em ${nivelAtual}%`;
+          case "ALM-DAT-02":
+            return obterMensagemTaxonomia(alarme.codigo, { nome, valorAtual: nivelAtual ?? "N/A" }) || "Leituras de nível inconsistentes ou fora da faixa válida (0-110%)";
+          case "ALM-DAT-01":
+            return obterMensagemTaxonomia(alarme.codigo, { nome }) || `${ausentesSelecionadas.length} leitura(s) ausente(s) por falha de telemetria`;
+          default:
+            return obterMensagemTaxonomia(alarme.codigo, { nome, valorAtual: vazaoAtual, variacao: varAbs }) || `Vazão atual (${vazaoAtual} L/s) está desviada (${statusVazao})`;
+        }
+      };
+      // Ordem das mensagens preservada: nível/vazão, preditivo e, por último, ausência de telemetria.
+      const mensagens = alarmes.filter((a) => a.codigo !== "ALM-DAT-01").map(textoAlarme);
       if (isPreditivo) {
         mensagens.push(predicao.mensagemPreditiva);
       }
-      if (isIncompleto && ausentesSelecionadas.length > 0) {
-        const msg = obterMensagemTaxonomia("ALM-DAT-01", { nome });
-        mensagens.push(msg || `${ausentesSelecionadas.length} leitura(s) ausente(s) por falha de telemetria`);
-      }
+      alarmes.filter((a) => a.codigo === "ALM-DAT-01").forEach((a) => mensagens.push(textoAlarme(a)));
 
       exceccoesMap.set(chave, {
         chave,
@@ -2035,6 +2037,7 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
         predicao,
         statusNivel,
         statusVazao,
+        alarmes,
         ausentes: ausentesSelecionadas,
         mensagens,
       });
@@ -2953,30 +2956,20 @@ window.NexoLoader = {
 };
 
 /**
- * Define o código de taxonomia do alarme ativo a partir dos status de nível e vazão.
- * Retorna null quando não há alarme (nível e vazão normais).
+ * Situação de nível e vazão para a investigação. Quando o reservatório está na lista de
+ * exceções do mural (excObj), usa os status e os alarmes de lá: é a mesma fonte do mural e
+ * evita divergência de base de comparação. Sem excObj, avalia localmente e não há alarme ativo.
  */
-function determinarCodigoAlarme(statusNivel, statusVazao) {
-  if (statusNivel === "Crítico") return "ALM-NIV-01";
-  if (statusNivel === "Atenção") return "ALM-NIV-02";
-  if (statusNivel === "Inconsistente" || statusNivel === "Sem Dados") return "ALM-DAT-02";
-  if (statusVazao === "Crítico") return "ALM-VAZ-02";
-  if (statusVazao === "Atenção") return "ALM-VAZ-01";
-  return null;
-}
-
-/**
- * Avalia nível e vazão de um reservatório com as mesmas regras usadas no restante do CCO.
- */
-function avaliarSituacaoAlarme(reservatorio, chave, banco, dataSelecionada, baseComparacao, horarios) {
-  const statusNivel = avaliarStatusNivel(reservatorio.leituras?.nivel, chave);
+function avaliarSituacaoAlarme(reservatorio, chave, banco, dataSelecionada, baseComparacao, horarios, excObj) {
   const referenciaVazao = obterReferenciaVazao(banco, chave, dataSelecionada, baseComparacao, horarios);
   const alertaVazao = avaliarAlertaVazao(reservatorio.leituras?.vazao, referenciaVazao, horarios, chave);
   return {
-    statusNivel,
+    statusNivel: excObj?.statusNivel ?? avaliarStatusNivel(reservatorio.leituras?.nivel, chave),
+    statusVazao: excObj?.statusVazao ?? alertaVazao?.status,
     referenciaVazao,
     alertaVazao,
-    codigoAlarme: determinarCodigoAlarme(statusNivel, alertaVazao?.status),
+    alarmes: excObj?.alarmes ?? [],
+    possuiLeiturasAusentes: (excObj?.ausentes?.length ?? 0) > 0,
   };
 }
 
@@ -2992,8 +2985,9 @@ function criarRotuloValor(rotulo, valor) {
 /**
  * @param {string|null} codigoAlarme
  * @param {object} dadosReservatorio
- * @param {{tag?: string, ultimaAtualizacao?: string}} [contexto] - tag configurada e
- *   timestamp do dia (a data da última atualização fica no dia, não no reservatório).
+ * @param {{tag?: string, ultimaAtualizacao?: string, severidade?: string, possuiLeiturasAusentes?: boolean}} [contexto]
+ *   tag configurada, timestamp do dia (a data da última atualização fica no dia, não no
+ *   reservatório), severidade real do alarme (sobrepõe a fixa da taxonomia) e flag de ausência de leituras.
  */
 function unificarTaxonomiaEEmitirCausa(codigoAlarme, dadosReservatorio, contexto = {}) {
   const tax = window.taxonomiaAlarmes || {};
@@ -3022,14 +3016,16 @@ function unificarTaxonomiaEEmitirCausa(codigoAlarme, dadosReservatorio, contexto
     : (Array.isArray(leituras.vazao) ? leituras.vazao[leituras.vazao.length - 1] ?? null : null);
   
   const ultimaLeituraTimestamp = contexto.ultimaAtualizacao || dadosReservatorio?.ultimaAtualizacao || null;
-  const statusComunicacao = (nivelAtual !== null || vazaoAtual !== null) ? "Online / Comunicando" : "Sem Comunicação / Inconsistente";
+  const statusComunicacao = contexto.possuiLeiturasAusentes
+    ? "Leituras ausentes (falha de telemetria)"
+    : (nivelAtual !== null || vazaoAtual !== null) ? "Online / Comunicando" : "Sem Comunicação / Inconsistente";
 
   return {
     taxonomia: {
       codigo: metaTaxonomia.codigo || codigoAlarme,
       ativo: codigoAlarme !== null,
       categoria: metaTaxonomia.categoria || "Desconhecida",
-      severidade: metaTaxonomia.severidade || "Desconhecida",
+      severidade: contexto.severidade || metaTaxonomia.severidade || "Desconhecida",
       template: metaTaxonomia.template || "Desconhecido"
     },
     causaRaiz: {
@@ -3043,6 +3039,16 @@ function unificarTaxonomiaEEmitirCausa(codigoAlarme, dadosReservatorio, contexto
     },
     timestampInvestigacao: new Date().toISOString()
   };
+}
+
+/** Taxonomia unificada de cada alarme ativo; sem alarme, uma única entrada "sem alarme ativo". */
+function obterTaxonomiasDosAlarmes(alarmes, reservatorio, contextoBase) {
+  if (!alarmes.length) {
+    return [unificarTaxonomiaEEmitirCausa(null, reservatorio, contextoBase)];
+  }
+  return alarmes.map((alarme) =>
+    unificarTaxonomiaEEmitirCausa(alarme.codigo, reservatorio, { ...contextoBase, severidade: alarme.severidade }),
+  );
 }
 
 function gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) {
@@ -3059,18 +3065,33 @@ function gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) {
   const baseComparacao = document.getElementById("seletor-base-vazao")?.value || "dia_anterior";
 
   const nivel = obterUltimaLeituraNivel(reservatorio.leituras?.nivel);
-  const { statusNivel, referenciaVazao, codigoAlarme } =
-    avaliarSituacaoAlarme(reservatorio, chave, banco, dataSelecionada, baseComparacao, horarios);
+  const excObj = obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada).find((e) => e.chave === chave);
+  const { statusNivel, referenciaVazao, alarmes, possuiLeiturasAusentes } =
+    avaliarSituacaoAlarme(reservatorio, chave, banco, dataSelecionada, baseComparacao, horarios, excObj);
 
   const vazaoAtual = obterUltimaLeitura(filtrarLeiturasVazaoValidas(reservatorio.leituras?.vazao)) ?? 0;
   const refVazaoMedia = referenciaVazao?.media ?? 0;
   const deltaVazao = vazaoAtual - refVazaoMedia;
   const variacaoPercentualVazao = refVazaoMedia > 0 ? ((deltaVazao / refVazaoMedia) * 100).toFixed(1) : "0.0";
 
-  const dadosUnificados = unificarTaxonomiaEEmitirCausa(codigoAlarme, reservatorio, {
+  const taxonomias = obterTaxonomiasDosAlarmes(alarmes, reservatorio, {
     tag,
     ultimaAtualizacao: dadosDoDia.ultimaAtualizacao,
+    possuiLeiturasAusentes,
   });
+  const dadosUnificados = taxonomias[0];
+  const blocoClassificacao = taxonomias
+    .map(({ taxonomia }) => {
+      const diagnostico = taxonomia.template && taxonomia.template !== taxonomia.categoria
+        ? `\n• Diagnóstico: ${taxonomia.template}`
+        : "";
+      return [
+        `• Código: ${taxonomia.codigo}`,
+        `• Categoria: ${taxonomia.categoria}`,
+        `• Severidade: ${taxonomia.severidade}${diagnostico}`,
+      ].join("\n");
+    })
+    .join("\n\n");
   const recomendacao = dadosUnificados.taxonomia.ativo
     ? `O sistema detectou desvio operacional em ${nome}. Recomenda-se envio imediato de equipe de campo para verificação de macromedição, telemetria e manobras hidráulicas pertinentes.`
     : `Nenhum desvio operacional ativo em ${nome} no momento da emissão. Registro apenas para acompanhamento.`;
@@ -3084,11 +3105,8 @@ function gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) {
 • Capacidade Útil: ${cap} m³
 
 [CLASSIFICAÇÃO NORMATIVA (TAXONOMIA)]
-• Código: ${dadosUnificados.taxonomia.codigo}
-• Categoria: ${dadosUnificados.taxonomia.categoria}
-• Severidade: ${dadosUnificados.taxonomia.severidade}
-${dadosUnificados.taxonomia.template && dadosUnificados.taxonomia.template !== dadosUnificados.taxonomia.categoria ? `• Diagnóstico: ${dadosUnificados.taxonomia.template}
-` : ""}
+${blocoClassificacao}
+
 [ANÁLISE COMPARATIVA DE VAZÃO & NÍVEL]
 • Nível Atual: ${nivel !== null ? Number(nivel).toFixed(1) + '%' : 'N/A'} (Status: ${statusNivel})
 • Vazão Atual: ${vazaoAtual} L/s
@@ -3152,8 +3170,8 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
   const painel = criarElementoTexto("div", "activated-alarm-panel inv-panel");
 
   const nivel = obterUltimaLeituraNivel(reservatorio.leituras?.nivel);
-  const { statusNivel, alertaVazao, codigoAlarme } =
-    avaliarSituacaoAlarme(reservatorio, chave, banco, dataSelecionada, baseComparacao, horarios);
+  const { statusNivel, alertaVazao, alarmes, possuiLeiturasAusentes } =
+    avaliarSituacaoAlarme(reservatorio, chave, banco, dataSelecionada, baseComparacao, horarios, excObj);
   const vazaoAlvo = obterUltimaLeitura(filtrarLeiturasVazaoValidas(reservatorio.leituras?.vazao)) ?? 0;
   const corStatusVazao =
     alertaVazao?.status === "Crítico"
@@ -3167,10 +3185,12 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
     : 5000;
   const predAlvo = calcularAutonomiaEProjecao(reservatorio, chave);
 
-  const dadosUnificados = unificarTaxonomiaEEmitirCausa(codigoAlarme, reservatorio, {
+  const taxonomias = obterTaxonomiasDosAlarmes(alarmes, reservatorio, {
     tag: configAlvo?.tag || chave,
     ultimaAtualizacao: banco.historico?.[dataSelecionada]?.ultimaAtualizacao,
+    possuiLeiturasAusentes,
   });
+  const dadosUnificados = taxonomias[0];
   const alarmeAtivo = dadosUnificados.taxonomia.ativo;
   const mensagensPadrao = [];
   if (statusNivel !== "Normal") mensagensPadrao.push(`Alarme de Nível: ${statusNivel}`);
@@ -3204,21 +3224,22 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
   });
   painel.appendChild(grupoMensagem);
 
-  const taxonomia = dadosUnificados.taxonomia;
   const taxonomiaDiv = criarElementoTexto("div", "inv-taxonomia");
-  const linhaTaxonomia = criarElementoTexto("div", "inv-taxonomia-line");
-  linhaTaxonomia.append(
-    criarElementoTexto("span", "inv-taxonomia-name", `Taxonomia Oficial: ${taxonomia.codigo} (${taxonomia.categoria})`),
-    criarElementoTexto("span", "inv-severity-badge", taxonomia.severidade),
-  );
-  taxonomiaDiv.append(linhaTaxonomia);
+  taxonomias.forEach(({ taxonomia }) => {
+    const linhaTaxonomia = criarElementoTexto("div", "inv-taxonomia-line");
+    linhaTaxonomia.append(
+      criarElementoTexto("span", "inv-taxonomia-name", `Taxonomia Oficial: ${taxonomia.codigo} (${taxonomia.categoria})`),
+      criarElementoTexto("span", "inv-severity-badge", taxonomia.severidade),
+    );
+    taxonomiaDiv.append(linhaTaxonomia);
 
-  // O template da taxonomia hoje repete a categoria; só mostra quando acrescenta informação.
-  if (taxonomia.template && taxonomia.template !== taxonomia.categoria) {
-    const blocoTemplate = criarElementoTexto("div", "inv-template");
-    blocoTemplate.append(criarRotuloValor("Template:", taxonomia.template));
-    taxonomiaDiv.append(blocoTemplate);
-  }
+    // O template da taxonomia hoje repete a categoria; só mostra quando acrescenta informação.
+    if (taxonomia.template && taxonomia.template !== taxonomia.categoria) {
+      const blocoTemplate = criarElementoTexto("div", "inv-template");
+      blocoTemplate.append(criarRotuloValor("Template:", taxonomia.template));
+      taxonomiaDiv.append(blocoTemplate);
+    }
+  });
 
   const metaTaxonomia = criarElementoTexto("div", "inv-meta-grid");
   metaTaxonomia.append(

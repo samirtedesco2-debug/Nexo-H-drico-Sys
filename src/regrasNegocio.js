@@ -495,6 +495,58 @@ function avaliarAlertaVazao(
   return { status, indicadores, referencia };
 }
 
+/**
+ * Direção do desvio de vazão. Usa o indicador que disparou o alarme (Crítico antes de
+ * Atenção); sem indicador em alarme, mantém o comportamento anterior (indicador de média).
+ */
+function obterDirecaoDesvioVazao(alertaVazao) {
+  const indicadores = alertaVazao?.indicadores ?? [];
+  for (const nivel of ["Crítico", "Atenção"]) {
+    const alvo = indicadores.find(
+      (indicador) =>
+        indicador.classificaAlerta &&
+        indicador.status === nivel &&
+        (indicador.direcao === "alta" || indicador.direcao === "baixa"),
+    );
+    if (alvo) return alvo.direcao;
+  }
+  return indicadores[0]?.direcao ?? "estável";
+}
+
+/**
+ * Códigos de taxonomia dos alarmes ativos de um reservatório. Fonte única para o mural e
+ * para a investigação. Nível usa o status; vazão usa a DIREÇÃO do desvio (baixa = ALM-VAZ-01,
+ * alta = ALM-VAZ-02) e a severidade real do status, não a fixa do arquivo de taxonomia.
+ * @returns {{codigo: string, severidade: string, origem: "nivel"|"vazao"|"dados"}[]}
+ */
+function classificarAlarmesAtivos({
+  statusNivel,
+  statusVazao,
+  direcaoVazao,
+  possuiLeiturasAusentes = false,
+}) {
+  const alarmes = [];
+  if (statusNivel === "Crítico") {
+    alarmes.push({ codigo: "ALM-NIV-01", severidade: "Crítico", origem: "nivel" });
+  } else if (statusNivel === "Atenção") {
+    alarmes.push({ codigo: "ALM-NIV-02", severidade: "Atenção", origem: "nivel" });
+  }
+  if (statusNivel === "Inconsistente" || statusNivel === "Sem Dados") {
+    alarmes.push({ codigo: "ALM-DAT-02", severidade: "Inconsistente", origem: "dados" });
+  }
+  if (statusVazao === "Crítico" || statusVazao === "Atenção") {
+    alarmes.push({
+      codigo: direcaoVazao === "alta" ? "ALM-VAZ-02" : "ALM-VAZ-01",
+      severidade: statusVazao,
+      origem: "vazao",
+    });
+  }
+  if (possuiLeiturasAusentes) {
+    alarmes.push({ codigo: "ALM-DAT-01", severidade: "Inconsistente", origem: "dados" });
+  }
+  return alarmes;
+}
+
 function calcularMediaMovel(valores, janela = 3) {
   if (!Array.isArray(valores) || valores.length === 0) return [];
   return valores.map((val, idx, arr) => {

@@ -14,3 +14,9 @@ O arquivo `src/regrasNegocio.js` é o núcleo lógico do Nexo Hídrico.
    - **Degrau Impossível**: Bloqueia e marca como `Inconsistente` se a variação entre horas consecutivas for superior a 25% (com estrutura comentada pronta para 10% em tempo real).
    - **Timeout (Queda de Link / Falha de Comunicação)**: Varredura cronológica de trás para frente; decreta falha se houver mais de 2 campos seguidos em branco (com estrutura comentada para $\Delta t \ge 5\text{ min}$ em tempo real).
 5. **`avaliarStatusNivel` / `avaliarAlertaVazao`**: Classifica o estado operacional em Normal, Atenção, Crítico, Sem Dados, Manutenção ou **Inconsistente** (quando reprovado pela auditoria ou com valores inválidos).
+6. **`classificarAlarmesAtivos({ statusNivel, statusVazao, direcaoVazao, possuiLeiturasAusentes })`**: Fonte única dos códigos de taxonomia dos alarmes ativos, usada pelo mural/exceções e pela investigação dedicada (`?view=investigacao`). Retorna uma lista (vazia quando não há alarme):
+   - **Nível**: `ALM-NIV-01` (Crítico) e `ALM-NIV-02` (Atenção); `ALM-DAT-02` para `Inconsistente`/`Sem Dados`.
+   - **Vazão**: o código segue a **direção** do desvio — baixa = `ALM-VAZ-01`, alta = `ALM-VAZ-02` — e a severidade é a do status real (Atenção/Crítico), não a fixa do arquivo `taxonomia_alarmes.json`.
+   - **Telemetria**: `ALM-DAT-01` quando há leituras ausentes.
+   - Alarmes simultâneos aparecem todos, na ordem nível, dados (`DAT-02`), vazão, telemetria.
+7. **`obterDirecaoDesvioVazao(alertaVazao)`**: Direção (`alta`/`baixa`) do indicador de vazão que disparou o alarme (Crítico antes de Atenção). Sem indicador em alarme, usa o primeiro indicador (comportamento anterior).
