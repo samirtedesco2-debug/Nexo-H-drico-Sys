@@ -36,7 +36,7 @@ Camadas (o fluxo de dados passa por todas):
 
 ## Armadilhas conhecidas
 
-- **`avaliarStatusNivel` existe duas vezes** como função global: a completa em `regrasNegocio.js` (limites por reservatório, manutenção, auditoria de leituras, `Inconsistente`) e uma simples em `app.js`. Como `app.js` carrega por último, **a versão simples é a que roda**: ignora limites por reservatório, manutenção e a auditoria de sensor, e nunca devolve `Inconsistente` (logo `ALM-DAT-02` não aparece). Corrigir muda os alarmes exibidos; só com autorização e testes.
+- **`avaliarStatusNivel`** agora tem uma única definição (`regrasNegocio.js`); havia uma cópia simples em `app.js` que vencia por ordem de carregamento e fazia a configuração por reservatório ser ignorada. Limites, alerta e manutenção de cada reservatório valem. Duas regras seguem **desligadas** por constantes (`AUDITORIA_SENSOR_ATIVA`, `COMPARACAO_NIVEL_MEDIO_ATIVA`) porque, com os dados fixos atuais (6 leituras de madrugada), gerariam alarmes falsos; ligar só com telemetria real e calibração. Os limites 60/50 do `config_reservatorios.json` são provisórios, à espera dos valores de cada reservatório.
 - Na janela `?view=investigacao`, o cabeçalho (`#cco-lean-investigation-header`) é de `renderizarPainelInvestigacaoDedicado`; `atualizarHeaderEnxutoInvestigacao` usa o mesmo id e por isso retorna sem fazer nada nessa view.
 - O código de alarme de vazão (`ALM-VAZ-01`/`02`) segue a **direção** do desvio, não a severidade; a classificação única está em `classificarAlarmesAtivos` (`regrasNegocio.js`).
 - `docs_v2` tem trechos defasados (ex.: `fluxo-navegacao.md` cita `?view=operacional` e a tecla Esc para a investigação; a view real é `?view=investigacao`, e o Esc só vale no modo dentro da página).

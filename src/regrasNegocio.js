@@ -255,6 +255,7 @@ function auditarLeiturasNivel(valores) {
     let estadoAnterior = null;
     for (let i = 0; i < validosComIndice.length; i++) {
       const v = validosComIndice[i].val;
+      // TODO: [TEMPO_REAL] - usar o nivelAtencao configurado do reservatório em vez do 60% fixo.
       const estadoAtual = v < 60 ? "ANORMAL" : "NORMAL";
       if (estadoAnterior !== null && estadoAtual !== estadoAnterior) {
         transicoes++;
@@ -269,45 +270,57 @@ function auditarLeiturasNivel(valores) {
   return { status: "Normal", motivo: "Auditoria contínua aprovada" };
 }
 
+// TODO: [TEMPO_REAL] - As duas regras abaixo ficam DESLIGADAS enquanto os dados forem os arquivos
+// históricos (6 leituras de madrugada por dia). Com esse formato elas geram alarmes falsos (nos dados
+// de 2026: ~6% de reservatório-dia virariam "Inconsistente" e ~7,6% mudariam para Atenção/Crítico,
+// inclusive reservatórios cheios). Ligar e calibrar com telemetria real antes de habilitar.
+//
+// AUDITORIA_SENSOR_ATIVA: auditoria do sensor (auditarLeiturasNivel) e valores fora de 0-110% ou
+// ausência total de leituras resultando em "Inconsistente".
+const AUDITORIA_SENSOR_ATIVA = false;
+// COMPARACAO_NIVEL_MEDIO_ATIVA: variação do nível médio contra a média histórica
+// (nivelMedioAtencao / nivelMedioCritico do reservatório).
+const COMPARACAO_NIVEL_MEDIO_ATIVA = false;
+
 function avaliarStatusNivel(valores, idReservatorio, referenciaMedia) {
   const config = obterConfiguracaoReservatorio(idReservatorio);
   if (config.emManutencao) return "Manutenção";
 
-  const auditoria = auditarLeiturasNivel(valores);
-  if (auditoria.status === "Inconsistente") {
-    return "Inconsistente";
-  }
-
-  if (!Array.isArray(valores) || valores.length === 0) {
-    return "Inconsistente";
+  if (AUDITORIA_SENSOR_ATIVA) {
+    if (auditarLeiturasNivel(valores).status === "Inconsistente") {
+      return "Inconsistente";
+    }
+    if (!Array.isArray(valores) || valores.length === 0) {
+      return "Inconsistente";
+    }
   }
 
   const leiturasFiltradas = filtrarLeiturasNivelValidas(valores);
-  const temInconsistencia = leiturasFiltradas.includes("INCONSISTENTE");
-  const ausenciaTotal = leiturasFiltradas.every((v) => v === null);
-
-  if (temInconsistencia || ausenciaTotal) {
+  if (
+    AUDITORIA_SENSOR_ATIVA &&
+    (leiturasFiltradas.includes("INCONSISTENTE") ||
+      leiturasFiltradas.every((v) => v === null))
+  ) {
     return "Inconsistente";
   }
 
+  // Última leitura válida (0-110%); valores inválidos são ignorados.
+  const nivelAtual = obterUltimaLeituraValida(leiturasFiltradas);
+  if (nivelAtual === null) return "Sem Dados";
+
   let statusInstantaneo = "Normal";
   if (config.alertaNivelAtivo) {
-    const nivelAtual = obterUltimaLeituraValida(valores);
-    if (nivelAtual !== null) {
-      if (nivelAtual < config.nivelCritico) statusInstantaneo = "Crítico";
-      else if (nivelAtual < config.nivelAtencao) statusInstantaneo = "Atenção";
-    } else {
-      statusInstantaneo = "Inconsistente";
-    }
+    if (nivelAtual < config.nivelCritico) statusInstantaneo = "Crítico";
+    else if (nivelAtual < config.nivelAtencao) statusInstantaneo = "Atenção";
   }
 
   let statusMedio = "Normal";
   if (
+    COMPARACAO_NIVEL_MEDIO_ATIVA &&
     config.alertaNivelMedioAtivo &&
     referenciaMedia !== null &&
     referenciaMedia !== undefined &&
-    referenciaMedia > 0 &&
-    Array.isArray(valores)
+    referenciaMedia > 0
   ) {
     const mediaAtual = calcularMediaValida(leiturasFiltradas);
     if (mediaAtual !== null) {
@@ -324,8 +337,6 @@ function avaliarStatusNivel(valores, idReservatorio, referenciaMedia) {
     return "Crítico";
   if (statusInstantaneo === "Atenção" || statusMedio === "Atenção")
     return "Atenção";
-  if (statusInstantaneo === "Inconsistente" || statusMedio === "Inconsistente")
-    return "Inconsistente";
   return "Normal";
 }
 

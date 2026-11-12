@@ -11,6 +11,9 @@ Este documento centraliza todas as diretrizes, observações arquiteturais e o c
 - [ ] **Média Móvel (Filtro de Ruído)**:
   - *Estado Atual*: Janela configurável em `src/regrasNegocio.js`.
   - *Ação em Tempo Real*: Ajustar conforme calibração dos sensores físicos em campo.
+- [ ] **Auditoria de sensor e comparação do nível médio (`src/regrasNegocio.js`)**:
+  - *Estado Atual*: `AUDITORIA_SENSOR_ATIVA` e `COMPARACAO_NIVEL_MEDIO_ATIVA` estão `false`. Com 6 leituras de madrugada por dia, as regras de sensor travado, degrau de 25 pontos, intermitência e variação do nível médio geram alarmes falsos nos dados atuais.
+  - *Ação em Tempo Real*: calibrar os limites com telemetria real, trocar a detecção de intermitência para usar o `nivelAtencao` do reservatório (hoje há 60% fixo), implementar o timeout por Δt de timestamp e então ligar as duas constantes. Há marcadores `TODO: [TEMPO_REAL]` no código.
 - [ ] **Vazão de Entrada (`vazaoEntrada`)**:
   - *Estado Atual*: Mapeado com fallback preditivo.
   - *Ação em Tempo Real*: Garantir que o payload do backend envie `reservatorio.leituras.vazaoEntrada` para alimentar o balanço hidráulico (*Net Flow*) com precisão milimétrica.

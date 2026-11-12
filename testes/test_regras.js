@@ -62,6 +62,91 @@ function executarTestesClassificacaoAlarmes() {
   assert.strictEqual(obterDirecaoDesvioVazao(undefined), 'estável');
 }
 
+function executarTestesStatusNivel() {
+  const raiz = path.join(__dirname, '..');
+  const fonte = fs.readFileSync(path.join(raiz, 'src/regrasNegocio.js'), 'utf8');
+
+  // Carrega regrasNegocio.js em um contexto isolado, com configuração por reservatório injetável
+  // e, opcionalmente, as chaves de tempo real trocadas (são const no código-fonte).
+  function carregar({ configuracoes = {}, salvos = {}, auditoria = false, nivelMedio = false } = {}) {
+    const contexto = {
+      window: { bancoDeDados: { configuracoes } },
+      localStorage: {
+        getItem: (chave) => (chave === 'nexo_hidrico_reservatorios_config' ? JSON.stringify(salvos) : null),
+      },
+      console, Map, Date,
+    };
+    const codigo = fonte
+      .replace('const AUDITORIA_SENSOR_ATIVA = false;', `const AUDITORIA_SENSOR_ATIVA = ${auditoria};`)
+      .replace('const COMPARACAO_NIVEL_MEDIO_ATIVA = false;', `const COMPARACAO_NIVEL_MEDIO_ATIVA = ${nivelMedio};`);
+    vm.runInNewContext(codigo, contexto);
+    return contexto;
+  }
+
+  // 1) Paridade: com as chaves desligadas e limites padrão (60/50), o resultado é idêntico ao da
+  // versão simples que rodava antes em app.js, em todos os dados históricos do repositório.
+  const padrao = carregar();
+  const simplesAntiga = (valores) => {
+    const validas = padrao.filtrarLeiturasNivelValidas(valores);
+    let atual = null;
+    for (let i = validas.length - 1; i >= 0; i--) {
+      const v = validas[i];
+      if (v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v))) { atual = Number(v); break; }
+    }
+    if (atual === null) return 'Sem Dados';
+    if (atual < 50) return 'Crítico';
+    if (atual < 60) return 'Atenção';
+    return 'Normal';
+  };
+  const pasta = path.join(raiz, 'dados_historicos');
+  let comparados = 0;
+  fs.readdirSync(pasta).filter((nome) => /^\d{4}_\d{2}\.json$/.test(nome)).forEach((nome) => {
+    const mes = JSON.parse(fs.readFileSync(path.join(pasta, nome), 'utf8'));
+    Object.values(mes.dias).forEach((dia) => {
+      Object.entries(dia.reservatorios || {}).forEach(([chave, reservatorio]) => {
+        const valores = reservatorio.leituras && reservatorio.leituras.nivel;
+        if (!Array.isArray(valores)) return;
+        // referência alta de propósito: com a comparação de nível médio desligada não pode influenciar
+        assert.strictEqual(padrao.avaliarStatusNivel(valores, chave, 10), simplesAntiga(valores), `${nome} ${chave}`);
+        comparados++;
+      });
+    });
+  });
+  assert.ok(comparados > 1000, 'a comparação deve cobrir o histórico');
+
+  // 2) Limites, alerta e manutenção por reservatório passam a valer.
+  const comLimites = carregar({ configuracoes: { 'R-X': { nivelAtencao: 40, nivelCritico: 20 } } });
+  assert.strictEqual(comLimites.avaliarStatusNivel([55], 'R-X'), 'Normal');
+  assert.strictEqual(comLimites.avaliarStatusNivel([35], 'R-X'), 'Atenção');
+  assert.strictEqual(comLimites.avaliarStatusNivel([15], 'R-X'), 'Crítico');
+  assert.strictEqual(comLimites.avaliarStatusNivel([55], 'R-OUTRO'), 'Atenção'); // padrão 60/50
+  // configuração salva no navegador tem precedência sobre a do arquivo
+  const salvo = carregar({ configuracoes: { 'R-X': { nivelAtencao: 40 } }, salvos: { 'R-X': { nivelAtencao: 70, nivelCritico: 50 } } });
+  assert.strictEqual(salvo.avaliarStatusNivel([65], 'R-X'), 'Atenção');
+  const manutencao = carregar({ configuracoes: { 'R-X': { emManutencao: true } } });
+  assert.strictEqual(manutencao.avaliarStatusNivel([10], 'R-X'), 'Manutenção');
+  const semAlerta = carregar({ configuracoes: { 'R-X': { alertaNivelAtivo: false } } });
+  assert.strictEqual(semAlerta.avaliarStatusNivel([10], 'R-X'), 'Normal');
+  assert.strictEqual(padrao.avaliarStatusNivel([null, null], 'R-X'), 'Sem Dados');
+  assert.strictEqual(padrao.avaliarStatusNivel([70, 8204], 'R-X'), 'Normal'); // ignora valor inválido
+
+  // 3) Auditoria do sensor (desligada hoje): quando ligada, volta a funcionar.
+  const travado = [60, 60, 60, 60, 60, 60];
+  assert.strictEqual(padrao.avaliarStatusNivel(travado, 'R-X'), 'Normal');
+  const comAuditoria = carregar({ auditoria: true });
+  assert.strictEqual(comAuditoria.avaliarStatusNivel(travado, 'R-X'), 'Inconsistente');
+  assert.strictEqual(comAuditoria.avaliarStatusNivel([39.8, 83.2, 85.9, 88.5, 91.6, 92.4], 'R-X'), 'Inconsistente');
+  assert.strictEqual(comAuditoria.avaliarStatusNivel([null, null], 'R-X'), 'Inconsistente');
+  assert.strictEqual(comAuditoria.avaliarStatusNivel([70, 71, 8204, 72, 73, 74], 'R-X'), 'Inconsistente');
+
+  // 4) Comparação do nível médio (desligada hoje): quando ligada, compara com a média histórica.
+  const serie = [90.7, 89.2, 88, 86.4, 85.9, 84];
+  assert.strictEqual(padrao.avaliarStatusNivel(serie, 'R-X', 46.9), 'Normal');
+  const comMedia = carregar({ nivelMedio: true });
+  assert.strictEqual(comMedia.avaliarStatusNivel(serie, 'R-X', 46.9), 'Crítico'); // variação muito acima de 25%
+  assert.strictEqual(comMedia.avaliarStatusNivel(serie, 'R-X', 80), 'Normal');
+}
+
 function executarTestesRegras() {
   console.log("-> Executando testes de Regras de Negócio e Roteamento de Configuração...");
   
@@ -85,6 +170,7 @@ function executarTestesRegras() {
   });
   
   executarTestesClassificacaoAlarmes();
+  executarTestesStatusNivel();
 
   console.log("✓ Regras de Negócio e Roteamento: Todos os testes passaram!");
 }

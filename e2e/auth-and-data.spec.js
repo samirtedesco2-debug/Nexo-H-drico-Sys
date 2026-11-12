@@ -446,7 +446,9 @@ test("reconhecimento do alarme persiste e sincroniza entre janelas", async ({ pa
   test.setTimeout(60_000);
   await context.addInitScript(() => {
     localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify({
-      "R01-A": { nivelAtencao: 101, nivelCritico: 100, alertaNivelAtivo: true }
+      // Nível do R01-A (~83%) entre 50 e 101: alarme de nível em "Atenção". A configuração por
+      // reservatório agora vale em avaliarStatusNivel; com nivelCritico: 100 o nível seria "Crítico".
+      "R01-A": { nivelAtencao: 101, nivelCritico: 50, alertaNivelAtivo: true }
     }));
   });
 

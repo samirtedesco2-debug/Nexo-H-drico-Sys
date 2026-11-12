@@ -9,6 +9,7 @@ O módulo de parametrização permite configurar parâmetros operacionais granul
 3. **Limites de Alerta de Nível**:
    - Nível de Atenção (%)
    - Nível Crítico (%)
+   - Os valores 60/50 hoje em `dados_historicos/config_reservatorios.json` são **provisórios** (padrão de criação), até chegarem os limites reais de cada reservatório. Quando forem informados, o status de nível passa a usá-los (e o alarme muda para os reservatórios cujo limite for diferente de 60/50). Valores salvos no navegador (`nexo_hidrico_reservatorios_config`) têm precedência sobre o arquivo.
 4. **Limites de Alerta de Vazão e Desvios (%)**:
    - Desvio de Entrada (Atenção / Crítico)
    - Desvio de Saída (Atenção / Crítico)

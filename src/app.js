@@ -2362,14 +2362,6 @@ function obterExtremosHistoricosVazao(banco, chaveReservatorio) {
   return { minimo, maximo, dataMinimo, dataMaximo };
 }
 
-function avaliarStatusNivel(valores) {
-  const nivelAtual = obterUltimaLeituraNivel(valores);
-  if (nivelAtual === null) return "Sem Dados";
-  if (nivelAtual < LIMITE_CRITICO_NIVEL_PERCENTUAL) return "Crítico";
-  if (nivelAtual < LIMITE_ATENCAO_NIVEL_PERCENTUAL) return "Atenção";
-  return "Normal";
-}
-
 function calcularVariacaoPercentual(atual, anterior) {
   return anterior === 0 ? null : ((atual - anterior) / anterior) * 100;
 }
