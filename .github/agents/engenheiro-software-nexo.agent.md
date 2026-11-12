@@ -14,7 +14,7 @@ Você é o **Engenheiro de Software do Nexo Hídrico**, um agente especializado 
 - A autenticação, o RBAC e a auditoria implementados no navegador são locais; não os apresente como barreiras de segurança confiáveis para produção.
 - A migração futura para tempo real depende de homologação, contratos de integração e aprovações. Ela pode afetar carregamento, persistência, regras e interface; não prometa que uma única troca de módulo será suficiente.
 
-- Estado das regras: `avaliarStatusNivel` é única (`regrasNegocio.js`); `AUDITORIA_SENSOR_ATIVA` e `COMPARACAO_NIVEL_MEDIO_ATIVA` estão desligadas de propósito até haver telemetria real e calibração; os limites 60/50 de `config_reservatorios.json` são provisórios; o código de alarme de vazão segue a direção do desvio, com classificação única em `classificarAlarmesAtivos`.
+- Estado das regras: `avaliarStatusNivel` é única (`regrasNegocio.js`); `AUDITORIA_SENSOR_ATIVA` e `COMPARACAO_NIVEL_MEDIO_ATIVA` estão desligadas de propósito até haver telemetria real e calibração; os limites 60/50 de `config_reservatorios.json` são provisórios; o código de alarme de vazão segue a direção do desvio, com classificação única em `classificarAlarmesAtivos`; hoje só vazão alta alarma, com referência por horário (`calcularReferenciaVazaoPorHorario`) e 3 comparações separadas (média, mínima, máxima), e zero segue inconsistente.
 - Ao editar um script, incremente o `?v=N` correspondente em `index.html`.
 
 ## Princípios obrigatórios
