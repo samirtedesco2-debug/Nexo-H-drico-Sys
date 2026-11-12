@@ -3015,10 +3015,10 @@ function unificarTaxonomiaEEmitirCausa(codigoAlarme, dadosReservatorio, contexto
     ? obterUltimaLeitura(leituras.vazao) 
     : (Array.isArray(leituras.vazao) ? leituras.vazao[leituras.vazao.length - 1] ?? null : null);
   
-  const ultimaLeituraTimestamp = contexto.ultimaAtualizacao || dadosReservatorio?.ultimaAtualizacao || null;
-  const statusComunicacao = contexto.possuiLeiturasAusentes
-    ? "Leituras ausentes (falha de telemetria)"
-    : (nivelAtual !== null || vazaoAtual !== null) ? "Online / Comunicando" : "Sem Comunicação / Inconsistente";
+  const atualizacaoDadosTimestamp = contexto.ultimaAtualizacao || dadosReservatorio?.ultimaAtualizacao || null;
+  const situacaoLeituras = contexto.possuiLeiturasAusentes
+    ? "Leituras ausentes no período"
+    : (nivelAtual !== null || vazaoAtual !== null) ? "Leituras presentes no período" : "Sem leituras válidas no período";
 
   return {
     taxonomia: {
@@ -3034,8 +3034,8 @@ function unificarTaxonomiaEEmitirCausa(codigoAlarme, dadosReservatorio, contexto
       nivelAtual: nivelAtual !== null ? `${Number(nivelAtual).toFixed(1)}%` : "N/A",
       vazaoAtual: vazaoAtual !== null ? `${vazaoAtual} L/s` : "N/A",
       // Texto no formato dos dados ("dd/mm/aaaa hh:mm"); não converter com Date (ambíguo).
-      ultimaLeitura: ultimaLeituraTimestamp ? String(ultimaLeituraTimestamp) : "N/A",
-      statusComunicacao: statusComunicacao
+      atualizacaoDados: atualizacaoDadosTimestamp ? String(atualizacaoDadosTimestamp) : "N/A",
+      situacaoLeituras
     },
     timestampInvestigacao: new Date().toISOString()
   };
@@ -3112,8 +3112,8 @@ ${blocoClassificacao}
 • Vazão Atual: ${vazaoAtual} L/s
 • Vazão Média de Referência (${obterRotuloBaseComparacao(baseComparacao)}): ${refVazaoMedia.toFixed(1)} L/s
 • Delta Comparativo: ${deltaVazao >= 0 ? '+' : ''}${deltaVazao.toFixed(1)} L/s (${variacaoPercentualVazao}%)
-• Status de Comunicação: ${dadosUnificados.causaRaiz.statusComunicacao}
-• Última Leitura: ${dadosUnificados.causaRaiz.ultimaLeitura}
+• Situação das Leituras: ${dadosUnificados.causaRaiz.situacaoLeituras}
+• Atualização dos Dados (boletim): ${dadosUnificados.causaRaiz.atualizacaoDados}
 
 [DIAGNÓSTICO TÉCNICO & RECOMENDAÇÃO]
 ${recomendacao}
@@ -3244,8 +3244,8 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
   const metaTaxonomia = criarElementoTexto("div", "inv-meta-grid");
   metaTaxonomia.append(
     criarRotuloValor("TAG:", dadosUnificados.causaRaiz.tagReservatorio),
-    criarRotuloValor("Status Com.:", dadosUnificados.causaRaiz.statusComunicacao),
-    criarRotuloValor("Última Leitura:", dadosUnificados.causaRaiz.ultimaLeitura),
+    criarRotuloValor("Leituras:", dadosUnificados.causaRaiz.situacaoLeituras),
+    criarRotuloValor("Atualização dos dados (boletim):", dadosUnificados.causaRaiz.atualizacaoDados),
     criarRotuloValor("Investigado em:", new Date(dadosUnificados.timestampInvestigacao).toLocaleString("pt-BR")),
   );
   taxonomiaDiv.append(metaTaxonomia);
