@@ -177,6 +177,58 @@ function executarTestesValidacaoConfiguracao() {
   assert.deepStrictEqual(problemas({ alertaVazaoMediaAtivo: false, vazaoMediaAtencao: 90, vazaoMediaCritico: 10 }), []);
 }
 
+function executarTestesAutonomiaPreditiva() {
+  const regras = carregarRegrasNegocio();
+  const comConfig = (config) => {
+    return (reservatorio) => {
+      const ctx = { window: { bancoDeDados: null }, localStorage: { getItem: (k) => (k === 'nexo_hidrico_reservatorios_config' ? JSON.stringify({ R1: config }) : null) }, console, Map, Date };
+      require('vm').runInNewContext(require('fs').readFileSync(require('path').join(__dirname, '../src/regrasNegocio.js'), 'utf8'), ctx);
+      return JSON.parse(JSON.stringify(ctx.calcularAutonomiaEProjecao(reservatorio, 'R1')));
+    };
+  };
+  const res = (nivel) => ({ leituras: { nivel, vazao: [] } });
+
+  // Capacidade ausente ou inválida: sem número inventado, autonomia N/A.
+  for (const capacidadeUtil of ['', undefined, 'abc', 0, -10]) {
+    const r = comConfig({ capacidadeUtil })(res([70, 65, 60]));
+    assert.strictEqual(r.capacidadeAusente, true, `capacidade ${capacidadeUtil}`);
+    assert.strictEqual(r.minutosAteCritico, null);
+    assert.strictEqual(r.statusPreditivo, 'Normal');
+    assert.ok(/N\/A/.test(r.mensagemPreditiva));
+  }
+  assert.strictEqual(regras.obterCapacidadeUtil({ capacidadeUtil: '1200' }), 1200);
+  assert.strictEqual(regras.obterCapacidadeUtil({ capacidadeUtil: '' }), null);
+
+  // Vazão ligada: série é só de saída; entrada desconhecida => pior caso, rotulado.
+  const comVazao = comConfig({ capacidadeUtil: 1000, possuiMedicaoVazao: true })({ leituras: { nivel: [80, 78, 75], vazao: [10, 10, 10] } });
+  assert.strictEqual(comVazao.entradaConsiderada, false);
+  assert.ok(/pior caso/.test(comVazao.avisoEntrada));
+  assert.ok(comVazao.vazaoLiquidaLs === 10, 'líquida = saída quando a entrada é desconhecida');
+  const semVazao = comConfig({ capacidadeUtil: 1000, possuiMedicaoVazao: false })(res([80, 78, 75]));
+  assert.strictEqual(semVazao.entradaConsiderada, true);
+  assert.strictEqual(semVazao.avisoEntrada, null);
+
+  // Limite de normalização vem da configuração, não de 60 fixo.
+  const sobe = comConfig({ capacidadeUtil: 1000, nivelAtencao: 70, nivelCritico: 40, nivelAlertaTempoAtencao: 70, nivelAlertaTempoCritico: 40 })(res([40, 45, 50]));
+  assert.ok(/\(70%\)/.test(sobe.mensagemPreditiva), sobe.mensagemPreditiva);
+
+  // Sem leituras de nível: sem dados.
+  const semDados = comConfig({ capacidadeUtil: 1000 })(res([null, null]));
+  assert.strictEqual(semDados.tendencia, 'Sem Dados');
+  assert.strictEqual(semDados.minutosAteCritico, null);
+
+  // Nível subindo: tendência e estimativa para normalizar, sem status de risco.
+  const subindo = comConfig({ capacidadeUtil: 1000 })(res([40, 45, 50]));
+  assert.strictEqual(subindo.tendencia, 'Subindo');
+  assert.ok(subindo.minutosAteNormal > 0);
+  assert.strictEqual(subindo.statusPreditivo, 'Normal');
+
+  // Nível caindo rápido perto do limite: aponta risco.
+  const caindo = comConfig({ capacidadeUtil: 1000 })(res([80, 70, 62]));
+  assert.strictEqual(caindo.tendencia, 'Descendo');
+  assert.ok(caindo.minutosAteCritico >= 0);
+}
+
 function executarTestesRegras() {
   console.log("-> Executando testes de Regras de Negócio e Roteamento de Configuração...");
   
@@ -202,6 +254,7 @@ function executarTestesRegras() {
   executarTestesClassificacaoAlarmes();
   executarTestesStatusNivel();
   executarTestesValidacaoConfiguracao();
+  executarTestesAutonomiaPreditiva();
 
   console.log("✓ Regras de Negócio e Roteamento: Todos os testes passaram!");
 }

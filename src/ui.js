@@ -590,7 +590,8 @@ function criarPainelAutonomiaPreditiva(
   const nivelAlvo = obterUltimaLeituraNivel(reservatorio.leituras?.nivel);
   const vazaoAlvo = obterUltimaLeitura(reservatorio.leituras?.vazao) ?? 0;
   const configAlvo = obterConfiguracaoReservatorio(chave);
-  const capAlvo = configAlvo.capacidadeUtil !== "" && !isNaN(configAlvo.capacidadeUtil) ? Number(configAlvo.capacidadeUtil) : 5000;
+  const capacidadeAlvo = obterCapacidadeUtil(configAlvo);
+  const capAlvo = capacidadeAlvo === null ? "N/A" : capacidadeAlvo;
 
   const niveisValidos = (Array.isArray(reservatorio?.leituras?.nivel) ? reservatorio.leituras.nivel : [])
     .map(v => (v !== null && v !== undefined && v !== "" && Number.isFinite(Number(v)) ? Number(v) : null))
@@ -611,10 +612,24 @@ function criarPainelAutonomiaPreditiva(
   }
 
   let fallbackAlertHTML = "";
-  if (predAlvo && predAlvo.fallbackUsoApenasNivel) {
+  if (predAlvo && predAlvo.capacidadeAusente) {
+    fallbackAlertHTML = `
+      <div style="background: rgba(215,165,43,0.15); border: 1px solid #d7a52b; border-radius: 8px; padding: 12px 16px; font-size: 0.9rem; color: #d7a52b; display: flex; align-items: center; gap: 8px;">
+        <span>⚠️</span> <strong>Aviso:</strong> ${predAlvo.mensagemPreditiva}
+      </div>
+    `;
+  } else if (predAlvo && predAlvo.fallbackUsoApenasNivel) {
     fallbackAlertHTML = `
       <div style="background: rgba(215,165,43,0.15); border: 1px solid #d7a52b; border-radius: 8px; padding: 12px 16px; font-size: 0.9rem; color: #d7a52b; display: flex; align-items: center; gap: 8px;">
         <span>⚠️</span> <strong>Aviso:</strong> ${predAlvo.mensagemFallback}
+      </div>
+    `;
+  }
+
+  if (predAlvo && predAlvo.entradaConsiderada === false && predAlvo.avisoEntrada) {
+    fallbackAlertHTML += `
+      <div style="background: rgba(215,165,43,0.15); border: 1px solid #d7a52b; border-radius: 8px; padding: 12px 16px; font-size: 0.9rem; color: #d7a52b; display: flex; align-items: center; gap: 8px;">
+        <span>⚠️</span> <strong>Aviso:</strong> ${predAlvo.avisoEntrada}
       </div>
     `;
   }
@@ -651,7 +666,7 @@ function criarPainelAutonomiaPreditiva(
       <!-- Card 1: Reservatório -->
       <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
         <h4 style="margin: 0; font-size: 1rem; color: var(--text-color);">Status do Reservatório</h4>
-        <span style="font-size: 0.85rem; color: var(--muted-color);">Capacidade Útil: ${capAlvo} m³</span>
+        <span style="font-size: 0.85rem; color: var(--muted-color);">Capacidade Útil: ${capAlvo}${capacidadeAlvo === null ? "" : " m³"}</span>
         <div style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; text-align: center;">
           <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-color);">${nivelAlvo !== null ? nivelAlvo.toFixed(1) + '%' : 'N/A'}</div>
           <div style="font-size: 0.8rem; color: var(--muted-color); margin-top: 4px;">Nível Atual (Tendência: ${predAlvo?.tendencia || 'Estável'} ${predAlvo?.iconeTendencia || '→'})</div>
@@ -3060,7 +3075,8 @@ function gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) {
   const nome = reservatorio.nome || chave;
   const config = obterConfiguracaoReservatorio(chave);
   const tag = config.tag || chave;
-  const cap = config.capacidadeUtil || "5000";
+  const capacidadeOS = obterCapacidadeUtil(config);
+  const cap = capacidadeOS === null ? "N/A" : `${capacidadeOS} m³`;
   const horarios = dadosDoDia.horarios || [];
   const baseComparacao = document.getElementById("seletor-base-vazao")?.value || "dia_anterior";
 
@@ -3102,7 +3118,7 @@ function gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) {
 • Data/Hora da Emissão: ${new Date().toLocaleString('pt-BR')}
 • Data Investigada: ${dataSelecionada}
 • Reservatório / TAG: ${nome} (${tag})
-• Capacidade Útil: ${cap} m³
+• Capacidade Útil: ${cap}
 
 [CLASSIFICAÇÃO NORMATIVA (TAXONOMIA)]
 ${blocoClassificacao}
@@ -3180,9 +3196,7 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
         ? "var(--status-attention-color)"
         : "var(--text-color)";
   const configAlvo = obterConfiguracaoReservatorio(chave);
-  const capAlvo = configAlvo && configAlvo.capacidadeUtil !== "" && !isNaN(configAlvo.capacidadeUtil)
-    ? Number(configAlvo.capacidadeUtil)
-    : 5000;
+  const capacidadeAlvo = obterCapacidadeUtil(configAlvo);
   const predAlvo = calcularAutonomiaEProjecao(reservatorio, chave);
 
   const taxonomias = obterTaxonomiasDosAlarmes(alarmes, reservatorio, {
@@ -3209,7 +3223,7 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
   const cabecalho = criarElementoTexto("div", "inv-panel-head");
   cabecalho.append(
     criarElementoTexto("h3", "investigation-section-title inv-panel-title", "Informações do Alarme Ativado e Diagnóstico Unificado"),
-    criarElementoTexto("span", "inv-pill", `Capacidade Útil: ${capAlvo} m³`),
+    criarElementoTexto("span", "inv-pill", `Capacidade Útil: ${capacidadeAlvo === null ? "N/A" : `${capacidadeAlvo} m³`}`),
   );
   painel.appendChild(cabecalho);
 

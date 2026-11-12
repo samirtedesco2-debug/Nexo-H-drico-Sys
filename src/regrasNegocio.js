@@ -629,12 +629,33 @@ function calcularMediaMovel(valores, janela = 3) {
   });
 }
 
+// Capacidade útil (m³) configurada, ou null se ausente/inválida. Sem valor padrão:
+// um número inventado geraria autonomias falsas.
+function obterCapacidadeUtil(config) {
+  const bruto = config?.capacidadeUtil;
+  if (bruto === "" || bruto === null || bruto === undefined) return null;
+  const valor = Number(bruto);
+  return Number.isFinite(valor) && valor > 0 ? valor : null;
+}
+
 function calcularAutonomiaEProjecao(reservatorio, idReservatorio) {
   const config = obterConfiguracaoReservatorio(idReservatorio);
-  const capacidade =
-    config.capacidadeUtil !== "" && !isNaN(config.capacidadeUtil)
-      ? Number(config.capacidadeUtil)
-      : 5000;
+  const capacidade = obterCapacidadeUtil(config);
+  if (capacidade === null) {
+    return {
+      statusPreditivo: "Normal",
+      mensagemPreditiva: "Capacidade útil não configurada: autonomia indisponível (N/A).",
+      tendencia: "Sem Dados",
+      iconeTendencia: "→",
+      minutosAteCritico: null,
+      minutosAteAtencao: null,
+      minutosAteNormal: null,
+      possuiMedicaoVazao: config.possuiMedicaoVazao,
+      fallbackUsoApenasNivel: false,
+      capacidadeAusente: true,
+      confiabilidade: "Baixa",
+    };
+  }
 
   const niveisRaw = reservatorio?.leituras?.nivel;
   const nivelAtual = obterUltimaLeituraValida(niveisRaw);
@@ -690,14 +711,23 @@ function calcularAutonomiaEProjecao(reservatorio, idReservatorio) {
 
   let fallbackUsoApenasNivel = false;
   let mensagemFallback = null;
+  // A série de vazão das planilhas é somente de saída; a entrada não é medida até a migração.
+  // Com vazão ligada, a conta é a de pior caso (sem reposição) e deve ser apresentada assim.
+  let entradaConsiderada = true;
+  let avisoEntrada = null;
 
   let vazaoLiquidaM3h = 0;
   let vazaoLiquidaLs = 0;
 
   if (config.possuiMedicaoVazao && temDadosVazao) {
     const saida = vazaoAtual > 0 ? vazaoAtual : 0;
-    const entrada = 0;
-    vazaoLiquidaLs = saida - entrada; // Positivo = esvaziando, Negativo = enchendo
+    // Entrada desconhecida (null): não é zero medido. Estimativa = saída, sem reposição.
+    const entrada = null;
+    vazaoLiquidaLs = saida - (entrada ?? 0); // Positivo = esvaziando, Negativo = enchendo
+    entradaConsiderada = false;
+    avisoEntrada =
+      "Estimativa sem considerar a entrada de água (pior caso): a vazão disponível é somente de saída.";
+    if (confiabilidade === "Alta") confiabilidade = "Média";
     vazaoLiquidaM3h = vazaoLiquidaLs * 3.6;
   } else {
     if (config.possuiMedicaoVazao && !temDadosVazao) {
@@ -729,13 +759,13 @@ function calcularAutonomiaEProjecao(reservatorio, idReservatorio) {
   let minutosAteAtencao = null;
   let minutosAteNormal = null;
 
-  if (vazaoLiquidaM3h < 0 && nivelAtual < 60) {
-    const volNormal = (capacidade * (60 - nivelAtual)) / 100;
+  if (vazaoLiquidaM3h < 0 && nivelAtual < config.nivelAtencao) {
+    const volNormal = (capacidade * (config.nivelAtencao - nivelAtual)) / 100;
     const taxaEnchimentoM3h = Math.abs(vazaoLiquidaM3h);
     if (taxaEnchimentoM3h > 0) {
       const horasNormal = volNormal / taxaEnchimentoM3h;
       minutosAteNormal = Math.round(horasNormal * 60);
-      mensagemPreditiva = `Nível subindo (${iconeTendencia}). Estimativa para normalizar (60%): ~${minutosAteNormal} min`;
+      mensagemPreditiva = `Nível subindo (${iconeTendencia}). Estimativa para normalizar (${config.nivelAtencao}%): ~${minutosAteNormal} min`;
     }
   } else if (vazaoLiquidaM3h > 0) {
     const volAtencao = capacidade * (config.nivelAlertaTempoAtencao / 100);
@@ -784,5 +814,8 @@ function calcularAutonomiaEProjecao(reservatorio, idReservatorio) {
     possuiMedicaoVazao: config.possuiMedicaoVazao,
     fallbackUsoApenasNivel,
     mensagemFallback,
+    entradaConsiderada,
+    avisoEntrada,
+    confiabilidade,
   };
 }
