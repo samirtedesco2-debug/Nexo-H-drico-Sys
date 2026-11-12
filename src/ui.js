@@ -452,39 +452,8 @@ function criarPainelInformativoAlarme(
   nivelStatus.className = `badge-status ${obterClasseStatus(statusNivel)}`;
   nivelStatus.textContent = statusNivel;
 
-  const classeRoscaNivel =
-    statusNivel === "Normal"
-      ? "status-normal"
-      : statusNivel === "Atenção"
-        ? "status-atencao"
-        : statusNivel === "Crítico"
-          ? "status-critico"
-          : "status-sem-dados";
-
-  const gaugeElement = document.createElement("div");
-  gaugeElement.className = "kpi-box kpi-level-gauge";
-  gaugeElement.setAttribute("role", "meter");
-  gaugeElement.setAttribute("aria-label", "Nível atual");
-  gaugeElement.setAttribute("aria-valuemin", "0");
-  gaugeElement.setAttribute("aria-valuemax", "100");
-  if (nivel !== null) {
-    gaugeElement.setAttribute("aria-valuenow", Math.min(nivel, 100));
-  }
+  const gaugeElement = criarMedidorNivel(nivel, statusNivel);
   gaugeElement.style.cssText = "grid-column: 1 / -1; justify-self: center; margin: 8px 0;";
-
-  const roscaSpan = document.createElement("span");
-  roscaSpan.className = `level-gauge ${classeRoscaNivel}`;
-  roscaSpan.style.setProperty("--nivel-atual", `${Math.min(Math.max(nivel ?? 0, 0), 100)}%`);
-
-  const conteudoGauge = document.createElement("span");
-  conteudoGauge.className = "level-gauge-content";
-  const strongGauge = document.createElement("strong");
-  strongGauge.textContent = nivel === null ? "N/A" : `${nivel.toFixed(1)}%`;
-  const smallGauge = document.createElement("small");
-  smallGauge.textContent = "Nível atual";
-  conteudoGauge.append(strongGauge, smallGauge);
-  roscaSpan.append(conteudoGauge);
-  gaugeElement.append(roscaSpan);
 
   const nivelDetalhe = document.createElement("p");
   nivelDetalhe.textContent =
@@ -2668,6 +2637,9 @@ window.abrirReservatorioMural = function(chave) {
   url.searchParams.set("view", "investigacao");
   url.searchParams.set("reservatorio", chave);
   url.searchParams.set("origem", "mural");
+  // Leva a data selecionada para a investigação mostrar o mesmo dia do mural.
+  const dataAtual = document.getElementById("seletor-data")?.value;
+  if (dataAtual) url.searchParams.set("data", dataAtual);
 
   const janelaExistente = window.nexoViewWindows?.investigacao;
   if (janelaExistente && !janelaExistente.closed) {
@@ -2807,6 +2779,10 @@ function atualizarHeaderEnxutoInvestigacao(
   dataSelecionada,
   dadosDoDia,
 ) {
+  // Na janela dedicada (?view=investigacao) o cabeçalho é de renderizarPainelInvestigacaoDedicado;
+  // este renderizador antigo usa o mesmo id e sobrescreveria o conteúdo.
+  if (new URLSearchParams(window.location.search).get("view") === "investigacao") return;
+
   let headerEnxuto = document.getElementById("cco-lean-investigation-header");
   const resumoOperacional = painelOperacional.querySelector(".operational-brief");
   const filtroDeReservatorio = filtroSelecionado.startsWith("reservatorio:");
@@ -3013,7 +2989,13 @@ function criarRotuloValor(rotulo, valor) {
   return span;
 }
 
-function unificarTaxonomiaEEmitirCausa(codigoAlarme, dadosReservatorio) {
+/**
+ * @param {string|null} codigoAlarme
+ * @param {object} dadosReservatorio
+ * @param {{tag?: string, ultimaAtualizacao?: string}} [contexto] - tag configurada e
+ *   timestamp do dia (a data da última atualização fica no dia, não no reservatório).
+ */
+function unificarTaxonomiaEEmitirCausa(codigoAlarme, dadosReservatorio, contexto = {}) {
   const tax = window.taxonomiaAlarmes || {};
   const metaTaxonomia = codigoAlarme === null
     ? {
@@ -3029,7 +3011,7 @@ function unificarTaxonomiaEEmitirCausa(codigoAlarme, dadosReservatorio) {
         template: "Alarme sem template definido na taxonomia."
       };
 
-  const tag = dadosReservatorio?.tag || dadosReservatorio?.nome || "TAG-DESCONHECIDA";
+  const tag = contexto.tag || dadosReservatorio?.tag || dadosReservatorio?.nome || "TAG-DESCONHECIDA";
   const leituras = dadosReservatorio?.leituras || {};
   const nivelAtual = typeof obterUltimaLeituraNivel === 'function' 
     ? obterUltimaLeituraNivel(leituras.nivel) 
@@ -3039,7 +3021,7 @@ function unificarTaxonomiaEEmitirCausa(codigoAlarme, dadosReservatorio) {
     ? obterUltimaLeitura(leituras.vazao) 
     : (Array.isArray(leituras.vazao) ? leituras.vazao[leituras.vazao.length - 1] ?? null : null);
   
-  const ultimaLeituraTimestamp = dadosReservatorio?.ultimaAtualizacao || null;
+  const ultimaLeituraTimestamp = contexto.ultimaAtualizacao || dadosReservatorio?.ultimaAtualizacao || null;
   const statusComunicacao = (nivelAtual !== null || vazaoAtual !== null) ? "Online / Comunicando" : "Sem Comunicação / Inconsistente";
 
   return {
@@ -3055,9 +3037,8 @@ function unificarTaxonomiaEEmitirCausa(codigoAlarme, dadosReservatorio) {
       nomeReservatorio: dadosReservatorio?.nome || "Reservatório",
       nivelAtual: nivelAtual !== null ? `${Number(nivelAtual).toFixed(1)}%` : "N/A",
       vazaoAtual: vazaoAtual !== null ? `${vazaoAtual} L/s` : "N/A",
-      ultimaLeitura: ultimaLeituraTimestamp
-        ? new Date(ultimaLeituraTimestamp).toLocaleString('pt-BR')
-        : "N/A",
+      // Texto no formato dos dados ("dd/mm/aaaa hh:mm"); não converter com Date (ambíguo).
+      ultimaLeitura: ultimaLeituraTimestamp ? String(ultimaLeituraTimestamp) : "N/A",
       statusComunicacao: statusComunicacao
     },
     timestampInvestigacao: new Date().toISOString()
@@ -3086,7 +3067,10 @@ function gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) {
   const deltaVazao = vazaoAtual - refVazaoMedia;
   const variacaoPercentualVazao = refVazaoMedia > 0 ? ((deltaVazao / refVazaoMedia) * 100).toFixed(1) : "0.0";
 
-  const dadosUnificados = unificarTaxonomiaEEmitirCausa(codigoAlarme, reservatorio);
+  const dadosUnificados = unificarTaxonomiaEEmitirCausa(codigoAlarme, reservatorio, {
+    tag,
+    ultimaAtualizacao: dadosDoDia.ultimaAtualizacao,
+  });
   const recomendacao = dadosUnificados.taxonomia.ativo
     ? `O sistema detectou desvio operacional em ${nome}. Recomenda-se envio imediato de equipe de campo para verificação de macromedição, telemetria e manobras hidráulicas pertinentes.`
     : `Nenhum desvio operacional ativo em ${nome} no momento da emissão. Registro apenas para acompanhamento.`;
@@ -3103,8 +3087,8 @@ function gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) {
 • Código: ${dadosUnificados.taxonomia.codigo}
 • Categoria: ${dadosUnificados.taxonomia.categoria}
 • Severidade: ${dadosUnificados.taxonomia.severidade}
-• Diagnóstico: ${dadosUnificados.taxonomia.template}
-
+${dadosUnificados.taxonomia.template && dadosUnificados.taxonomia.template !== dadosUnificados.taxonomia.categoria ? `• Diagnóstico: ${dadosUnificados.taxonomia.template}
+` : ""}
 [ANÁLISE COMPARATIVA DE VAZÃO & NÍVEL]
 • Nível Atual: ${nivel !== null ? Number(nivel).toFixed(1) + '%' : 'N/A'} (Status: ${statusNivel})
 • Vazão Atual: ${vazaoAtual} L/s
@@ -3118,10 +3102,54 @@ ${recomendacao}
 ========================================`;
 }
 
+/** Cria um elemento com classe e texto (textContent, nunca HTML). */
+function criarElementoTexto(tag, classe, texto) {
+  const elemento = document.createElement(tag);
+  if (classe) elemento.className = classe;
+  if (texto !== undefined && texto !== null) elemento.textContent = texto;
+  return elemento;
+}
+
+/**
+ * Medidor circular de nível (rosca) reutilizado pelo painel informativo do dashboard
+ * e pelo painel de investigação. Classes e animações vêm de styles.css.
+ */
+function criarMedidorNivel(nivel, statusNivel) {
+  const nivelNumerico = nivel === null || nivel === undefined ? null : Number(nivel);
+  const classeRoscaNivel =
+    statusNivel === "Normal"
+      ? "status-normal"
+      : statusNivel === "Atenção"
+        ? "status-atencao"
+        : statusNivel === "Crítico"
+          ? "status-critico"
+          : "status-sem-dados";
+
+  const medidor = document.createElement("div");
+  medidor.className = "kpi-box kpi-level-gauge";
+  medidor.setAttribute("role", "meter");
+  medidor.setAttribute("aria-label", "Nível atual");
+  medidor.setAttribute("aria-valuemin", "0");
+  medidor.setAttribute("aria-valuemax", "100");
+  if (nivelNumerico !== null) {
+    medidor.setAttribute("aria-valuenow", String(Math.min(nivelNumerico, 100)));
+  }
+
+  const rosca = criarElementoTexto("span", `level-gauge ${classeRoscaNivel}`);
+  rosca.style.setProperty("--nivel-atual", `${Math.min(Math.max(nivelNumerico ?? 0, 0), 100)}%`);
+
+  const conteudo = criarElementoTexto("span", "level-gauge-content");
+  conteudo.append(
+    criarElementoTexto("strong", "", nivelNumerico === null ? "N/A" : `${nivelNumerico.toFixed(1)}%`),
+    criarElementoTexto("small", "", "Nível atual"),
+  );
+  rosca.append(conteudo);
+  medidor.append(rosca);
+  return medidor;
+}
+
 function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSelecionada, baseComparacao, excObj) {
-  const painel = document.createElement("div");
-  painel.className = "activated-alarm-panel";
-  painel.style.cssText = "display: flex; flex-direction: column; gap: 20px; background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px;";
+  const painel = criarElementoTexto("div", "activated-alarm-panel inv-panel");
 
   const nivel = obterUltimaLeituraNivel(reservatorio.leituras?.nivel);
   const { statusNivel, alertaVazao, codigoAlarme } =
@@ -3139,7 +3167,11 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
     : 5000;
   const predAlvo = calcularAutonomiaEProjecao(reservatorio, chave);
 
-  const dadosUnificados = unificarTaxonomiaEEmitirCausa(codigoAlarme, reservatorio);
+  const dadosUnificados = unificarTaxonomiaEEmitirCausa(codigoAlarme, reservatorio, {
+    tag: configAlvo?.tag || chave,
+    ultimaAtualizacao: banco.historico?.[dataSelecionada]?.ultimaAtualizacao,
+  });
+  const alarmeAtivo = dadosUnificados.taxonomia.ativo;
   const mensagensPadrao = [];
   if (statusNivel !== "Normal") mensagensPadrao.push(`Alarme de Nível: ${statusNivel}`);
   if (alertaVazao?.status === "Crítico" || alertaVazao?.status === "Atenção") {
@@ -3148,77 +3180,67 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
   if (mensagensPadrao.length === 0) mensagensPadrao.push("Nível e vazão operando dentro da normalidade.");
   const mensagens = excObj?.mensagens?.length ? excObj.mensagens : mensagensPadrao;
 
-  const header = document.createElement("div");
-  header.style.cssText = "display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;";
-  const tituloHeader = document.createElement("h3");
-  tituloHeader.className = "investigation-section-title";
-  tituloHeader.style.cssText = "margin: 0; font-size: 1.1rem; color: var(--heading-color);";
-  tituloHeader.textContent = "Informações do Alarme Ativado e Diagnóstico Unificado";
+  // Cores dinâmicas de severidade entram como variáveis CSS; o resto do visual é do styles.css.
+  if (excObj) {
+    painel.style.setProperty("--inv-bg", excObj.bg);
+    painel.style.setProperty("--inv-cor", excObj.cor);
+  }
 
-  const capBadge = document.createElement("span");
-  capBadge.style.cssText = "font-size: 0.85rem; padding: 4px 12px; background: var(--surface-inset); border: 1px solid var(--border-color); border-radius: 12px; color: var(--muted-color);";
-  capBadge.textContent = `Capacidade Útil: ${capAlvo} m³`;
-  header.append(tituloHeader, capBadge);
-  painel.appendChild(header);
+  const cabecalho = criarElementoTexto("div", "inv-panel-head");
+  cabecalho.append(
+    criarElementoTexto("h3", "investigation-section-title inv-panel-title", "Informações do Alarme Ativado e Diagnóstico Unificado"),
+    criarElementoTexto("span", "inv-pill", `Capacidade Útil: ${capAlvo} m³`),
+  );
+  painel.appendChild(cabecalho);
 
-  const grupoMensagem = document.createElement("div");
-  grupoMensagem.style.cssText = "display: flex; flex-direction: column; gap: 10px;";
+  const grupoMensagem = criarElementoTexto("div", "inv-messages");
   mensagens.forEach((msg) => {
-    const item = document.createElement("div");
-    item.style.cssText = `background: ${excObj ? excObj.bg : 'var(--surface-inset)'}; border: 1px solid ${excObj ? excObj.cor : 'var(--border-color)'}; border-radius: 8px; padding: 14px 18px; font-size: 0.95rem; color: ${excObj ? excObj.cor : 'var(--text-color)'}; display: flex; align-items: center; gap: 12px; font-weight: 600;`;
-    const icone = document.createElement("span");
-    icone.style.fontSize = "1.2rem";
-    icone.textContent = dadosUnificados.taxonomia.ativo ? "🚨" : "✅";
-    const texto = document.createElement("span");
-    texto.textContent = msg;
-    item.append(icone, texto);
+    const item = criarElementoTexto("div", "inv-message");
+    item.append(
+      criarElementoTexto("span", "inv-message-icon", alarmeAtivo ? "🚨" : "✅"),
+      criarElementoTexto("span", "", msg),
+    );
     grupoMensagem.appendChild(item);
   });
   painel.appendChild(grupoMensagem);
 
-  const taxonomiaUnificadaDiv = document.createElement("div");
-  taxonomiaUnificadaDiv.style.cssText = "background: var(--surface-inset); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; font-size: 0.9rem;";
+  const taxonomia = dadosUnificados.taxonomia;
+  const taxonomiaDiv = criarElementoTexto("div", "inv-taxonomia");
+  const linhaTaxonomia = criarElementoTexto("div", "inv-taxonomia-line");
+  linhaTaxonomia.append(
+    criarElementoTexto("span", "inv-taxonomia-name", `Taxonomia Oficial: ${taxonomia.codigo} (${taxonomia.categoria})`),
+    criarElementoTexto("span", "inv-severity-badge", taxonomia.severidade),
+  );
+  taxonomiaDiv.append(linhaTaxonomia);
 
-  const linhaTaxonomia = document.createElement("div");
-  linhaTaxonomia.style.cssText = "display: flex; justify-content: space-between; align-items: center;";
+  // O template da taxonomia hoje repete a categoria; só mostra quando acrescenta informação.
+  if (taxonomia.template && taxonomia.template !== taxonomia.categoria) {
+    const blocoTemplate = criarElementoTexto("div", "inv-template");
+    blocoTemplate.append(criarRotuloValor("Template:", taxonomia.template));
+    taxonomiaDiv.append(blocoTemplate);
+  }
 
-  const nomeTaxonomia = document.createElement("span");
-  nomeTaxonomia.style.cssText = "font-weight: 700; color: var(--accent-color);";
-  nomeTaxonomia.textContent = `Taxonomia Oficial: ${dadosUnificados.taxonomia.codigo} (${dadosUnificados.taxonomia.categoria})`;
-
-  const severidadeTaxonomia = document.createElement("span");
-  severidadeTaxonomia.style.cssText = `background: ${excObj ? excObj.bg : 'var(--surface-bg)'}; color: ${excObj ? excObj.cor : 'var(--text-color)'}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;`;
-  severidadeTaxonomia.textContent = dadosUnificados.taxonomia.severidade;
-
-  linhaTaxonomia.append(nomeTaxonomia, severidadeTaxonomia);
-
-  const templateTaxonomia = document.createElement("div");
-  templateTaxonomia.style.color = "var(--text-color)";
-  templateTaxonomia.append(criarRotuloValor("Template:", dadosUnificados.taxonomia.template));
-
-  const metaTaxonomia = document.createElement("div");
-  metaTaxonomia.style.cssText = "border-top: 1px dashed var(--border-color); padding-top: 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 0.82rem; color: var(--muted-color);";
+  const metaTaxonomia = criarElementoTexto("div", "inv-meta-grid");
   metaTaxonomia.append(
     criarRotuloValor("TAG:", dadosUnificados.causaRaiz.tagReservatorio),
     criarRotuloValor("Status Com.:", dadosUnificados.causaRaiz.statusComunicacao),
     criarRotuloValor("Última Leitura:", dadosUnificados.causaRaiz.ultimaLeitura),
-    criarRotuloValor("Investigado em:", new Date(dadosUnificados.timestampInvestigacao).toLocaleString('pt-BR')),
+    criarRotuloValor("Investigado em:", new Date(dadosUnificados.timestampInvestigacao).toLocaleString("pt-BR")),
   );
+  taxonomiaDiv.append(metaTaxonomia);
 
-  const btnCopiarOS = document.createElement("button");
+  const rotuloBotaoOS = "📋 Copiar Ordem de Serviço (OS)";
+  const btnCopiarOS = criarElementoTexto("button", "inv-btn inv-btn--primary", rotuloBotaoOS);
   btnCopiarOS.type = "button";
-  btnCopiarOS.textContent = "📋 Copiar Ordem de Serviço (OS)";
-  btnCopiarOS.style.cssText = "padding: 10px 18px; background: var(--accent-color); color: #fff; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px var(--shadow-color); width: fit-content;";
-
-  const restaurarBotaoOS = () => {
-    btnCopiarOS.textContent = "📋 Copiar Ordem de Serviço (OS)";
-    btnCopiarOS.style.background = "var(--accent-color)";
+  const definirEstadoBotaoOS = (texto, estado) => {
+    btnCopiarOS.textContent = texto;
+    btnCopiarOS.classList.toggle("is-success", estado === "sucesso");
+    btnCopiarOS.classList.toggle("is-error", estado === "erro");
   };
 
   btnCopiarOS.addEventListener("click", async () => {
     try {
-      const payloadOS = gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco);
-      const textoParaCopiar = String(payloadOS ?? "");
+      const textoParaCopiar = String(gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) ?? "");
 
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(textoParaCopiar);
@@ -3230,94 +3252,49 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
         area.style.left = "-9999px";
         document.body.appendChild(area);
         area.select();
-        document.execCommand("copy");
+        const copiou = document.execCommand("copy");
         document.body.removeChild(area);
+        if (!copiou) throw new Error("execCommand('copy') não concluiu a cópia.");
       }
 
-      btnCopiarOS.textContent = "✅ OS Copiada com Sucesso!";
-      btnCopiarOS.style.background = "var(--status-normal-color)";
-      setTimeout(restaurarBotaoOS, 3000);
+      definirEstadoBotaoOS("✅ OS Copiada com Sucesso!", "sucesso");
     } catch (err) {
       console.error("Erro ao copiar OS:", err);
-      btnCopiarOS.textContent = "⚠️ Falha ao copiar a OS";
-      btnCopiarOS.style.background = "var(--status-critical-color)";
-      setTimeout(restaurarBotaoOS, 3000);
+      definirEstadoBotaoOS("⚠️ Falha ao copiar a OS", "erro");
     }
+    setTimeout(() => definirEstadoBotaoOS(rotuloBotaoOS, null), 3000);
   });
+  taxonomiaDiv.append(btnCopiarOS);
+  painel.appendChild(taxonomiaDiv);
 
-  taxonomiaUnificadaDiv.append(linhaTaxonomia, templateTaxonomia, metaTaxonomia, btnCopiarOS);
-  painel.appendChild(taxonomiaUnificadaDiv);
+  const cardsGrid = criarElementoTexto("div", "inv-cards");
 
-  const cardsGrid = document.createElement("div");
-  cardsGrid.style.cssText = "display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-items: center;";
-
-  const medidorWrap = document.createElement("div");
-  medidorWrap.style.cssText = "background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;";
-
-  const medidorTitulo = document.createElement("h4");
-  medidorTitulo.style.cssText = "margin: 0; font-size: 1rem; color: var(--text-color); width: 100%; text-align: left;";
-  medidorTitulo.textContent = "Medidor de Nível";
-
-  const gauge = document.createElement("div");
-  gauge.className = "kpi-box kpi-level-gauge";
-  gauge.setAttribute("role", "meter");
-  gauge.setAttribute("aria-label", "Nível atual");
-  gauge.setAttribute("aria-valuemin", "0");
-  gauge.setAttribute("aria-valuemax", "100");
-  if (nivel !== null) gauge.setAttribute("aria-valuenow", String(Math.min(nivel, 100)));
-
-  const classeRoscaNivel =
-    statusNivel === "Normal"
-      ? "status-normal"
+  const medidorWrap = criarElementoTexto("div", "inv-card inv-card--center");
+  const statusGauge = criarElementoTexto("span", "inv-gauge-status", "Status: ");
+  const statusGaugeValor = criarElementoTexto("strong", "inv-gauge-status-value", statusNivel);
+  statusGaugeValor.style.color =
+    statusNivel === "Crítico"
+      ? "var(--status-critical-color)"
       : statusNivel === "Atenção"
-        ? "status-atencao"
-        : statusNivel === "Crítico"
-          ? "status-critico"
-          : "status-sem-dados";
+        ? "var(--status-attention-color)"
+        : statusNivel === "Normal"
+          ? "var(--status-normal-color)"
+          : "var(--muted-color)";
+  statusGauge.append(statusGaugeValor);
+  medidorWrap.append(
+    criarElementoTexto("h4", "inv-card-title", "Medidor de Nível"),
+    criarMedidorNivel(nivel, statusNivel),
+    statusGauge,
+  );
 
-  const gaugeSpan = document.createElement("span");
-  gaugeSpan.className = `level-gauge ${classeRoscaNivel}`;
-  gaugeSpan.style.setProperty("--nivel-atual", `${Math.min(Math.max(nivel ?? 0, 0), 100)}%`);
+  const paramsWrap = criarElementoTexto("div", "inv-card");
+  const paramsLista = criarElementoTexto("div", "inv-params");
 
-  const gaugeContent = document.createElement("span");
-  gaugeContent.className = "level-gauge-content";
-  const gaugeValor = document.createElement("strong");
-  gaugeValor.textContent = nivel === null ? "N/A" : `${Number(nivel).toFixed(1)}%`;
-  const gaugeRotulo = document.createElement("small");
-  gaugeRotulo.textContent = "Nível atual";
-  gaugeContent.append(gaugeValor, gaugeRotulo);
-  gaugeSpan.appendChild(gaugeContent);
-  gauge.appendChild(gaugeSpan);
-
-  const statusGauge = document.createElement("span");
-  statusGauge.style.cssText = "font-size: 0.85rem; color: var(--muted-color);";
-  const statusGaugeValor = document.createElement("strong");
-  statusGaugeValor.style.color = excObj ? excObj.cor : "var(--text-color)";
-  statusGaugeValor.textContent = statusNivel;
-  statusGauge.append("Status: ", statusGaugeValor);
-
-  medidorWrap.append(medidorTitulo, gauge, statusGauge);
-
-  const paramsWrap = document.createElement("div");
-  paramsWrap.style.cssText = "background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px;";
-
-  const paramsTitulo = document.createElement("h4");
-  paramsTitulo.style.cssText = "margin: 0; font-size: 1rem; color: var(--text-color);";
-  paramsTitulo.textContent = "Parâmetros Operacionais Atuais";
-
-  const paramsLista = document.createElement("div");
-  paramsLista.style.cssText = "display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem;";
-
-  const criarItemParametro = (rotulo, valor, corValor, estiloExtra = "") => {
-    const item = document.createElement("div");
-    item.style.cssText = `display: flex; justify-content: space-between; padding: 8px 12px; background: var(--surface-inset); border-radius: 6px; ${estiloExtra}`;
-    const spanRotulo = document.createElement("span");
-    spanRotulo.style.color = "var(--muted-color)";
-    spanRotulo.textContent = rotulo;
-    const strongValor = document.createElement("strong");
+  const criarItemParametro = (rotulo, valor, corValor, classeExtra = "") => {
+    const item = criarElementoTexto("div", `inv-param ${classeExtra}`.trim());
+    const strongValor = criarElementoTexto("strong", "", valor);
     strongValor.style.color = corValor;
-    strongValor.textContent = valor;
-    item.append(spanRotulo, strongValor);
+    item.append(criarElementoTexto("span", "inv-param-label", rotulo), strongValor);
     return item;
   };
 
@@ -3331,109 +3308,140 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
     ),
     criarItemParametro(
       "Tendência:",
-      `${predAlvo?.tendencia || 'Estável'} ${predAlvo?.iconeTendencia || '→'}`,
+      `${predAlvo?.tendencia || "Estável"} ${predAlvo?.iconeTendencia || "→"}`,
       "var(--text-color)",
     ),
   );
-  if (predAlvo?.statusPreditivo && predAlvo.statusPreditivo !== 'Normal') {
-    const projPreditiva = criarItemParametro(
-      "Projeção Preditiva:",
-      predAlvo.mensagemPreditiva,
-      "var(--status-critical-color)",
-      "background: rgba(227,93,106,0.1); border: 1px solid var(--status-critical-color);",
+  if (predAlvo?.statusPreditivo && predAlvo.statusPreditivo !== "Normal") {
+    paramsLista.appendChild(
+      criarItemParametro("Projeção Preditiva:", predAlvo.mensagemPreditiva, "var(--status-critical-color)", "inv-param--alert"),
     );
-    projPreditiva.firstChild.style.cssText = "color: var(--status-critical-color); font-weight: 600;";
-    paramsLista.appendChild(projPreditiva);
   }
 
-  paramsWrap.append(paramsTitulo, paramsLista);
+  paramsWrap.append(criarElementoTexto("h4", "inv-card-title", "Parâmetros Operacionais Atuais"), paramsLista);
   cardsGrid.append(medidorWrap, paramsWrap);
   painel.appendChild(cardsGrid);
 
   return painel;
 }
 
-window.renderizarPainelInvestigacaoDedicado = function(chave, dataSelecionada, banco) {
-  const dadosDoDia = banco.historico[dataSelecionada];
-  if (!dadosDoDia || !dadosDoDia.reservatorios) return;
-  const reservatorio = dadosDoDia.reservatorios[chave];
-  if (!reservatorio) return;
+function mostrarInvestigacaoIndisponivel(headerEnxuto, containerAlarme, motivo) {
+  if (headerEnxuto) headerEnxuto.replaceChildren();
+  if (!containerAlarme) return;
+  const aviso = criarElementoTexto("div", "mural-empty-state");
+  aviso.setAttribute("role", "alert");
+  aviso.append(
+    criarElementoTexto("h3", "", "Investigação indisponível"),
+    criarElementoTexto("p", "", motivo),
+  );
+  containerAlarme.replaceChildren(aviso);
+}
 
+window.renderizarPainelInvestigacaoDedicado = function(chave, dataSelecionada, banco) {
   const painelInvestigacao = document.getElementById("painel-investigacao-alarme");
   if (!painelInvestigacao) return;
 
   const headerEnxuto = painelInvestigacao.querySelector("#cco-lean-investigation-header");
   const containerAlarme = painelInvestigacao.querySelector("#container-investigacao-alarme");
 
-  const exceccoes = typeof obterReservatoriosComAlertaOuExcecao === 'function' ? obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) : [];
-  const excObj = exceccoes.find(e => e.chave === chave);
+  const dadosDoDia = banco?.historico?.[dataSelecionada];
+  const reservatorio = dadosDoDia?.reservatorios?.[chave];
+  if (!reservatorio) {
+    mostrarInvestigacaoIndisponivel(
+      headerEnxuto,
+      containerAlarme,
+      !dadosDoDia?.reservatorios
+        ? `Não há dados carregados para a data ${dataSelecionada || "informada"}.`
+        : `O reservatório "${chave}" não foi encontrado nos dados de ${dataSelecionada}.`,
+    );
+    return;
+  }
+
+  const exceccoes = typeof obterReservatoriosComAlertaOuExcecao === "function"
+    ? obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada)
+    : [];
+  const excObj = exceccoes.find((e) => e.chave === chave);
+  const temAlarme = Boolean(excObj);
   const severidade = excObj ? excObj.severidade : "Normal";
   const bg = excObj ? excObj.bg : "var(--surface-inset)";
   const cor = excObj ? excObj.cor : "var(--text-color)";
-  const ackDet = typeof obterDetalhesAck === 'function' ? obterDetalhesAck(chave) : { reconhecido: false, texto: '🚨 Reconhecer', titulo: 'Reconhecer alarme' };
-  const btnAckId = `btn-ack-dedicated-${chave.replace(/[^a-zA-Z0-9]/g, '_')}`;
   const nomeRes = reservatorio.nome || chave;
 
   if (headerEnxuto) {
-    headerEnxuto.style.borderLeftWidth = "6px";
-    headerEnxuto.style.borderLeftStyle = "solid";
-    headerEnxuto.style.borderLeftColor = cor;
-    headerEnxuto.style.background = `linear-gradient(90deg, ${bg} 0%, var(--surface-bg) 35%)`;
+    headerEnxuto.style.setProperty("--inv-bg", bg);
+    headerEnxuto.style.setProperty("--inv-cor", cor);
+    headerEnxuto.classList.add("inv-header");
 
-    headerEnxuto.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; width: 100%;">
-        <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0;">
-          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <span style="font-size: 0.7rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">Inteligência Operacional · Investigação de Alarme Dedicada</span>
-            <span style="background: ${bg}; color: ${cor}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${severidade}</span>
-          </div>
-          <div>
-            <h2 id="cco-investigation-title" style="font-size: 1.25rem; color: var(--heading-color); margin: 0;">${nomeRes}</h2>
-          </div>
-          <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.82rem; color: var(--muted-color);">
-            <span><strong>Data investigada:</strong> <span id="cco-investigation-date">${dataSelecionada}</span></span>
-            <span><strong>Última atualização dos dados:</strong> <span id="cco-investigation-updated-at">${dadosDoDia.ultimaAtualizacao || 'Não informada'}</span></span>
-          </div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 12px; flex: 0 0 auto;">
-          <button type="button" id="btn-voltar-mural-investigacao" style="padding: 8px 16px; background: var(--surface-inset); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">
-            ← Voltar ao Mural
-          </button>
-          <button type="button" id="${btnAckId}" title="${ackDet.titulo}" style="padding: 8px 18px; background: ${ackDet.reconhecido ? 'rgba(115,191,105,0.2)' : 'var(--accent-color)'}; color: ${ackDet.reconhecido ? 'var(--status-normal-color)' : '#fff'}; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px var(--shadow-color);">
-            ${ackDet.reconhecido ? ackDet.texto : '🚨 Reconhecer'}
-          </button>
-        </div>
-      </div>
-    `;
+    const linha = criarElementoTexto("div", "inv-header-row");
 
-    const btnVoltar = headerEnxuto.querySelector("#btn-voltar-mural-investigacao");
-    if (btnVoltar) {
-      btnVoltar.addEventListener("click", () => {
-        window.close();
-      });
+    const bloco = criarElementoTexto("div", "inv-header-main");
+    const topo = criarElementoTexto("div", "inv-header-top");
+    topo.append(
+      criarElementoTexto("span", "inv-eyebrow", "Inteligência Operacional · Investigação de Alarme Dedicada"),
+      criarElementoTexto("span", "inv-severity-badge", severidade),
+    );
+    const titulo = criarElementoTexto("h2", "inv-title", nomeRes);
+    titulo.id = "cco-investigation-title";
+
+    const meta = criarElementoTexto("div", "inv-meta");
+    const spanData = criarElementoTexto("span", "", dataSelecionada);
+    spanData.id = "cco-investigation-date";
+    const spanAtualizacao = criarElementoTexto("span", "", dadosDoDia.ultimaAtualizacao || "Não informada");
+    spanAtualizacao.id = "cco-investigation-updated-at";
+    const itemData = criarElementoTexto("span", "");
+    itemData.append(criarElementoTexto("strong", "", "Data investigada:"), " ", spanData);
+    const itemAtualizacao = criarElementoTexto("span", "");
+    itemAtualizacao.append(criarElementoTexto("strong", "", "Última atualização dos dados:"), " ", spanAtualizacao);
+    meta.append(itemData, itemAtualizacao);
+    bloco.append(topo, titulo, meta);
+
+    const acoes = criarElementoTexto("div", "inv-actions");
+
+    // "Voltar ao Mural" só faz sentido quando esta janela foi aberta pelo mural (window.opener).
+    if (window.opener && !window.opener.closed) {
+      const btnVoltar = criarElementoTexto("button", "inv-btn", "← Voltar ao Mural");
+      btnVoltar.type = "button";
+      btnVoltar.id = "btn-voltar-mural-investigacao";
+      btnVoltar.addEventListener("click", () => window.close());
+      acoes.append(btnVoltar);
     }
 
-    const btnAck = headerEnxuto.querySelector(`#${CSS.escape(btnAckId)}`);
-    if (btnAck) {
+    // Reconhecimento só existe para reservatório com alarme/exceção ativo.
+    if (temAlarme) {
+      const ackDet = typeof obterDetalhesAck === "function"
+        ? obterDetalhesAck(chave)
+        : { reconhecido: false, texto: "🚨 Reconhecer", titulo: "Reconhecer alarme" };
+      const btnAck = criarElementoTexto(
+        "button",
+        `inv-btn ${ackDet.reconhecido ? "inv-btn--ack-done" : "inv-btn--primary"}`,
+        ackDet.reconhecido ? ackDet.texto : "🚨 Reconhecer",
+      );
+      btnAck.type = "button";
+      btnAck.id = `btn-ack-dedicated-${chave.replace(/[^a-zA-Z0-9]/g, "_")}`;
+      if (ackDet.titulo) btnAck.title = ackDet.titulo;
       btnAck.addEventListener("click", async () => {
         await toggleAckMural(chave, severidade, nomeRes);
         window.renderizarPainelInvestigacaoDedicado(chave, dataSelecionada, banco);
       });
+      acoes.append(btnAck);
     }
+
+    linha.append(bloco, acoes);
+    headerEnxuto.replaceChildren(linha);
   }
 
   if (containerAlarme) {
-    containerAlarme.innerHTML = "";
     const baseComparacao = document.getElementById("seletor-base-vazao")?.value || "dia_anterior";
-    const painelAlarmeAtivado = criarPainelAlarmeAtivado(
-      reservatorio,
-      chave,
-      dadosDoDia.horarios || [],
-      banco,
-      dataSelecionada,
-      baseComparacao,
-      excObj
+    containerAlarme.replaceChildren(
+      criarPainelAlarmeAtivado(
+        reservatorio,
+        chave,
+        dadosDoDia.horarios || [],
+        banco,
+        dataSelecionada,
+        baseComparacao,
+        excObj,
+      ),
     );
-    containerAlarme.appendChild(painelAlarmeAtivado);
   }
 };

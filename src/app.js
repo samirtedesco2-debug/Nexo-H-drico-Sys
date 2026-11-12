@@ -585,7 +585,10 @@ function inicializarDashboard() {
     if (painelInvestigacao) {
       painelInvestigacao.hidden = false;
       if (typeof window.renderizarPainelInvestigacaoDedicado === "function") {
-        window.renderizarPainelInvestigacaoDedicado(reservatorioInvestigado, ultimaDataDoBanco, banco);
+        // Data vinda da URL (mural); se ausente usa a última do banco. Data inexistente
+        // não é substituída: a investigação exibe o aviso de dados indisponíveis.
+        const dataInvestigada = parametrosView.get("data") || ultimaDataDoBanco;
+        window.renderizarPainelInvestigacaoDedicado(reservatorioInvestigado, dataInvestigada, banco);
       }
     }
   } else {
