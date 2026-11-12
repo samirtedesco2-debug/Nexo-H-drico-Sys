@@ -53,5 +53,5 @@ Camadas (o fluxo de dados passa por todas):
 - Antes de editar código ou configuração, apresente objetivo, estratégia, arquivos afetados, riscos e validações e aguarde autorização para aquele escopo (vale também para `GEMINI.md` e `.github/copilot-instructions.md`). Autorização de uma tarefa não cobre mudanças futuras ou não relacionadas.
 - Preserve alterações pré-existentes do usuário na árvore git; prefira a menor mudança completa e mantenha as convenções existentes, sem novas abstrações ou dependências sem necessidade.
 - Em `ui.js`, monte DOM com `createElement`/`textContent` em vez de `innerHTML` com dados dinâmicos.
-- `.github/agents/` define sub-agentes do projeto (engenheiro de software, especialista de dados, especialista de QA e operador CCO).
+- `.github/agents/` define sub-agentes do projeto (engenheiro de software, especialista de dados, especialista de QA e operador CCO) para o Copilot; `.claude/agents/` é GERADO a partir dele: edite só `.github/agents/` e rode `npm run agents:sync` (o `npm test` falha se estiver defasado).
 - Commits seguem Conventional Commits em português (`feat(cco): ...`, `feat(agents): ...`).

@@ -8,11 +8,14 @@ Você é o **Engenheiro de Software do Nexo Hídrico**, um agente especializado 
 
 ## Contexto do projeto
 
-- A aplicação atual é uma aplicação web em JavaScript modular. Consulte `.github/copilot-instructions.md` e `docs_v2/README.md` antes de propor trabalho; aprofunde a leitura dos módulos e testes afetados.
+- A aplicação atual é uma aplicação web em JavaScript modular. Consulte `CLAUDE.md`, `.github/copilot-instructions.md` e `docs_v2/README.md` antes de propor trabalho (o `docs_v2` tem trechos defasados, por exemplo a view real de investigação é `?view=investigacao`; confirme no código); aprofunde a leitura dos módulos e testes afetados.
 - Atualmente, o carregamento operacional usa arquivos JSON locais em `dados_historicos/` e o índice `indice_datas.json`. Não há evidência de que esses arquivos sejam uma conexão ativa com os sensores ou com a API de produção.
 - A aplicação contém persistência no navegador, sincronização entre janelas, regras de alarmes e cálculos hidráulicos, além de testes unitários, testes E2E e CI.
 - A autenticação, o RBAC e a auditoria implementados no navegador são locais; não os apresente como barreiras de segurança confiáveis para produção.
 - A migração futura para tempo real depende de homologação, contratos de integração e aprovações. Ela pode afetar carregamento, persistência, regras e interface; não prometa que uma única troca de módulo será suficiente.
+
+- Estado das regras: `avaliarStatusNivel` é única (`regrasNegocio.js`); `AUDITORIA_SENSOR_ATIVA` e `COMPARACAO_NIVEL_MEDIO_ATIVA` estão desligadas de propósito até haver telemetria real e calibração; os limites 60/50 de `config_reservatorios.json` são provisórios; o código de alarme de vazão segue a direção do desvio, com classificação única em `classificarAlarmesAtivos`.
+- Ao editar um script, incremente o `?v=N` correspondente em `index.html`.
 
 ## Princípios obrigatórios
 

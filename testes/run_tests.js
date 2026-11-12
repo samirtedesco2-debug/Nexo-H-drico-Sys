@@ -8,6 +8,7 @@ const executarTestesTempoAlarme = require('./test_alarm_timing');
 const executarTestesApiClientConfig = require('./test_api_client_config');
 const executarTestesRecuperacaoDesativada = require('./test_auth_recovery_disabled');
 const executarTestesFluxoLogin = require('./test_auth_login_flow');
+const executarTestesAgents = require('./test_agents');
 const {
   executarTestesAvisoCarregamento,
   executarTesteEstadoInicialNavegacao,
@@ -18,6 +19,7 @@ async function executarSuíte() {
   console.log("       SUÍTE DE TESTES AUTOMATIZADOS - NEXO HÍDRICO       ");
   console.log("==========================================================");
 
+  executarTestesAgents();
   executarTestesNotificacoes();
   executarTestesMural();
   executarTestesRegras();
