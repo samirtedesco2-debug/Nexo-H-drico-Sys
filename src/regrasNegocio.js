@@ -454,6 +454,50 @@ function resumirLeiturasEstruturadas(valores, horarios) {
   };
 }
 
+/**
+ * Referência de vazão POR HORÁRIO. Para cada horário (ex.: 00:15) junta os valores válidos desse
+ * horário nos dias da base (ex.: as últimas 4 segundas). Um horário só entra com pelo menos 2 valores.
+ * Dos horários incluídos saem: média de todos os valores, MENOR valor e MAIOR valor do período
+ * (extremos reais, não médias de mínimas/máximas). `horariosReferencia` lista os horários usados,
+ * para a comparação do dia olhar os mesmos horários.
+ * @param {{data: string, horarios?: string[], vazao: any[]}[]} dias dias da base (já filtrados pela base de comparação)
+ */
+function calcularReferenciaVazaoPorHorario(dias, horariosPadrao = []) {
+  const porHorario = new Map();
+  const datasComDados = new Set();
+  (dias || []).forEach(({ data, horarios, vazao }) => {
+    const rotulos = Array.isArray(horarios) && horarios.length ? horarios : horariosPadrao;
+    filtrarLeiturasVazaoValidas(vazao).forEach((valor, indice) => {
+      if (typeof valor !== "number") return;
+      const rotulo = rotulos[indice] ?? `Leitura ${indice + 1}`;
+      if (!porHorario.has(rotulo)) porHorario.set(rotulo, []);
+      porHorario.get(rotulo).push({ data, valor });
+      datasComDados.add(data);
+    });
+  });
+
+  const incluidos = [...porHorario.entries()].filter(([, itens]) => itens.length >= 2);
+  const valores = [];
+  const datasUsadas = new Set();
+  incluidos.forEach(([, itens]) =>
+    itens.forEach(({ data, valor }) => {
+      valores.push(valor);
+      datasUsadas.add(data);
+    }),
+  );
+  const tem = valores.length > 0;
+  return {
+    media: tem ? valores.reduce((total, valor) => total + valor, 0) / valores.length : null,
+    minimo: tem ? Math.min(...valores) : null,
+    maximo: tem ? Math.max(...valores) : null,
+    quantidade: datasComDados.size,
+    datas: [...datasComDados],
+    quantidades: { media: datasUsadas.size, minimo: datasUsadas.size, maximo: datasUsadas.size },
+    horariosReferencia: incluidos.map(([rotulo]) => rotulo),
+    valoresPorHorario: Object.fromEntries(incluidos.map(([rotulo, itens]) => [rotulo, itens.map(({ valor }) => valor)])),
+  };
+}
+
 function avaliarAlertaVazao(
   leiturasAtuais,
   referencia,
@@ -464,29 +508,58 @@ function avaliarAlertaVazao(
   if (config.emManutencao) {
     return { status: "Manutenção", indicadores: [], referencia };
   }
+  // Compara o dia só nos horários que entraram na referência (mesmo horário contra mesmo horário).
+  const horariosReferencia = Array.isArray(referencia?.horariosReferencia)
+    ? new Set(referencia.horariosReferencia)
+    : null;
+  const leiturasAlinhadas =
+    horariosReferencia && Array.isArray(leiturasAtuais)
+      ? leiturasAtuais.map((valor, indice) =>
+          horariosReferencia.has(horarios?.[indice] ?? `Leitura ${indice + 1}`) ? valor : null,
+        )
+      : leiturasAtuais;
   const atual = resumirLeiturasEstruturadas(
-    filtrarLeiturasVazaoValidas(leiturasAtuais),
+    filtrarLeiturasVazaoValidas(leiturasAlinhadas),
     horarios,
   );
+  // A referência usa só os horários em que o dia tem leitura válida (mesmo horário contra mesmo horário).
+  let referenciaComparavel = referencia;
+  if (referencia?.valoresPorHorario && Array.isArray(leiturasAtuais)) {
+    const valoresReferencia = [];
+    filtrarLeiturasVazaoValidas(leiturasAtuais).forEach((valor, indice) => {
+      if (typeof valor !== "number") return;
+      const rotulo = horarios?.[indice] ?? `Leitura ${indice + 1}`;
+      (referencia.valoresPorHorario[rotulo] ?? []).forEach((v) => valoresReferencia.push(v));
+    });
+    const tem = valoresReferencia.length > 0;
+    referenciaComparavel = {
+      ...referencia,
+      media: tem ? valoresReferencia.reduce((total, v) => total + v, 0) / valoresReferencia.length : null,
+      minimo: tem ? Math.min(...valoresReferencia) : null,
+      maximo: tem ? Math.max(...valoresReferencia) : null,
+    };
+  }
   const indicadores = [
     {
       rotulo: "Média",
       valorAtual: atual.media,
-      valorAnterior: referencia?.media ?? null,
+      valorAnterior: referenciaComparavel?.media ?? null,
       quantidadeReferencia: referencia?.quantidades.media ?? 0,
       classificaAlerta: true,
+      somenteAcimaDaReferencia: true,
     },
     {
       rotulo: "Mínima",
       valorAtual: atual.minimo,
-      valorAnterior: referencia?.minimo ?? null,
+      valorAnterior: referenciaComparavel?.minimo ?? null,
       quantidadeReferencia: referencia?.quantidades.minimo ?? 0,
       classificaAlerta: true,
+      somenteAcimaDaReferencia: true,
     },
     {
       rotulo: "Máxima",
       valorAtual: atual.maximo,
-      valorAnterior: referencia?.maximo ?? null,
+      valorAnterior: referenciaComparavel?.maximo ?? null,
       quantidadeReferencia: referencia?.quantidades.maximo ?? 0,
       classificaAlerta: true,
       somenteAcimaDaReferencia: true,

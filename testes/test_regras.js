@@ -229,6 +229,66 @@ function executarTestesAutonomiaPreditiva() {
   assert.ok(caindo.minutosAteCritico >= 0);
 }
 
+function executarTestesVazaoPorHorario() {
+  const regras = carregarRegrasNegocio();
+  const H = ['00:15', '01:15', '02:15'];
+  const dia = (data, vazao) => ({ data, horarios: H, vazao });
+  const ref = (dias) => JSON.parse(JSON.stringify(regras.calcularReferenciaVazaoPorHorario(dias, H)));
+  const avaliar = (atual, referencia) => JSON.parse(JSON.stringify(regras.avaliarAlertaVazao(atual, referencia, H, 'R-TESTE')));
+  const indicador = (r, rotulo) => r.indicadores.find((i) => i.rotulo === rotulo);
+
+  // Referência: mesmo horário nos dias da base; média/mín/máx reais do período (não médias de extremos).
+  const dias = [dia('a', [10, 12, 14]), dia('b', [20, 12, 14]), dia('c', [10, 12, 14])];
+  const r = ref(dias);
+  assert.strictEqual(r.minimo, 10);
+  assert.strictEqual(r.maximo, 20);
+  assert.ok(Math.abs(r.media - (10 + 20 + 10 + 12 * 3 + 14 * 3) / 9) < 1e-9);
+  assert.deepStrictEqual(r.horariosReferencia, H);
+
+  // Horário com menos de 2 valores não entra; sem 2 dias com o mesmo horário não há referência.
+  const parcial = ref([dia('a', [10, null, 14]), dia('b', [10, 12, 14])]);
+  assert.deepStrictEqual(parcial.horariosReferencia, ['00:15', '02:15']);
+  const unico = ref([dia('a', [10, 12, 14])]);
+  assert.strictEqual(unico.media, null);
+  assert.strictEqual(unico.minimo, null);
+  assert.deepStrictEqual(unico.horariosReferencia, []);
+
+  // Zero continua inconsistente: fora da referência.
+  const comZero = ref([dia('a', [0, 12, 14]), dia('b', [10, 12, 14])]);
+  assert.deepStrictEqual(comZero.horariosReferencia, ['01:15', '02:15']);
+
+  // Vazão alta alarma por qualquer das 3 comparações; baixa NÃO alarma.
+  const base = ref([dia('a', [10, 10, 10]), dia('b', [10, 10, 10])]);
+  const alta = avaliar([13, 10, 10], base); // máxima +30% (>= 20%), média ~ +10%
+  assert.strictEqual(indicador(alta, 'Máxima').status, 'Atenção');
+  assert.strictEqual(alta.status, 'Atenção');
+  const altaCritica = avaliar([14, 14, 14], base); // +40% nas 3
+  assert.strictEqual(altaCritica.status, 'Crítico');
+  ['Média', 'Mínima', 'Máxima'].forEach((rotulo) => {
+    assert.strictEqual(indicador(altaCritica, rotulo).direcao, 'alta');
+    assert.strictEqual(indicador(altaCritica, rotulo).status, 'Crítico');
+  });
+  const baixa = avaliar([5, 5, 5], base); // -50%
+  assert.strictEqual(baixa.status, 'Normal');
+  assert.strictEqual(indicador(baixa, 'Mínima').direcao, 'baixa');
+
+  // Comparação alinhada: só os horários da referência entram no valor de hoje.
+  const refParcial = ref([dia('a', [10, null, 10]), dia('b', [10, null, 10])]);
+  const alinhado = avaliar([10, 99, 10], refParcial); // 99 está num horário sem referência
+  assert.strictEqual(alinhado.status, 'Normal');
+  assert.strictEqual(indicador(alinhado, 'Máxima').valorAtual, 10);
+
+  // Hoje sem leitura num horário: a referência também ignora esse horário.
+  const refDesigual = ref([dia('a', [10, 10, 100]), dia('b', [10, 10, 100])]);
+  const semUltimo = avaliar([10, 10, null], refDesigual);
+  assert.strictEqual(indicador(semUltimo, 'Máxima').valorAnterior, 10);
+  assert.strictEqual(indicador(semUltimo, 'Média').valorAnterior, 10);
+  assert.strictEqual(semUltimo.status, 'Normal');
+
+  // Sem referência: sem comparação (não inventa).
+  assert.strictEqual(avaliar([10, 10, 10], unico).status, 'Sem comparação');
+}
+
 function executarTestesRegras() {
   console.log("-> Executando testes de Regras de Negócio e Roteamento de Configuração...");
   
@@ -255,6 +315,7 @@ function executarTestesRegras() {
   executarTestesStatusNivel();
   executarTestesValidacaoConfiguracao();
   executarTestesAutonomiaPreditiva();
+  executarTestesVazaoPorHorario();
 
   console.log("✓ Regras de Negócio e Roteamento: Todos os testes passaram!");
 }

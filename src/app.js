@@ -2273,47 +2273,19 @@ function obterReferenciaVazao(
   base,
   horarios,
 ) {
-  const resumosDiarios = obterDatasBaseComparacao(banco, dataSelecionada, base)
+  // Referência por horário (regrasNegocio.js): mesmo horário nos dias da base.
+  const dias = obterDatasBaseComparacao(banco, dataSelecionada, base)
     .map((data) => {
-      const reservatorio =
-        banco.historico[data]?.reservatorios?.[chaveReservatorio];
+      const reservatorio = banco.historico[data]?.reservatorios?.[chaveReservatorio];
       if (!reservatorio) return null;
-      const resumo = resumirLeiturasEstruturadas(
-        filtrarLeiturasVazaoValidas(reservatorio.leituras?.vazao),
-        banco.historico[data]?.horarios ?? horarios,
-      );
-      return resumo.quantidade ? { data, ...resumo } : null;
+      return {
+        data,
+        horarios: banco.historico[data]?.horarios,
+        vazao: reservatorio.leituras?.vazao,
+      };
     })
     .filter(Boolean);
-
-  const obterMediaComMinimo = (campo) => {
-    const valores = resumosDiarios
-      .map((resumo) => resumo[campo])
-      .filter((valor) => valor !== null);
-    return {
-      valor:
-        valores.length >= 2
-          ? valores.reduce((soma, valor) => soma + valor, 0) / valores.length
-          : null,
-      quantidade: valores.length,
-    };
-  };
-  const media = obterMediaComMinimo("media");
-  const minimo = obterMediaComMinimo("minimo");
-  const maximo = obterMediaComMinimo("maximo");
-
-  return {
-    media: media.valor,
-    minimo: minimo.valor,
-    maximo: maximo.valor,
-    quantidade: resumosDiarios.length,
-    datas: resumosDiarios.map(({ data }) => data),
-    quantidades: {
-      media: media.quantidade,
-      minimo: minimo.quantidade,
-      maximo: maximo.quantidade,
-    },
-  };
+  return calcularReferenciaVazaoPorHorario(dias, horarios);
 }
 
 function obterUltimaLeitura(valores) {
