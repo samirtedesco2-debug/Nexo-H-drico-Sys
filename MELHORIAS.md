@@ -140,3 +140,7 @@ Este documento registra o histórico cronológico de melhorias, refatorações e
 
 ---
 *Nexo Hídrico — Inteligência Operacional*
+
+### Investigação de alarme e vazão por horário
+* **Descrição:** Tela de investigação: removido "Voltar ao Mural", cabeçalho com "Alarme acionado em", resumo por origem (nível, vazão, comunicação) acima do botão da OS. Regra de vazão: referência por horário (média, menor e maior valor do período), 3 comparações separadas e alarme só para vazão **alta**; zero segue inconsistente, com aviso de "vazão sem leitura válida" quando todas as leituras do dia são zero/inconsistentes.
+* **OS:** formato curto, sem TAG nem linha de boletim: nome do reservatório, cada alarme com o mesmo dado da tela logo abaixo e uma recomendação de uma linha (Crítico: acionar equipe de campo; só dados: verificar a telemetria; Atenção: sem recomendação). Recomendações são sugestões, não procedimento oficial.

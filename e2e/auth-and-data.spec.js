@@ -196,10 +196,11 @@ test("clique no mural abre o reservatório direto na investigação", async ({ p
     const data = document.getElementById("seletor-data").value;
     return {
       data,
+      acionadoEm: window.ccoAlarmTriggerTimes?.get(`${data}_R01-A`) || "Não registrado",
       ultimaAtualizacao: window.bancoDeDados.historico[data]?.ultimaAtualizacao || "Não informada"
     };
   });
-  await expect(investigacao.locator("#cco-investigation-date")).toHaveText(dadosInvestigados.data);
+  await expect(investigacao.locator("#cco-investigation-date")).toHaveText(dadosInvestigados.acionadoEm);
   await expect(investigacao.locator("#cco-investigation-updated-at")).toHaveText(dadosInvestigados.ultimaAtualizacao);
   await investigacao.close();
 });

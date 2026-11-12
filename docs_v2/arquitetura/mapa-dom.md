@@ -62,8 +62,8 @@ Este documento fornece um mapa completo de todos os elementos estruturais (`head
 - `#analise-grafico-reservatorio` (class: `.reservoir-analysis-view`): Visão de gráfico detalhado por reservatório.
 
 ### Visão Dedicada de Investigação de Alarme (`#painel-investigacao-alarme` / `main.view-panel`)
-- `#cco-lean-investigation-header` (class: `.cco-lean-investigation-header`): Cabeçalho contextual da investigação dedicada, exibindo severidade, nome do reservatório, datas e botões de retorno ao Mural ("Voltar ao Mural") e reconhecimento (ACK).
-- `#container-investigacao-alarme`: Container onde o painel informativo do alarme (`reservoir-alarm-info`) é injetado exclusivamente.
+- `#cco-lean-investigation-header` (class: `.cco-lean-investigation-header`): Cabeçalho contextual da investigação dedicada, exibindo severidade, nome do reservatório, "Alarme acionado em" (`#cco-investigation-date`, horário em que o CCO registrou o acionamento, de `ccoAlarmTriggerTimes`; não é horário de sensor), "Última atualização dos dados" (`#cco-investigation-updated-at`, horário do boletim) e o botão de reconhecimento (ACK). Não há botão "Voltar ao Mural": basta fechar a janela.
+- `#container-investigacao-alarme`: Container do painel da investigação (`.inv-panel`, gerado por `criarPainelAlarmeAtivado`): resumo do alarme por origem (nível, vazão, comunicação) com o botão "Copiar Ordem de Serviço (OS)" em `.inv-taxonomia`, medidor de nível e parâmetros do boletim.
 
 ### Visão Analítica (`#painel-analitico`)
 - **`.focused-view-actions`**: Ações da janela focada, com modo CCO e fechamento.

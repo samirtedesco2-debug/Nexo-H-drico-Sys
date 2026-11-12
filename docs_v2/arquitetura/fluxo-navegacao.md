@@ -37,7 +37,7 @@ Este documento descreve o mapa de navegação (*Sitemap*) e os fluxos de intera�
                  │                   └──► [ Visão Operacional em Modo Investigação ]
                  │                             (Parâmetro: ?view=operacional&origem=mural&reservatorio=R01-A)
                  │                             ├── Exibe dados detalhados do reservatório investigado
-                 │                             └── Botão "Voltar ao Mural" ou Tecla [Esc] ──► Retorna ao Mural de Alarmes
+                 │                             └── Fechar a janela ──► Retorna ao Mural de Alarmes
                  │
                  └──► 5. Configurações & Parâmetros Globais (ADMIN)
                            ├── Parâmetros de Plantão e SLAs
@@ -79,7 +79,7 @@ Este documento descreve o mapa de navegação (*Sitemap*) e os fluxos de intera�
    - Ao clicar no card ou item do mural, o sistema abre diretamente a **Visão Dedicada de Investigação de Alarme** (`?view=investigacao&reservatorio=R01-A&origem=mural`), completamente isolada da Visão Operacional.
 3. **Painel Exclusivo & Retorno:**
    - A tela exibe exclusivamente o cabeçalho CCO lean e o painel informativo do alarme (`reservoir-alarm-info`) com taxonomia, dados da leitura violada e tempo de resposta, sem poluição visual.
-   - O operador pode retornar rapidamente ao Mural de Alarmes clicando no botão **"Voltar ao Mural"** ou pressionando a tecla **[Esc]**, restaurando o contexto operacional anterior sem perda de estado.
+   - O operador pode retornar rapidamente ao Mural de Alarmes fechando a janela ou pressionando a tecla **[Esc]**, restaurando o contexto operacional anterior sem perda de estado.
 
 ---
 

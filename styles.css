@@ -3718,3 +3718,26 @@ body[data-view-scale="large-tv"] .kpi-box {
   width: 132px;
   max-width: 100%;
 }
+
+/* Checklist de verificação (investigação de alarme) */
+.inv-check-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+  border-top: 1px dashed var(--border-color);
+}
+
+.inv-check-title {
+  margin: 0;
+  color: var(--accent-color);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+
+
+.inv-check-group:first-child {
+  border-top: 0;
+  padding-top: 0;
+}

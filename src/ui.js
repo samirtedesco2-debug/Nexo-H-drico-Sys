@@ -492,12 +492,11 @@ function criarPainelInformativoAlarme(
   const vazaoRegra = document.createElement("p");
   vazaoRegra.textContent =
     `Comparação: ${obterRotuloBaseComparacao(baseComparacao)} ` +
-    `(${referencia.quantidade} dia(s) válidos). Na vazão mínima, desvios para ` +
-    `cima ou para baixo de ${LIMITE_ATENCAO_VAZAO_PERCENTUAL}% a ` +
-    `${LIMITE_CRITICO_VAZAO_PERCENTUAL}% geram atenção; acima de ` +
-    `${LIMITE_CRITICO_VAZAO_PERCENTUAL}% são críticos. Na máxima, somente ` +
-    `aumentos em relação à referência geram alarme. ` +
-    "A vazão média é informativa.";
+    `(${referencia.quantidade} dia(s) com dados), horário a horário. A vazão só gera ` +
+    `alarme ao subir acima da referência (média, mínima ou máxima do período): ` +
+    `atenção a partir de ${LIMITE_ATENCAO_VAZAO_PERCENTUAL}%, crítico acima de ` +
+    `${LIMITE_CRITICO_VAZAO_PERCENTUAL}%. Vazão abaixo da referência não gera alarme; ` +
+    "leitura zero é inconsistente.";
   const indicadores = document.createElement("div");
   indicadores.className = "reservoir-alarm-indicators";
 
@@ -518,7 +517,7 @@ function criarPainelInformativoAlarme(
           ? indicador.valorAnterior === 0
             ? "Referência histórica zero; variação não calculável."
             : `Sem base suficiente (${indicador.quantidadeReferencia} dia(s) válidos).`
-          : indicador.rotulo === "Máxima" && indicador.variacao <= 0
+          : indicador.variacao <= 0
             ? `${formatarPercentual(indicador.variacao)} · igual ou abaixo da referência, sem alarme`
             : `${formatarPercentual(indicador.variacao)} · ${
                 indicador.direcao === "baixa"
@@ -1989,7 +1988,14 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
 
     const isCritico = statusNivelAtivo === "Crítico" || statusVazaoAtivo === "Crítico" || predicao?.statusPreditivo === "Crítico";
     const isAtencao = statusNivelAtivo === "Atenção" || statusVazaoAtivo === "Atenção" || predicao?.statusPreditivo === "Atenção";
-    const isIncompleto = ausentesSelecionadas.length > 0 || statusNivel === "Sem Dados" || statusNivel === "Inconsistente";
+    // Vazão zerada/inconsistente em todas as leituras (zero é inconsistente, não "baixa"): avisa como dado.
+    const leiturasVazaoValidas = filtrarLeiturasVazaoValidas(leituras?.vazao);
+    const vazaoSemLeituraValida =
+      vazaoEsperada &&
+      ausentesSelecionadas.length === 0 &&
+      leiturasVazaoValidas.length > 0 &&
+      !leiturasVazaoValidas.some((valor) => typeof valor === "number");
+    const isIncompleto = ausentesSelecionadas.length > 0 || vazaoSemLeituraValida || statusNivel === "Sem Dados" || statusNivel === "Inconsistente";
     const isPreditivo = predicao && predicao.statusPreditivo !== "Normal";
 
     if (isCritico || isAtencao || isIncompleto || isPreditivo) {
@@ -2018,7 +2024,7 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
         statusNivel,
         statusVazao,
         direcaoVazao,
-        possuiLeiturasAusentes: isIncompleto && ausentesSelecionadas.length > 0,
+        possuiLeiturasAusentes: isIncompleto && (ausentesSelecionadas.length > 0 || vazaoSemLeituraValida),
       });
       const varAbs = variacaoVazao !== null ? Math.abs(variacaoVazao).toFixed(0) : "";
       const textoAlarme = (alarme) => {
@@ -2030,6 +2036,7 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
           case "ALM-DAT-02":
             return obterMensagemTaxonomia(alarme.codigo, { nome, valorAtual: nivelAtual ?? "N/A" }) || "Leituras de nível inconsistentes ou fora da faixa válida (0-110%)";
           case "ALM-DAT-01":
+            if (vazaoSemLeituraValida) return "Vazão sem leitura válida no boletim (zerada ou inconsistente).";
             return obterMensagemTaxonomia(alarme.codigo, { nome }) || `${ausentesSelecionadas.length} leitura(s) ausente(s) por falha de telemetria`;
           default:
             return obterMensagemTaxonomia(alarme.codigo, { nome, valorAtual: vazaoAtual, variacao: varAbs }) || `Vazão atual (${vazaoAtual} L/s) está desviada (${statusVazao})`;
@@ -2054,6 +2061,7 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
         statusVazao,
         alarmes,
         ausentes: ausentesSelecionadas,
+        vazaoSemLeituraValida,
         mensagens,
       });
     }
@@ -2984,7 +2992,7 @@ function avaliarSituacaoAlarme(reservatorio, chave, banco, dataSelecionada, base
     referenciaVazao,
     alertaVazao,
     alarmes: excObj?.alarmes ?? [],
-    possuiLeiturasAusentes: (excObj?.ausentes?.length ?? 0) > 0,
+    possuiLeiturasAusentes: (excObj?.ausentes?.length ?? 0) > 0 || Boolean(excObj?.vazaoSemLeituraValida),
   };
 }
 
@@ -3066,6 +3074,72 @@ function obterTaxonomiasDosAlarmes(alarmes, reservatorio, contextoBase) {
   );
 }
 
+/**
+ * Dados que acionaram cada alarme, agrupados por origem (nível, vazão, comunicação).
+ * Reaproveita as regras existentes (autonomia/projeção, referência de vazão); não recalcula nada.
+ * Dado ausente aparece como N/A. Retorna [{ origem, titulo, linhas }].
+ */
+function montarGruposAnaliseAlarme(reservatorio, chave, statusNivel, alertaVazao, alarmes, vazaoSemLeituraValida = false) {
+  const config = obterConfiguracaoReservatorio(chave);
+  const pred = calcularAutonomiaEProjecao(reservatorio, chave);
+  const nivel = obterUltimaLeituraNivel(reservatorio.leituras?.nivel);
+  const origens = new Set((alarmes || []).map((a) => a.origem));
+  const codigos = new Set((alarmes || []).map((a) => a.codigo));
+  const grupos = [];
+
+  if (origens.has("nivel")) {
+    const linhas = [`Nível: ${nivel !== null ? `${Number(nivel).toFixed(1)}%` : "N/A"} (estado: ${statusNivel})`];
+    if (pred?.capacidadeAusente) {
+      linhas.push("Projeção: N/A (capacidade útil não configurada)");
+    } else {
+      const formatar = (min) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")} h`;
+      const fraseProjecao = (verbo, limite, min) => (min === 0 ? `${limite}% já atingido` : `${verbo} ${limite}% em ${formatar(min)}`);
+      const partes = [];
+      if (pred?.minutosAteNormal != null) partes.push(fraseProjecao("Normalizará", config.nivelAtencao, pred.minutosAteNormal));
+      if (pred?.minutosAteAtencao != null) partes.push(fraseProjecao("Atingirá", config.nivelAlertaTempoAtencao, pred.minutosAteAtencao));
+      if (pred?.minutosAteCritico != null) partes.push(fraseProjecao("Atingirá", config.nivelAlertaTempoCritico, pred.minutosAteCritico));
+      const aviso = pred?.entradaConsiderada === false ? " (estimativa sem considerar a entrada de água)" : "";
+      linhas.push(`Projeção: ${partes.length ? partes.join(" · ") : "estável"}${aviso}`);
+    }
+    grupos.push({ origem: "nivel", titulo: "Nível", linhas });
+  }
+
+  if (origens.has("vazao")) {
+    // Uma linha por comparação que disparou (média, mínima ou máxima do dia vs referência do período).
+    const linhas = (alertaVazao?.indicadores ?? [])
+      .filter((i) => i.classificaAlerta && (i.status === "Atenção" || i.status === "Crítico"))
+      .map((i) => {
+        const diferenca = i.valorAtual - i.valorAnterior;
+        const sinal = diferenca >= 0 ? "+" : "";
+        return `Vazão ${i.rotulo.toLowerCase()}: ${i.valorAtual.toFixed(1)} L/s · ${sinal}${diferenca.toFixed(1)} L/s (${sinal}${i.variacao.toFixed(1)}%) · ${i.status}`;
+      });
+    grupos.push({ origem: "vazao", titulo: "Vazão", linhas: linhas.length ? linhas : ["Vazão fora da referência."] });
+  }
+
+  if (origens.has("dados")) {
+    const linhas = [];
+    if (codigos.has("ALM-DAT-01")) {
+      linhas.push(vazaoSemLeituraValida ? "Vazão sem leitura válida (zerada ou inconsistente)." : "Leituras ausentes no período.");
+    }
+    if (codigos.has("ALM-DAT-02")) linhas.push("Leituras inconsistentes no período.");
+    grupos.push({ origem: "dados", titulo: "Comunicação", linhas });
+  }
+
+  return grupos;
+}
+
+/** Monta o bloco visual com os dados que acionaram o alarme, por origem. */
+function criarResumoAlarme(grupos) {
+  const bloco = criarElementoTexto("div", "inv-checklist");
+  grupos.forEach((grupo) => {
+    const secao = criarElementoTexto("div", "inv-check-group");
+    secao.append(criarElementoTexto("h5", "inv-check-title", grupo.titulo));
+    grupo.linhas.forEach((linha) => secao.append(criarElementoTexto("div", "inv-template", linha)));
+    bloco.append(secao);
+  });
+  return bloco;
+}
+
 function gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) {
   const dadosDoDia = banco.historico[dataSelecionada];
   if (!dadosDoDia || !dadosDoDia.reservatorios) return "Dados indisponíveis para gerar OS.";
@@ -3073,67 +3147,57 @@ function gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) {
   if (!reservatorio) return "Reservatório não encontrado.";
 
   const nome = reservatorio.nome || chave;
-  const config = obterConfiguracaoReservatorio(chave);
-  const tag = config.tag || chave;
-  const capacidadeOS = obterCapacidadeUtil(config);
-  const cap = capacidadeOS === null ? "N/A" : `${capacidadeOS} m³`;
+  const tag = obterConfiguracaoReservatorio(chave).tag || chave;
   const horarios = dadosDoDia.horarios || [];
   const baseComparacao = document.getElementById("seletor-base-vazao")?.value || "dia_anterior";
 
-  const nivel = obterUltimaLeituraNivel(reservatorio.leituras?.nivel);
   const excObj = obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada).find((e) => e.chave === chave);
-  const { statusNivel, referenciaVazao, alarmes, possuiLeiturasAusentes } =
+  const { statusNivel, alertaVazao, alarmes, possuiLeiturasAusentes } =
     avaliarSituacaoAlarme(reservatorio, chave, banco, dataSelecionada, baseComparacao, horarios, excObj);
-
-  const vazaoAtual = obterUltimaLeitura(filtrarLeiturasVazaoValidas(reservatorio.leituras?.vazao)) ?? 0;
-  const refVazaoMedia = referenciaVazao?.media ?? 0;
-  const deltaVazao = vazaoAtual - refVazaoMedia;
-  const variacaoPercentualVazao = refVazaoMedia > 0 ? ((deltaVazao / refVazaoMedia) * 100).toFixed(1) : "0.0";
 
   const taxonomias = obterTaxonomiasDosAlarmes(alarmes, reservatorio, {
     tag,
     ultimaAtualizacao: dadosDoDia.ultimaAtualizacao,
     possuiLeiturasAusentes,
   });
-  const dadosUnificados = taxonomias[0];
-  const blocoClassificacao = taxonomias
-    .map(({ taxonomia }) => {
-      const diagnostico = taxonomia.template && taxonomia.template !== taxonomia.categoria
-        ? `\n• Diagnóstico: ${taxonomia.template}`
-        : "";
-      return [
-        `• Código: ${taxonomia.codigo}`,
-        `• Categoria: ${taxonomia.categoria}`,
-        `• Severidade: ${taxonomia.severidade}${diagnostico}`,
-      ].join("\n");
-    })
-    .join("\n\n");
-  const recomendacao = dadosUnificados.taxonomia.ativo
-    ? `O sistema detectou desvio operacional em ${nome}. Recomenda-se envio imediato de equipe de campo para verificação de macromedição, telemetria e manobras hidráulicas pertinentes.`
-    : `Nenhum desvio operacional ativo em ${nome} no momento da emissão. Registro apenas para acompanhamento.`;
+  const ativo = taxonomias[0].taxonomia.ativo;
 
-  return `========================================
-📋 ORDEM DE SERVIÇO INTELIGENTE - CCO
-========================================
-• Data/Hora da Emissão: ${new Date().toLocaleString('pt-BR')}
-• Data Investigada: ${dataSelecionada}
-• Reservatório / TAG: ${nome} (${tag})
-• Capacidade Útil: ${cap}
+  // Cada alarme com o dado que o acionou logo abaixo (mesma análise da tela de investigação).
+  const grupos = montarGruposAnaliseAlarme(
+    reservatorio, chave, statusNivel, alertaVazao, alarmes, Boolean(excObj?.vazaoSemLeituraValida),
+  );
+  const origensImpressas = new Set();
+  const blocoAlarmes = ativo
+    ? taxonomias
+        .map(({ taxonomia }, indice) => {
+          const origem = alarmes[indice]?.origem;
+          const linhas = [`• ${taxonomia.codigo} · ${taxonomia.categoria} (${taxonomia.severidade})`];
+          if (origem && !origensImpressas.has(origem)) {
+            origensImpressas.add(origem);
+            const grupo = grupos.find((g) => g.origem === origem);
+            (grupo?.linhas ?? []).forEach((linha) => linhas.push(`   ${linha}`));
+          }
+          return linhas.join("\n");
+        })
+        .join("\n")
+    : `Nenhum desvio operacional ativo em ${nome} no momento da emissão.`;
 
-[CLASSIFICAÇÃO NORMATIVA (TAXONOMIA)]
-${blocoClassificacao}
+  // Recomendação proporcional à severidade (sugestão; sem comandar equipamento).
+  const severidades = new Set(alarmes.map((alarme) => alarme.severidade));
+  const recomendacao = !ativo
+    ? "Registro apenas para acompanhamento."
+    : severidades.has("Crítico")
+      ? "Acionar equipe de campo."
+      : severidades.has("Atenção")
+        ? null
+        : "Verificar a telemetria.";
 
-[ANÁLISE COMPARATIVA DE VAZÃO & NÍVEL]
-• Nível Atual: ${nivel !== null ? Number(nivel).toFixed(1) + '%' : 'N/A'} (Status: ${statusNivel})
-• Vazão Atual: ${vazaoAtual} L/s
-• Vazão Média de Referência (${obterRotuloBaseComparacao(baseComparacao)}): ${refVazaoMedia.toFixed(1)} L/s
-• Delta Comparativo: ${deltaVazao >= 0 ? '+' : ''}${deltaVazao.toFixed(1)} L/s (${variacaoPercentualVazao}%)
-• Situação das Leituras: ${dadosUnificados.causaRaiz.situacaoLeituras}
-• Atualização dos Dados (boletim): ${dadosUnificados.causaRaiz.atualizacaoDados}
+  return `ORDEM DE SERVIÇO - CCO
+${nome}
 
-[DIAGNÓSTICO TÉCNICO & RECOMENDAÇÃO]
-${recomendacao}
-========================================`;
+${blocoAlarmes}${recomendacao ? `
+
+Recomendação: ${recomendacao}` : ""}`;
 }
 
 /** Cria um elemento com classe e texto (textContent, nunca HTML). */
@@ -3186,7 +3250,7 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
   const painel = criarElementoTexto("div", "activated-alarm-panel inv-panel");
 
   const nivel = obterUltimaLeituraNivel(reservatorio.leituras?.nivel);
-  const { statusNivel, alertaVazao, alarmes, possuiLeiturasAusentes } =
+  const { statusNivel, alertaVazao, alarmes, possuiLeiturasAusentes, referenciaVazao } =
     avaliarSituacaoAlarme(reservatorio, chave, banco, dataSelecionada, baseComparacao, horarios, excObj);
   const vazaoAlvo = obterUltimaLeitura(filtrarLeiturasVazaoValidas(reservatorio.leituras?.vazao)) ?? 0;
   const corStatusVazao =
@@ -3196,7 +3260,6 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
         ? "var(--status-attention-color)"
         : "var(--text-color)";
   const configAlvo = obterConfiguracaoReservatorio(chave);
-  const capacidadeAlvo = obterCapacidadeUtil(configAlvo);
   const predAlvo = calcularAutonomiaEProjecao(reservatorio, chave);
 
   const taxonomias = obterTaxonomiasDosAlarmes(alarmes, reservatorio, {
@@ -3212,7 +3275,8 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
     mensagensPadrao.push(`Alarme de Vazão: ${alertaVazao.status}`);
   }
   if (mensagensPadrao.length === 0) mensagensPadrao.push("Nível e vazão operando dentro da normalidade.");
-  const mensagens = excObj?.mensagens?.length ? excObj.mensagens : mensagensPadrao;
+  // Com alarme ativo a taxonomia já descreve cada alarme; as mensagens só aparecem sem alarme.
+  const mensagens = excObj?.mensagens?.length ? [] : mensagensPadrao;
 
   // Cores dinâmicas de severidade entram como variáveis CSS; o resto do visual é do styles.css.
   if (excObj) {
@@ -3223,7 +3287,6 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
   const cabecalho = criarElementoTexto("div", "inv-panel-head");
   cabecalho.append(
     criarElementoTexto("h3", "investigation-section-title inv-panel-title", "Informações do Alarme Ativado e Diagnóstico Unificado"),
-    criarElementoTexto("span", "inv-pill", `Capacidade Útil: ${capacidadeAlvo === null ? "N/A" : `${capacidadeAlvo} m³`}`),
   );
   painel.appendChild(cabecalho);
 
@@ -3236,33 +3299,13 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
     );
     grupoMensagem.appendChild(item);
   });
-  painel.appendChild(grupoMensagem);
+  if (mensagens.length) painel.appendChild(grupoMensagem);
 
   const taxonomiaDiv = criarElementoTexto("div", "inv-taxonomia");
-  taxonomias.forEach(({ taxonomia }) => {
-    const linhaTaxonomia = criarElementoTexto("div", "inv-taxonomia-line");
-    linhaTaxonomia.append(
-      criarElementoTexto("span", "inv-taxonomia-name", `Taxonomia Oficial: ${taxonomia.codigo} (${taxonomia.categoria})`),
-      criarElementoTexto("span", "inv-severity-badge", taxonomia.severidade),
-    );
-    taxonomiaDiv.append(linhaTaxonomia);
-
-    // O template da taxonomia hoje repete a categoria; só mostra quando acrescenta informação.
-    if (taxonomia.template && taxonomia.template !== taxonomia.categoria) {
-      const blocoTemplate = criarElementoTexto("div", "inv-template");
-      blocoTemplate.append(criarRotuloValor("Template:", taxonomia.template));
-      taxonomiaDiv.append(blocoTemplate);
-    }
-  });
-
-  const metaTaxonomia = criarElementoTexto("div", "inv-meta-grid");
-  metaTaxonomia.append(
-    criarRotuloValor("TAG:", dadosUnificados.causaRaiz.tagReservatorio),
-    criarRotuloValor("Leituras:", dadosUnificados.causaRaiz.situacaoLeituras),
-    criarRotuloValor("Atualização dos dados (boletim):", dadosUnificados.causaRaiz.atualizacaoDados),
-    criarRotuloValor("Investigado em:", new Date(dadosUnificados.timestampInvestigacao).toLocaleString("pt-BR")),
+  // Dados que acionaram o alarme, acima do botão da OS (a OS em si não muda).
+  taxonomiaDiv.append(
+    criarResumoAlarme(montarGruposAnaliseAlarme(reservatorio, chave, statusNivel, alertaVazao, alarmes, Boolean(excObj?.vazaoSemLeituraValida))),
   );
-  taxonomiaDiv.append(metaTaxonomia);
 
   const rotuloBotaoOS = "📋 Copiar Ordem de Serviço (OS)";
   const btnCopiarOS = criarElementoTexto("button", "inv-btn inv-btn--primary", rotuloBotaoOS);
@@ -3419,27 +3462,24 @@ window.renderizarPainelInvestigacaoDedicado = function(chave, dataSelecionada, b
     titulo.id = "cco-investigation-title";
 
     const meta = criarElementoTexto("div", "inv-meta");
-    const spanData = criarElementoTexto("span", "", dataSelecionada);
+    // Momento em que o CCO registrou o acionamento deste alarme (ccoAlarmTriggerTimes), não horário de sensor.
+    const chaveAcionamento = `${dataSelecionada}_${chave}`;
+    if (!window.ccoAlarmTriggerTimes?.has?.(chaveAcionamento) && typeof carregarReconhecidosLocalStorage === "function") {
+      carregarReconhecidosLocalStorage();
+    }
+    const acionadoEm = temAlarme ? window.ccoAlarmTriggerTimes?.get?.(chaveAcionamento) : null;
+    const spanData = criarElementoTexto("span", "", acionadoEm || (temAlarme ? "Não registrado" : "Sem alarme ativo"));
     spanData.id = "cco-investigation-date";
     const spanAtualizacao = criarElementoTexto("span", "", dadosDoDia.ultimaAtualizacao || "Não informada");
     spanAtualizacao.id = "cco-investigation-updated-at";
     const itemData = criarElementoTexto("span", "");
-    itemData.append(criarElementoTexto("strong", "", "Data investigada:"), " ", spanData);
+    itemData.append(criarElementoTexto("strong", "", "Alarme acionado em:"), " ", spanData);
     const itemAtualizacao = criarElementoTexto("span", "");
     itemAtualizacao.append(criarElementoTexto("strong", "", "Última atualização dos dados:"), " ", spanAtualizacao);
     meta.append(itemData, itemAtualizacao);
     bloco.append(topo, titulo, meta);
 
     const acoes = criarElementoTexto("div", "inv-actions");
-
-    // "Voltar ao Mural" só faz sentido quando esta janela foi aberta pelo mural (window.opener).
-    if (window.opener && !window.opener.closed) {
-      const btnVoltar = criarElementoTexto("button", "inv-btn", "← Voltar ao Mural");
-      btnVoltar.type = "button";
-      btnVoltar.id = "btn-voltar-mural-investigacao";
-      btnVoltar.addEventListener("click", () => window.close());
-      acoes.append(btnVoltar);
-    }
 
     // Reconhecimento só existe para reservatório com alarme/exceção ativo.
     if (temAlarme) {
