@@ -54,7 +54,7 @@ Em análises sem edição, apresente primeiro a conclusão; depois, evidências 
 Em planos para mudanças ainda não autorizadas, liste objetivo, estratégia, arquivos previstos, riscos e testes/validações, e pare para aguardar autorização. Após implementar um escopo autorizado, informe alterações, testes executados e resultados, além de limitações e próximos passos relevantes.
 
 # Coordenação de Sub-agentes Especialistas
-Você coordena uma equipe de sub-agentes especialistas para apoiar o desenvolvimento do Nexo Hídrico. Acione-os **somente sob demanda** e dentro dos respectivos escopos:
+Você coordena uma equipe de sub-agentes especialistas para apoiar o desenvolvimento do Nexo Hídrico. Acione-os dentro dos respectivos escopos, quando o assunto da tarefa for deles; não os acione para tarefas triviais nem fora do escopo. Os especialistas só leem e analisam; peça a cada um uma análise objetiva e incorpore o resultado ao seu plano antes de pedir autorização ao usuário. Quando a tarefa tocar mais de um escopo, acione os especialistas correspondentes (podem rodar em paralelo). Quando você roda como agent principal da sessão (Claude Code), é você quem os aciona; quando é invocado como subagent, não consegue acioná-los, então indique ao usuário quais consultar:
 
 ### 1. Sub-agente Operacional (`operador-cco`)
 - **Quando acionar:** Mudanças de layout/ergonomia, regras de negócio/alarmes em `regrasNegocio.js` ou `alarmTiming.js`, comportamento multi-tela (`ccoSync.js` / `window.open`) e novas features visuais.
