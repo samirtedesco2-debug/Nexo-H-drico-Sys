@@ -853,8 +853,12 @@ function calcularAutonomiaEProjecao(reservatorio, idReservatorio) {
 
   let vazaoLiquidaM3h = 0;
   let vazaoLiquidaLs = 0;
+  // De onde saiu a vazão líquida (só para exibição): "saida" = igual à saída (entrada não medida),
+  // "nivel" = pela variação do nível × capacidade, null = sem base (menos de 2 leituras de nível).
+  let origemVazaoLiquida = null;
 
   if (config.possuiMedicaoVazao && temDadosVazao) {
+    origemVazaoLiquida = "saida";
     const saida = vazaoAtual > 0 ? vazaoAtual : 0;
     // Entrada desconhecida (null): não é zero medido. Estimativa = saída, sem reposição.
     const entrada = null;
@@ -872,6 +876,7 @@ function calcularAutonomiaEProjecao(reservatorio, idReservatorio) {
     }
     // Calculo baseado na variação percentual do nível ao longo do tempo em relação à capacidade útil
     if (niveisValidos.length >= 2) {
+      origemVazaoLiquida = "nivel";
       const deltaNivelPorHora =
         niveisValidos[niveisValidos.length - 1] -
         niveisValidos[niveisValidos.length - 2];
@@ -946,6 +951,7 @@ function calcularAutonomiaEProjecao(reservatorio, idReservatorio) {
     minutosAteNormal,
     vazaoLiquidaLs,
     vazaoLiquidaM3h,
+    origemVazaoLiquida,
     possuiMedicaoVazao: config.possuiMedicaoVazao,
     fallbackUsoApenasNivel,
     mensagemFallback,

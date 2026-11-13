@@ -159,3 +159,8 @@ Este documento registra o histórico cronológico de melhorias, refatorações e
 * **Vazão de saída:** sem leitura válida no dia (vazia ou zerada), a investigação mostra "N/A (sem leitura válida)" em vez de "0 L/s".
 * **Reconhecimento entre janelas:** ACK ou revogação feitos no Mural (ou em outra janela) agora redesenham a janela de investigação aberta (`CcoSync.atualizarAposMudancaAck`). Antes o botão ficava com o estado antigo, e um clique gravava de novo um ACK já feito ou tentava revogar um já revogado. O fluxo de reconhecimento em si não mudou.
 * **Validação:** E2E com duas janelas (ACK e revogação no Mural refletidos na investigação; vazão zerada exibida como N/A); o teste falha sem a correção.
+
+### Investigação: tendência sob o medidor e vazão líquida com origem
+* **Tendência** (do nível, duas últimas leituras) saiu do card de parâmetros e fica abaixo do medidor, junto do status.
+* **Vazão líquida** no card de parâmetros, sempre com a origem: com medição de vazão a entrada não é medida, então mostra "X L/s = saída (entrada não medida)" sem afirmar enchendo/esvaziando (contradiria a tendência do nível); sem medição de vazão, "X L/s enchendo/esvaziando (pela variação do nível)"; sem capacidade útil ou leituras de nível, N/A com o motivo. `calcularAutonomiaEProjecao` passa a devolver `origemVazaoLiquida` ("saida", "nivel" ou null); a fórmula não mudou.
+* **Validação:** testes unitários de `origemVazaoLiquida` e E2E dos três casos na investigação.

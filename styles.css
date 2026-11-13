@@ -3698,6 +3698,10 @@ body[data-view-scale="large-tv"] .kpi-box {
   font-size: 0.85rem;
 }
 
+.inv-gauge-trend strong {
+  color: var(--text-color);
+}
+
 .inv-gauge-status-value {
   color: var(--inv-cor, var(--text-color));
 }

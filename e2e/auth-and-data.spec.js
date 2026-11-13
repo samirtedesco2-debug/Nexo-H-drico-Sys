@@ -742,3 +742,40 @@ test("investigação aberta acompanha o reconhecimento feito no Mural e mostra N
   await expect(vazaoSaida).not.toContainText("0 L/s");
   await investigacao.close();
 });
+
+test("investigação: tendência sob o medidor e vazão líquida com origem", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("e2e-config")) return;
+    sessionStorage.setItem("e2e-config", "1");
+    localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify({
+      "R01-A": { nivelAtencao: 101, nivelCritico: 100, alertaNivelAtivo: true, capacidadeUtil: 500, possuiMedicaoVazao: true }
+    }));
+  });
+  await page.goto("/");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  await page.goto("/?view=investigacao&reservatorio=R01-A");
+
+  const medidor = page.locator("#container-investigacao-alarme .inv-cards > div").nth(0);
+  const parametros = page.locator("#container-investigacao-alarme .inv-cards > div").nth(1);
+  await expect(medidor.locator(".inv-gauge-trend")).toContainText(/Tendência: (Subindo ↑|Descendo ↓|Estável →)/, { timeout: 15_000 });
+  await expect(parametros).not.toContainText("Tendência:");
+
+  const liquida = parametros.locator(".inv-param").filter({ hasText: "Vazão Líquida:" });
+  // Com medição de vazão: a entrada não é medida, então a líquida é a própria saída e diz isso.
+  await expect(liquida).toContainText(/\d+\.\d L\/s = saída \(entrada não medida\)/);
+  await expect(liquida).not.toContainText(/enchendo|esvaziando/);
+
+  const redesenhar = (config) => page.evaluate((cfg) => {
+    localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify({ "R01-A": cfg }));
+    const atual = window.nexoInvestigacaoAtual;
+    window.renderizarPainelInvestigacaoDedicado(atual.chave, atual.dataSelecionada, atual.banco);
+  }, config);
+
+  // Sem medição de vazão: estimada pela variação do nível.
+  await redesenhar({ nivelAtencao: 101, nivelCritico: 100, alertaNivelAtivo: true, capacidadeUtil: 500, possuiMedicaoVazao: false });
+  await expect(liquida).toContainText(/\d+\.\d L\/s (enchendo|esvaziando|estável) \(pela variação do nível\)/);
+
+  // Sem capacidade útil: N/A, sem número.
+  await redesenhar({ nivelAtencao: 101, nivelCritico: 100, alertaNivelAtivo: true, possuiMedicaoVazao: false });
+  await expect(liquida).toContainText("N/A (capacidade útil não configurada)");
+});

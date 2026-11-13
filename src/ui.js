@@ -3321,6 +3321,29 @@ function criarMedidorNivel(nivel, statusNivel) {
   return medidor;
 }
 
+/**
+ * Texto da vazão líquida com sentido e origem, para não ser lida como medição real:
+ * a entrada não é medida, então com vazão de saída a "líquida" é igual à saída (pior caso).
+ * @returns {{ texto: string, disponivel: boolean }}
+ */
+function descreverVazaoLiquida(pred, vazaoSaidaValida) {
+  if (!pred || pred.capacidadeAusente) return { texto: "N/A (capacidade útil não configurada)", disponivel: false };
+  if (pred.tendencia === "Sem Dados") return { texto: "N/A (sem leitura de nível válida)", disponivel: false };
+  if (pred.origemVazaoLiquida === "saida" && vazaoSaidaValida === null) {
+    return { texto: "N/A (sem leitura válida de vazão)", disponivel: false };
+  }
+  if (!pred.origemVazaoLiquida || !Number.isFinite(pred.vazaoLiquidaLs)) {
+    return { texto: "N/A (menos de 2 leituras de nível)", disponivel: false };
+  }
+  const valor = Math.abs(pred.vazaoLiquidaLs).toFixed(1);
+  // Com entrada não medida a "líquida" é só a saída: não afirma sentido (contradiria a tendência do nível).
+  if (pred.origemVazaoLiquida === "saida") {
+    return { texto: `${valor} L/s = saída (entrada não medida)`, disponivel: true };
+  }
+  const sentido = pred.vazaoLiquidaLs > 0 ? "esvaziando" : pred.vazaoLiquidaLs < 0 ? "enchendo" : "estável";
+  return { texto: `${valor} L/s ${sentido} (pela variação do nível)`, disponivel: true };
+}
+
 function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSelecionada, baseComparacao, excObj) {
   const painel = criarElementoTexto("div", "activated-alarm-panel inv-panel");
 
@@ -3435,10 +3458,16 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
           ? "var(--status-normal-color)"
           : "var(--muted-color)";
   statusGauge.append(statusGaugeValor);
+  // Tendência é do nível (duas últimas leituras): fica junto do medidor.
+  const tendenciaGauge = criarElementoTexto("span", "inv-gauge-status inv-gauge-trend", "Tendência: ");
+  tendenciaGauge.append(
+    criarElementoTexto("strong", "", `${predAlvo?.tendencia || "Sem Dados"} ${predAlvo?.iconeTendencia || "→"}`),
+  );
   medidorWrap.append(
     criarElementoTexto("h4", "inv-card-title", "Medidor de Nível"),
     criarMedidorNivel(nivel, statusNivel),
     statusGauge,
+    tendenciaGauge,
   );
 
   const paramsWrap = criarElementoTexto("div", "inv-card");
@@ -3453,6 +3482,7 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
   };
 
   const vazaoEntrada = predAlvo?.vazaoEntradaLs;
+  const vazaoLiquida = descreverVazaoLiquida(predAlvo, vazaoAlvo);
   paramsLista.append(
     criarItemParametro(
       "Vazão de Saída:",
@@ -3465,9 +3495,9 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
       "var(--text-color)",
     ),
     criarItemParametro(
-      "Tendência:",
-      `${predAlvo?.tendencia || "Estável"} ${predAlvo?.iconeTendencia || "→"}`,
-      "var(--text-color)",
+      "Vazão Líquida:",
+      vazaoLiquida.texto,
+      vazaoLiquida.disponivel ? "var(--text-color)" : "var(--muted-color)",
     ),
   );
   if (predAlvo?.statusPreditivo && predAlvo.statusPreditivo !== "Normal") {

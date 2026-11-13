@@ -234,9 +234,16 @@ function executarTestesAutonomiaPreditiva() {
   assert.strictEqual(comVazao.entradaConsiderada, false);
   assert.ok(/pior caso/.test(comVazao.avisoEntrada));
   assert.ok(comVazao.vazaoLiquidaLs === 10, 'líquida = saída quando a entrada é desconhecida');
+  assert.strictEqual(comVazao.origemVazaoLiquida, 'saida');
   const semVazao = comConfig({ capacidadeUtil: 1000, possuiMedicaoVazao: false })(res([80, 78, 75]));
   assert.strictEqual(semVazao.entradaConsiderada, true);
   assert.strictEqual(semVazao.avisoEntrada, null);
+  // Sem vazão: líquida pela variação do nível (75 - 78 = -3%/h de 1000 m³ => 30 m³/h esvaziando).
+  assert.strictEqual(semVazao.origemVazaoLiquida, 'nivel');
+  assert.ok(Math.abs(semVazao.vazaoLiquidaLs - 30 / 3.6) < 1e-9);
+  // Menos de 2 leituras de nível: não há base para a líquida (o 0 interno não é medição).
+  const umaLeitura = comConfig({ capacidadeUtil: 1000, possuiMedicaoVazao: false })(res([null, null, 75]));
+  assert.strictEqual(umaLeitura.origemVazaoLiquida, null);
 
   // Limite de normalização vem da configuração, não de 60 fixo.
   const sobe = comConfig({ capacidadeUtil: 1000, nivelAtencao: 70, nivelCritico: 40, nivelAlertaTempoAtencao: 70, nivelAlertaTempoCritico: 40 })(res([40, 45, 50]));
