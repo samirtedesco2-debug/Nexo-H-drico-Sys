@@ -611,7 +611,7 @@ test("base dos alarmes: só ADMIN altera em Parâmetros Globais e a troca é aud
   expect(resultado.auditoria).toEqual([
     {
       usuario: "admin.nexo",
-      detalhes: "Base de comparação dos alarmes: mesmo dia da semana nas últimas 4 semanas → últimos 7 dias corridos",
+      detalhes: "Base de comparação dos alarmes: mesmo dia da semana: 4 últimos com dado válido (até 8 semanas) → últimos 7 dias corridos",
     },
   ]);
 });
@@ -636,12 +636,12 @@ test("investigação mostra a base dos alarmes, avisa valor inválido e acompanh
 
   // Seletor de análise segue livre; o indicador diz qual base os alarmes usam e avisa o valor inválido.
   await expect(page.locator("#indicador-base-alarme")).toContainText("inválida");
-  await expect(page.locator("#indicador-base-alarme")).toContainText("mesmo dia da semana nas últimas 4 semanas");
+  await expect(page.locator("#indicador-base-alarme")).toContainText("mesmo dia da semana: 4 últimos com dado válido");
 
   const investigacao = await context.newPage();
   await investigacao.goto("/?view=investigacao&reservatorio=R01-A");
   const base = investigacao.locator("#cco-investigation-base");
-  await expect(base).toContainText("mesmo dia da semana nas últimas 4 semanas", { timeout: 15_000 });
+  await expect(base).toContainText("mesmo dia da semana: 4 últimos com dado válido", { timeout: 15_000 });
   await expect(base).toContainText("inválida");
 
   // Mudança salva em outra janela chega pelo evento storage e redesenha a investigação.
@@ -658,4 +658,48 @@ test("investigação mostra a base dos alarmes, avisa valor inválido e acompanh
     "Alarmes usam: histórico global (Parâmetros Globais).",
   );
   await investigacao.close();
+});
+
+test("base mesmo dia da semana: busca a semana anterior quando falta vazão e avisa no Mural sem base", async ({ page }) => {
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  await expect(page.locator("#painel-alarmes")).toBeVisible({ timeout: 15_000 });
+  await aguardarBancoDisponivel(page);
+
+  const resultado = await page.evaluate(() => {
+    const banco = window.bancoDeDados;
+    const data = banco.datasDisponiveis[banco.datasDisponiveis.length - 1];
+    const horarios = banco.historico[data].horarios;
+    const referencia = () => obterReferenciaVazao(banco, "R01-A", data, "same-weekday-4", horarios);
+    const curta = (r) => ({ datas: r.datas, semVazao: r.datasSemVazaoValida });
+
+    const completa = curta(referencia());
+    // Falta a vazão da terça mais recente: entra a 5ª (mais antiga) no lugar dela.
+    const maisRecente = completa.datas[0];
+    banco.historico[maisRecente].reservatorios["R01-A"].leituras.vazao = [null, null, null, null, null, null];
+    const comFalta = curta(referencia());
+    return { completa, comFalta, maisRecente };
+  });
+  expect(resultado.completa.datas).toHaveLength(4);
+  expect(resultado.completa.semVazao).toEqual([]);
+  expect(resultado.comFalta.datas).toHaveLength(4);
+  expect(resultado.comFalta.datas).not.toContain(resultado.maisRecente);
+  // Exatamente uma data nova (a 5ª semana) entrou no lugar da que ficou sem vazão.
+  expect(resultado.comFalta.datas.filter((d) => !resultado.completa.datas.includes(d))).toHaveLength(1);
+  expect(resultado.comFalta.semVazao).toEqual([resultado.maisRecente]);
+
+  // Sem nenhum dia válido na janela de 8 semanas: aviso informativo no Mural (não vira alarme).
+  await page.evaluate(() => {
+    const banco = window.bancoDeDados;
+    const data = banco.datasDisponiveis[banco.datasDisponiveis.length - 1];
+    obterDatasBaseComparacao(banco, data, "same-weekday-4").forEach((dia) => {
+      const res = banco.historico[dia]?.reservatorios?.["R01-A"];
+      if (res) res.leituras.vazao = res.leituras.vazao.map(() => null);
+    });
+    renderizarDashboardExceccoes();
+  });
+  const aviso = page.locator("#aviso-base-vazao-mural");
+  await expect(aviso).toBeVisible();
+  await expect(aviso).toContainText("alarme de vazão inativo");
+  await expect(aviso).toContainText("R01-A (0 dia(s) com vazão válida)");
 });

@@ -1273,7 +1273,7 @@ function renderizarAnaliseGraficoReservatorio(
   seletorBaseGrafico.dataset.analysisBaseFilter = "";
   seletorBaseGrafico.setAttribute("aria-label", "Base de comparação do histórico do gráfico");
   [
-    { valor: "same-weekday-4", rotulo: "Base: Mesmo dia (4 sem.)" },
+    { valor: "same-weekday-4", rotulo: "Base: Mesmo dia (4 válidos)" },
     { valor: "7d-calendar", rotulo: "Base: Últimos 7 dias" },
     { valor: "30d-calendar", rotulo: "Base: Últimos 30 dias" },
     { valor: "global", rotulo: "Base: Histórico global" },
@@ -1932,6 +1932,50 @@ function abrirModalAlertasPreditivos(alertas) {
   };
 }
 
+/**
+ * Reservatórios cuja vazão de hoje não tem base de comparação (menos de 2 dias válidos por horário
+ * na base dos alarmes): o alarme de vazão fica inativo. Só informativo, sem código de alarme.
+ */
+function obterReservatoriosSemBaseVazao(banco, dataSelecionada) {
+  const dadosDoDia = banco?.historico?.[dataSelecionada];
+  if (!dadosDoDia?.reservatorios) return [];
+  if (document.getElementById("seletor-escopo-operacional")?.value === "nivel") return [];
+  const horarios = dadosDoDia.horarios || [];
+  const baseComparacao = obterBaseComparacaoAlarme().base;
+  return Object.entries(dadosDoDia.reservatorios)
+    .filter(([chave, res]) => {
+      if (obterConfiguracaoReservatorio(chave).emManutencao) return false;
+      if (!temLeiturasHistoricasHabituais(banco, chave, "vazao", dataSelecionada)) return false;
+      if (!filtrarLeiturasVazaoValidas(res?.leituras?.vazao).some((valor) => typeof valor === "number")) return false;
+      const referencia = obterReferenciaVazao(banco, chave, dataSelecionada, baseComparacao, horarios);
+      return avaliarAlertaVazao(res?.leituras?.vazao, referencia, horarios, chave).status === "Sem comparação";
+    })
+    .map(([chave, res]) => {
+      const referencia = obterReferenciaVazao(banco, chave, dataSelecionada, baseComparacao, horarios);
+      return { chave, nome: res.nome || chave, diasValidos: referencia.quantidade };
+    });
+}
+
+/** Faixa informativa do Mural: vazão sem base de comparação (não é alarme; não gera ACK nem tempo de resposta). */
+function renderizarAvisoBaseVazaoMural(banco, dataSelecionada) {
+  const aviso = document.getElementById("aviso-base-vazao-mural");
+  if (!aviso) return;
+  const semBase = obterReservatoriosSemBaseVazao(banco, dataSelecionada);
+  aviso.hidden = semBase.length === 0;
+  if (!semBase.length) {
+    aviso.replaceChildren();
+    return;
+  }
+  const lista = semBase
+    .map(({ nome, diasValidos }) => `${nome} (${diasValidos} dia(s) com vazão válida)`)
+    .join("; ");
+  aviso.replaceChildren(
+    criarElementoTexto("strong", "", "ℹ️ Vazão sem base de comparação, alarme de vazão inativo: "),
+    lista,
+    criarElementoTexto("span", "", ` · Base: ${obterRotuloBaseComparacao(obterBaseComparacaoAlarme().base)}.`),
+  );
+}
+
 function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
   const dadosDoDia = banco.historico[dataSelecionada];
   if (!dadosDoDia || !dadosDoDia.reservatorios) return [];
@@ -2234,6 +2278,7 @@ function renderizarDashboardExceccoes() {
 
   const exceccoes = obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada);
   atualizarBadgeAlarmes();
+  renderizarAvisoBaseVazaoMural(banco, dataSelecionada);
 
   // Rastreamento de Timestamp de Acionamento (Persistente e Imutável por Data + Reservatório)
   window.ccoAlarmTriggerTimes = window.ccoAlarmTriggerTimes || new Map();
@@ -3075,6 +3120,20 @@ function obterTaxonomiasDosAlarmes(alarmes, reservatorio, contextoBase) {
   );
 }
 
+/** "Referência: 4 dia(s): 14/10, 07/10, … · sem vazão válida: 21/10" (dias realmente usados na comparação). */
+function descreverDiasReferenciaVazao(referencia) {
+  const curta = (data) => String(data).slice(0, 5);
+  const datas = referencia?.datas ?? [];
+  const partes = [
+    datas.length
+      ? `Referência: ${datas.length} dia(s): ${datas.map(curta).join(", ")}`
+      : "Referência: nenhum dia com vazão válida",
+  ];
+  const semVazao = referencia?.datasSemVazaoValida ?? [];
+  if (semVazao.length) partes.push(`sem vazão válida: ${semVazao.map(curta).join(", ")}`);
+  return partes.join(" · ");
+}
+
 /**
  * Dados que acionaram cada alarme, agrupados por origem (nível, vazão, comunicação).
  * Reaproveita as regras existentes (autonomia/projeção, referência de vazão); não recalcula nada.
@@ -3114,7 +3173,22 @@ function montarGruposAnaliseAlarme(reservatorio, chave, statusNivel, alertaVazao
         const sinal = diferenca >= 0 ? "+" : "";
         return `Vazão ${i.rotulo.toLowerCase()}: ${i.valorAtual.toFixed(1)} L/s · ${sinal}${diferenca.toFixed(1)} L/s (${sinal}${i.variacao.toFixed(1)}%) · ${i.status}`;
       });
-    grupos.push({ origem: "vazao", titulo: "Vazão", linhas: linhas.length ? linhas : ["Vazão fora da referência."] });
+    if (!linhas.length) linhas.push("Vazão fora da referência.");
+    if (alertaVazao?.referencia) linhas.push(descreverDiasReferenciaVazao(alertaVazao.referencia));
+    grupos.push({ origem: "vazao", titulo: "Vazão", linhas });
+  } else if (
+    alertaVazao?.status === "Sem comparação" &&
+    filtrarLeiturasVazaoValidas(reservatorio.leituras?.vazao).some((valor) => typeof valor === "number")
+  ) {
+    // Não é alarme: avisa que a vazão está sem vigilância por falta de base.
+    grupos.push({
+      origem: "vazao-sem-base",
+      titulo: "Vazão",
+      linhas: [
+        "Sem base de comparação: alarme de vazão inativo.",
+        descreverDiasReferenciaVazao(alertaVazao.referencia),
+      ],
+    });
   }
 
   if (origens.has("dados")) {

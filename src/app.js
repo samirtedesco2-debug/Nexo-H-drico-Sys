@@ -2190,7 +2190,7 @@ function obterRotuloBaseComparacao(base) {
   const rotulos = {
     "7d-calendar": "últimos 7 dias corridos",
     "30d-calendar": "últimos 30 dias corridos",
-    "same-weekday-4": "mesmo dia da semana nas últimas 4 semanas",
+    "same-weekday-4": `mesmo dia da semana: ${BASE_MESMO_DIA_SEMANA_DIAS_VALIDOS} últimos com dado válido (até ${BASE_MESMO_DIA_SEMANA_SEMANAS_BUSCA} semanas)`,
     global: "histórico global",
   };
   return rotulos[base] ?? rotulos["7d-calendar"];
@@ -2222,8 +2222,9 @@ function obterDatasBaseComparacao(banco, dataSelecionada, base) {
     if (base === "7d-calendar") return diferencaDias <= 7;
     if (base === "30d-calendar") return diferencaDias <= 30;
     if (base === "same-weekday-4") {
+      // Janela de busca: até 8 semanas; cada consumidor usa só os 4 mais recentes com dado válido.
       return (
-        diferencaDias <= 28 &&
+        diferencaDias <= BASE_MESMO_DIA_SEMANA_SEMANAS_BUSCA * 7 &&
         new Date(converterDataParaUTC(data)).getUTCDay() === diaSemanaAtual
       );
     }
@@ -2266,7 +2267,9 @@ function obterComparacaoNivel(
   horarios,
   nivelAtual,
 ) {
-  const resumos = obterDatasBaseComparacao(banco, dataSelecionada, base)
+  const limiteDias = obterLimiteDiasValidosBase(base);
+  const resumosValidos = obterDatasBaseComparacao(banco, dataSelecionada, base)
+    .reverse() // mais recente primeiro: com limite, ficam os N dias válidos mais recentes
     .map((data) => {
       const reservatorio =
         banco.historico[data]?.reservatorios?.[chaveReservatorio];
@@ -2278,6 +2281,7 @@ function obterComparacaoNivel(
       return resumo.media === null ? null : { data, media: resumo.media };
     })
     .filter(Boolean);
+  const resumos = (limiteDias ? resumosValidos.slice(0, limiteDias) : resumosValidos).reverse();
   const medias = resumos.map(({ media }) => media);
   const referencia =
     medias.length >= 2
@@ -2303,8 +2307,10 @@ function obterReferenciaVazao(
   base,
   horarios,
 ) {
-  // Referência por horário (regrasNegocio.js): mesmo horário nos dias da base.
+  // Referência por horário (regrasNegocio.js): mesmo horário nos dias da base, do mais recente
+  // para o mais antigo (na base "mesmo dia da semana", os 4 válidos mais recentes por horário).
   const dias = obterDatasBaseComparacao(banco, dataSelecionada, base)
+    .reverse()
     .map((data) => {
       const reservatorio = banco.historico[data]?.reservatorios?.[chaveReservatorio];
       if (!reservatorio) return null;
@@ -2315,7 +2321,7 @@ function obterReferenciaVazao(
       };
     })
     .filter(Boolean);
-  return calcularReferenciaVazaoPorHorario(dias, horarios);
+  return calcularReferenciaVazaoPorHorario(dias, horarios, obterLimiteDiasValidosBase(base));
 }
 
 function obterUltimaLeitura(valores) {
@@ -2380,9 +2386,12 @@ function obterEstatisticasHistoricasPorHorario(
     vazao: horarios.map(() => []),
   };
 
+  // Mais recente primeiro: na base "mesmo dia da semana" cada horário guarda só os N válidos mais recentes.
   const datasHistoricas = dataSelecionada && baseComparacao
-    ? obterDatasBaseComparacao(banco, dataSelecionada, baseComparacao)
+    ? obterDatasBaseComparacao(banco, dataSelecionada, baseComparacao).reverse()
     : banco.datasDisponiveis;
+  const limiteDias = dataSelecionada && baseComparacao ? obterLimiteDiasValidosBase(baseComparacao) : null;
+  const cabe = (lista) => !limiteDias || lista.length < limiteDias;
 
   datasHistoricas.forEach((data) => {
     const dadosDoDia = banco.historico[data];
@@ -2397,12 +2406,12 @@ function obterEstatisticasHistoricasPorHorario(
       if (indiceHistorico < 0) return;
 
       const nivel = obterLeituraAnalitica(leituras.nivel?.[indiceHistorico]);
-      if (nivel.valor !== null && nivel.valor >= 0 && nivel.valor <= 110) {
+      if (nivel.valor !== null && nivel.valor >= 0 && nivel.valor <= 110 && cabe(amostras.nivel[indiceAtual])) {
         amostras.nivel[indiceAtual].push(nivel.valor);
       }
 
       const vazao = obterLeituraAnalitica(leituras.vazao?.[indiceHistorico]);
-      if (vazao.valor !== null && vazao.valor >= 0) {
+      if (vazao.valor !== null && vazao.valor >= 0 && cabe(amostras.vazao[indiceAtual])) {
         amostras.vazao[indiceAtual].push(vazao.valor);
       }
     });

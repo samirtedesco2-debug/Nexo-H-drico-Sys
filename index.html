@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="manual-imagens/nexo-hidrico-icon.png" />
 
     <!-- Estilos CSS -->
-    <link rel="stylesheet" href="styles.css?v=13" />
+    <link rel="stylesheet" href="styles.css?v=14" />
 
     <meta name="author" content="Samir Tedesco" />
 
@@ -341,7 +341,7 @@
               <option value="7d-calendar">Últimos 7 dias corridos</option>
               <option value="30d-calendar">Últimos 30 dias corridos</option>
               <option value="same-weekday-4" selected>
-                Mesmo dia da semana (últimas 4 semanas)
+                Mesmo dia da semana (4 válidos, até 8 semanas)
               </option>
               <option value="global">Histórico global</option>
             </select>
@@ -486,6 +486,7 @@
           <button type="button" id="btn-exportar-html"></button>
         </div>
       </div>
+      <div id="aviso-base-vazao-mural" class="mural-base-warning" role="status" hidden></div>
       <div id="grid-alarmes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 10px;">
         <!-- Injetado dinamicamente via ui.js -->
       </div>
@@ -812,15 +813,15 @@
     <script src="src/legacyMigration.js?v=1"></script>
     <script src="src/apiClient.js?v=7"></script>
     <script src="src/dados.js?v=5"></script>
-    <script src="src/regrasNegocio.js?v=14"></script>
+    <script src="src/regrasNegocio.js?v=15"></script>
     <script src="src/graficos.js?v=5"></script>
     <script src="src/storageRepository.js?v=7"></script>
     <script src="src/alarmTiming.js?v=1"></script>
-    <script src="src/ui.js?v=32"></script>
+    <script src="src/ui.js?v=33"></script>
     <script src="src/ccoSync.js?v=7"></script>
     <script src="src/authRepository.js?v=8"></script>
     <script src="src/rbac.js?v=6"></script>
     <script src="src/authUI.js?v=13"></script>
-    <script src="src/app.js?v=14"></script>
+    <script src="src/app.js?v=15"></script>
   </body>
 </html>

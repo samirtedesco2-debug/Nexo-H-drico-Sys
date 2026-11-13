@@ -259,6 +259,56 @@ function executarTestesAutonomiaPreditiva() {
   assert.ok(caindo.minutosAteCritico >= 0);
 }
 
+function executarTestesBaseMesmoDiaSemana() {
+  const regras = carregarRegrasNegocio();
+  const H = ['00:15', '01:15', '02:15'];
+  const dia = (data, vazao) => ({ data, horarios: H, vazao });
+  const ref = (dias, limite = 4) => JSON.parse(JSON.stringify(regras.calcularReferenciaVazaoPorHorario(dias, H, limite)));
+
+  assert.strictEqual(regras.obterLimiteDiasValidosBase('same-weekday-4'), 4);
+  assert.strictEqual(regras.obterLimiteDiasValidosBase('7d-calendar'), null);
+  assert.strictEqual(regras.obterLimiteDiasValidosBase('global'), null);
+
+  // Dias do mais recente para o mais antigo (t1 = terça passada ... t6 = 6 semanas atrás).
+  // 4 terças completas: usa exatamente as 4 mais recentes (mesmo resultado de antes).
+  const completas = ref([dia('t1', [10, 10, 10]), dia('t2', [10, 10, 10]), dia('t3', [10, 10, 10]),
+    dia('t4', [10, 10, 10]), dia('t5', [99, 99, 99])]);
+  assert.deepStrictEqual(completas.datas, ['t1', 't2', 't3', 't4']);
+  assert.strictEqual(completas.maximo, 10);
+  assert.deepStrictEqual(completas.datasSemVazaoValida, []);
+
+  // Uma terça inteira sem vazão válida: busca a 5ª no lugar dela e informa a que faltou.
+  const semUmDia = ref([dia('t1', [10, 10, 10]), dia('t2', [null, 0, null]), dia('t3', [10, 10, 10]),
+    dia('t4', [10, 10, 10]), dia('t5', [12, 12, 12]), dia('t6', [99, 99, 99])]);
+  assert.deepStrictEqual(semUmDia.datas, ['t1', 't3', 't4', 't5']);
+  assert.strictEqual(semUmDia.maximo, 12);
+  assert.deepStrictEqual(semUmDia.datasSemVazaoValida, ['t2']);
+  Object.values(semUmDia.valoresPorHorario).forEach((valores) => assert.strictEqual(valores.length, 4));
+
+  // Falta só um horário: a busca para trás vale só para esse horário.
+  const semUmHorario = ref([dia('t1', [10, null, 10]), dia('t2', [10, 10, 10]), dia('t3', [10, 10, 10]),
+    dia('t4', [10, 10, 10]), dia('t5', [20, 20, 20])]);
+  assert.deepStrictEqual(semUmHorario.valoresPorHorario['00:15'], [10, 10, 10, 10]);
+  assert.deepStrictEqual(semUmHorario.valoresPorHorario['01:15'], [10, 10, 10, 20]);
+  assert.deepStrictEqual(semUmHorario.datasSemVazaoValida, []);
+
+  // Menos de 4 válidas na janela: usa o que há (mínimo de 2 por horário segue valendo).
+  const tres = ref([dia('t1', [10, 10, 10]), dia('t2', [null, null, null]), dia('t3', [11, 11, 11])]);
+  assert.deepStrictEqual(tres.datas, ['t1', 't3']);
+  assert.deepStrictEqual(tres.horariosReferencia, H);
+  const so1 = ref([dia('t1', [10, 10, 10]), dia('t2', [null, null, null])]);
+  assert.strictEqual(so1.media, null);
+  assert.deepStrictEqual(so1.horariosReferencia, []);
+  const avaliado = JSON.parse(JSON.stringify(regras.avaliarAlertaVazao([50, 50, 50], so1, H, 'R-TESTE')));
+  assert.strictEqual(avaliado.status, 'Sem comparação');
+
+  // Sem limite (bases de calendário): todos os dias da janela entram, como antes.
+  const semLimite = ref([dia('a', [10, 10, 10]), dia('b', [10, 10, 10]), dia('c', [10, 10, 10]),
+    dia('d', [10, 10, 10]), dia('e', [30, 30, 30])], null);
+  assert.strictEqual(semLimite.maximo, 30);
+  assert.strictEqual(semLimite.datas.length, 5);
+}
+
 function executarTestesVazaoPorHorario() {
   const regras = carregarRegrasNegocio();
   const H = ['00:15', '01:15', '02:15'];
@@ -347,6 +397,7 @@ function executarTestesRegras() {
   executarTestesAutonomiaPreditiva();
   executarTestesVazaoPorHorario();
   executarTestesBaseComparacaoAlarme();
+  executarTestesBaseMesmoDiaSemana();
 
   console.log("✓ Regras de Negócio e Roteamento: Todos os testes passaram!");
 }

@@ -11,6 +11,17 @@ const LIMITE_CRITICO_VAZAO_PERCENTUAL = 35;
 const BASES_COMPARACAO_VALIDAS = ["7d-calendar", "30d-calendar", "same-weekday-4", "global"];
 const BASE_COMPARACAO_ALARME_PADRAO = "same-weekday-4";
 
+// Base "mesmo dia da semana": por horário, usa os 4 dias mais recentes (mesmo dia da semana) com
+// leitura válida naquele horário. Se um dia não tem dado, busca o anterior, até 8 semanas para trás;
+// achando menos de 4, usa o que houver (mínimo de 2 por horário segue valendo).
+const BASE_MESMO_DIA_SEMANA_DIAS_VALIDOS = 4;
+const BASE_MESMO_DIA_SEMANA_SEMANAS_BUSCA = 8;
+
+/** Quantos dias válidos cada horário usa na base (null = todos os dias da janela). */
+function obterLimiteDiasValidosBase(base) {
+  return base === "same-weekday-4" ? BASE_MESMO_DIA_SEMANA_DIAS_VALIDOS : null;
+}
+
 /**
  * Lê a base dos alarmes em nexo_hidrico_global_config.baseComparacaoAlarme.
  * Sem valor salvo usa o padrão; valor inválido ou configuração ilegível também usa o padrão,
@@ -494,21 +505,37 @@ function resumirLeiturasEstruturadas(valores, horarios) {
  * Dos horários incluídos saem: média de todos os valores, MENOR valor e MAIOR valor do período
  * (extremos reais, não médias de mínimas/máximas). `horariosReferencia` lista os horários usados,
  * para a comparação do dia olhar os mesmos horários.
+ * Com `limiteDiasPorHorario`, os dias devem vir do MAIS RECENTE para o mais antigo: cada horário usa
+ * só os N primeiros dias com leitura válida nele (dia sem dado é pulado e o anterior entra no lugar).
+ * `datasSemVazaoValida` lista os dias consultados sem nenhuma vazão válida que ficaram entre os usados.
  * @param {{data: string, horarios?: string[], vazao: any[]}[]} dias dias da base (já filtrados pela base de comparação)
+ * @param {string[]} [horariosPadrao]
+ * @param {number|null} [limiteDiasPorHorario]
  */
-function calcularReferenciaVazaoPorHorario(dias, horariosPadrao = []) {
+function calcularReferenciaVazaoPorHorario(dias, horariosPadrao = [], limiteDiasPorHorario = null) {
   const porHorario = new Map();
   const datasComDados = new Set();
+  const datasSemVazao = [];
   (dias || []).forEach(({ data, horarios, vazao }) => {
     const rotulos = Array.isArray(horarios) && horarios.length ? horarios : horariosPadrao;
-    filtrarLeiturasVazaoValidas(vazao).forEach((valor, indice) => {
+    const validas = filtrarLeiturasVazaoValidas(vazao);
+    if (!validas.some((valor) => typeof valor === "number")) datasSemVazao.push(data);
+    validas.forEach((valor, indice) => {
       if (typeof valor !== "number") return;
       const rotulo = rotulos[indice] ?? `Leitura ${indice + 1}`;
       if (!porHorario.has(rotulo)) porHorario.set(rotulo, []);
-      porHorario.get(rotulo).push({ data, valor });
+      const itensHorario = porHorario.get(rotulo);
+      if (limiteDiasPorHorario && itensHorario.length >= limiteDiasPorHorario) return;
+      itensHorario.push({ data, valor });
       datasComDados.add(data);
     });
   });
+  // Dias sem vazão válida que a busca "pulou" (mais recentes que o dia mais antigo usado).
+  const indiceDia = new Map((dias || []).map(({ data }, indice) => [data, indice]));
+  const indiceMaisAntigoUsado = Math.max(-1, ...[...datasComDados].map((data) => indiceDia.get(data)));
+  const datasSemVazaoValida = datasComDados.size
+    ? datasSemVazao.filter((data) => indiceDia.get(data) < indiceMaisAntigoUsado)
+    : datasSemVazao;
 
   const incluidos = [...porHorario.entries()].filter(([, itens]) => itens.length >= 2);
   const valores = [];
@@ -526,6 +553,7 @@ function calcularReferenciaVazaoPorHorario(dias, horariosPadrao = []) {
     maximo: tem ? Math.max(...valores) : null,
     quantidade: datasComDados.size,
     datas: [...datasComDados],
+    datasSemVazaoValida,
     quantidades: { media: datasUsadas.size, minimo: datasUsadas.size, maximo: datasUsadas.size },
     horariosReferencia: incluidos.map(([rotulo]) => rotulo),
     valoresPorHorario: Object.fromEntries(incluidos.map(([rotulo, itens]) => [rotulo, itens.map(({ valor }) => valor)])),

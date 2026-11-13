@@ -79,7 +79,7 @@ A primeira inicialização após a troca de identidade migra os bancos e chaves 
 
 * Acessíveis através do botão dedicado **`#btn-config-parametros-globais`** no painel de configurações, separados dos formulários individuais de reservatórios.
 * Contém o **Formulário I** (Passagem de plantão, e-mails de destino e grade de Timers de disparos automáticos) e o **Formulário II** (E-mails da manutenção, logs de erro, SLA e Cron).
-* **Alarmes de Vazão — base de comparação dos alarmes** (`#cfg-base-comparacao-alarme`, gravada em `nexo_hidrico_global_config.baseComparacaoAlarme`). Padrão: mesmo dia da semana nas últimas 4 semanas (`same-weekday-4`). Vale para o Mural, a investigação, a OS, o informativo do alarme e o resumo de plantão; o seletor "Base de comparação (análise)" da tela operacional não muda os alarmes. Só ADMIN salva (o formulário recusa outro perfil) e cada troca gera `BASE_ALARME_ALTERADA` na auditoria. Valor inválido usa o padrão e exibe aviso; as janelas abertas recalculam pelo evento `storage`.
+* **Alarmes de Vazão — base de comparação dos alarmes** (`#cfg-base-comparacao-alarme`, gravada em `nexo_hidrico_global_config.baseComparacaoAlarme`). Padrão: mesmo dia da semana (`same-weekday-4`): por horário, os 4 dias mais recentes com vazão válida, buscando até 8 semanas para trás. Vale para o Mural, a investigação, a OS, o informativo do alarme e o resumo de plantão; o seletor "Base de comparação (análise)" da tela operacional não muda os alarmes. Só ADMIN salva (o formulário recusa outro perfil) e cada troca gera `BASE_ALARME_ALTERADA` na auditoria. Valor inválido usa o padrão e exibe aviso; as janelas abertas recalculam pelo evento `storage`.
 
 ---
 
