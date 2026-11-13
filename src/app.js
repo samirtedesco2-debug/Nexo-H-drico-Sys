@@ -545,17 +545,25 @@ function inicializarDashboard() {
     option.textContent = data;
     seletorData.appendChild(option);
   });
-  seletorData.value = ultimaDataDoBanco;
+  const parametrosView = new URLSearchParams(window.location.search);
+  // Visão Operacional aberta pela investigação (?view=operacional&data=...) mostra o mesmo dia.
+  // Data inexistente: fica na última data e avisa (sem trocar o dia em silêncio).
+  const dataSolicitada = parametrosView.get("view") === "operacional" ? parametrosView.get("data") : null;
+  const dataInicial =
+    dataSolicitada && banco.datasDisponiveis.includes(dataSolicitada) ? dataSolicitada : ultimaDataDoBanco;
+  seletorData.value = dataInicial;
+  if (dataSolicitada && dataInicial !== dataSolicitada && typeof window.mostrarToast === "function") {
+    window.mostrarToast(`Data ${dataSolicitada} não encontrada nos dados; exibindo ${ultimaDataDoBanco}.`, "atencao");
+  }
 
   const seletorFiltro = document.getElementById("seletor-filtro");
   const seletorBaseComparacao = document.getElementById("seletor-base-vazao");
   const seletorEscopo = document.getElementById("seletor-escopo-operacional");
-  const parametrosView = new URLSearchParams(window.location.search);
   const reservatorioInvestigado = parametrosView.get("reservatorio");
   window.veioDeAlertasCCO =
     parametrosView.get("origem") === "mural" && Boolean(reservatorioInvestigado);
   preencherSeletorFiltro(
-    ultimaDataDoBanco,
+    dataInicial,
     reservatorioInvestigado
       ? `reservatorio:${reservatorioInvestigado}`
       : "TODOS",

@@ -2765,6 +2765,24 @@ function renderizarDashboardExceccoes() {
   });
 }
 
+/**
+ * Abre (ou reaproveita) a janela da Visão Operacional filtrada no reservatório e na data informados.
+ * Usa o mesmo nome de janela das abas, então uma Visão Operacional já aberta passa para este reservatório.
+ */
+window.abrirVisaoOperacionalDoReservatorio = function(chave, data) {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.searchParams.set("view", "operacional");
+  url.searchParams.set("reservatorio", chave);
+  if (data) url.searchParams.set("data", data);
+  const janela = window.open(url.href, "nexoViewWindow_operacional", "width=1200,height=800");
+  if (janela) {
+    window.nexoViewWindows = window.nexoViewWindows || {};
+    window.nexoViewWindows.operacional = janela;
+    janela.focus();
+  }
+};
+
 window.abrirReservatorioMural = function(chave) {
   const url = new URL(window.location.href);
   url.searchParams.set("view", "investigacao");
@@ -3451,8 +3469,15 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
   }
 
   const cabecalho = criarElementoTexto("div", "inv-panel-head");
+  // Aprofundar a análise: abre a Visão Operacional já filtrada neste reservatório e nesta data.
+  const btnOperacional = criarElementoTexto("button", "inv-btn", "📊 Ver na Visão Operacional");
+  btnOperacional.type = "button";
+  btnOperacional.id = "btn-investigacao-abrir-operacional";
+  btnOperacional.title = "Abre a Visão Operacional com o card, os gráficos e o informativo deste reservatório";
+  btnOperacional.addEventListener("click", () => window.abrirVisaoOperacionalDoReservatorio(chave, dataSelecionada));
   cabecalho.append(
     criarElementoTexto("h3", "investigation-section-title inv-panel-title", "Diagnóstico do Alarme"),
+    btnOperacional,
   );
   painel.appendChild(cabecalho);
 

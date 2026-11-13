@@ -880,3 +880,27 @@ test("CSV da auditoria e de alarmes não deixa texto digitado virar fórmula", a
   expect(cabecalho).toBe("Data;Chave;Reservatório;Severidade;Diagnóstico;Tendência");
   expect(primeira).toMatch(/^"\d{2}\/\d{2}\/\d{4}";"[^"]+";/);
 });
+
+test("investigação abre a Visão Operacional no mesmo reservatório e data", async ({ page }) => {
+  await page.goto("/");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  await page.goto("/?view=investigacao&reservatorio=R01-A&origem=mural&data=28/10/2026");
+
+  const botao = page.locator("#container-investigacao-alarme .inv-panel-head #btn-investigacao-abrir-operacional");
+  await expect(botao).toHaveText("📊 Ver na Visão Operacional", { timeout: 15_000 });
+  const popupPromise = page.waitForEvent("popup");
+  await botao.click();
+  const operacional = await popupPromise;
+
+  await expect(operacional).toHaveURL(/[?&]view=operacional(?:&|$)/);
+  await expect(operacional.locator("#painel-operacional")).toBeVisible({ timeout: 15_000 });
+  await expect(operacional.locator("#seletor-data")).toHaveValue("28/10/2026");
+  await expect(operacional.locator("#seletor-filtro")).toHaveValue("reservatorio:R01-A");
+  await operacional.close();
+
+  // Data inexistente: abre na última data e avisa, sem trocar o dia em silêncio.
+  await page.goto("/?view=operacional&reservatorio=R01-A&data=01/01/1999");
+  await expect(page.locator("#nexo-toast-container")).toContainText("Data 01/01/1999 não encontrada nos dados", { timeout: 15_000 });
+  const ultimaData = await page.evaluate(() => window.bancoDeDados.datasDisponiveis.at(-1));
+  await expect(page.locator("#seletor-data")).toHaveValue(ultimaData);
+});
