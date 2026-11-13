@@ -3149,6 +3149,8 @@ function montarGruposAnaliseAlarme(reservatorio, chave, statusNivel, alertaVazao
 
   if (origens.has("nivel")) {
     const linhas = [`Nível: ${nivel !== null ? `${Number(nivel).toFixed(1)}%` : "N/A"} (estado: ${statusNivel})`];
+    // A linha do nível vai para a OS; na tela o medidor já mostra valor e status.
+    const omitirNaTela = [0];
     if (pred?.capacidadeAusente) {
       linhas.push("Projeção: N/A (capacidade útil não configurada)");
     } else {
@@ -3161,7 +3163,7 @@ function montarGruposAnaliseAlarme(reservatorio, chave, statusNivel, alertaVazao
       const aviso = pred?.entradaConsiderada === false ? " (estimativa sem considerar a entrada de água)" : "";
       linhas.push(`Projeção: ${partes.length ? partes.join(" · ") : "estável"}${aviso}`);
     }
-    grupos.push({ origem: "nivel", titulo: "Nível", linhas });
+    grupos.push({ origem: "nivel", titulo: "Nível", linhas, omitirNaTela });
   }
 
   if (origens.has("vazao")) {
@@ -3209,7 +3211,9 @@ function criarResumoAlarme(grupos) {
   grupos.forEach((grupo) => {
     const secao = criarElementoTexto("div", "inv-check-group");
     secao.append(criarElementoTexto("h5", "inv-check-title", grupo.titulo));
-    grupo.linhas.forEach((linha) => secao.append(criarElementoTexto("div", "inv-template", linha)));
+    grupo.linhas
+      .filter((_, indice) => !(grupo.omitirNaTela ?? []).includes(indice))
+      .forEach((linha) => secao.append(criarElementoTexto("div", "inv-template", linha)));
     bloco.append(secao);
   });
   return bloco;
@@ -3385,7 +3389,7 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
 
   const cabecalho = criarElementoTexto("div", "inv-panel-head");
   cabecalho.append(
-    criarElementoTexto("h3", "investigation-section-title inv-panel-title", "Informações do Alarme Ativado e Diagnóstico Unificado"),
+    criarElementoTexto("h3", "investigation-section-title inv-panel-title", "Diagnóstico do Alarme"),
   );
   painel.appendChild(cabecalho);
 
@@ -3506,7 +3510,7 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
     );
   }
 
-  paramsWrap.append(criarElementoTexto("h4", "inv-card-title", "Parâmetros Operacionais Atuais"), paramsLista);
+  paramsWrap.append(criarElementoTexto("h4", "inv-card-title", "Parâmetros Operacionais"), paramsLista);
   cardsGrid.append(medidorWrap, paramsWrap);
   painel.appendChild(cardsGrid);
 
@@ -3567,7 +3571,7 @@ window.renderizarPainelInvestigacaoDedicado = function(chave, dataSelecionada, b
     const bloco = criarElementoTexto("div", "inv-header-main");
     const topo = criarElementoTexto("div", "inv-header-top");
     topo.append(
-      criarElementoTexto("span", "inv-eyebrow", "Inteligência Operacional · Investigação de Alarme Dedicada"),
+      criarElementoTexto("span", "inv-eyebrow", "Investigação de Alarme"),
       criarElementoTexto("span", "inv-severity-badge", severidade),
     );
     const titulo = criarElementoTexto("h2", "inv-title", nomeRes);

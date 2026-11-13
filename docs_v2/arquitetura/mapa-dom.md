@@ -31,7 +31,7 @@ Este documento fornece um mapa completo de todos os elementos estruturais (`head
 - `#tab-operacional` (class: `.view-tab`): Aba da Visão Operacional.
 - `#tab-analitico` (class: `.view-tab`): Aba da Visão Analítica.
 - `#tab-engenharia` (class: `.view-tab`): Aba da Visão de Engenharia.
-- `#tab-exceccoes` (class: `.view-tab`): Aba do Mural de Alertas CCO.
+- `#tab-alarmes` (class: `.view-tab`): Aba do Mural de Alertas CCO (`?view=alarmes`).
 
 ### Anunciador de Alarme CCO (`#cco-alarm-banner`)
 - **`.cco-banner-content`**: Conteúdo do banner de alerta preditivo.
@@ -63,8 +63,15 @@ Este documento fornece um mapa completo de todos os elementos estruturais (`head
 - `#analise-grafico-reservatorio` (class: `.reservoir-analysis-view`): Visão de gráfico detalhado por reservatório.
 
 ### Visão Dedicada de Investigação de Alarme (`#painel-investigacao-alarme` / `main.view-panel`)
-- `#cco-lean-investigation-header` (class: `.cco-lean-investigation-header`): Cabeçalho contextual da investigação dedicada, exibindo severidade, nome do reservatório, "Alarme acionado em" (`#cco-investigation-date`, horário em que o CCO registrou o acionamento, de `ccoAlarmTriggerTimes`; não é horário de sensor), "Última atualização dos dados" (`#cco-investigation-updated-at`, horário do boletim) e o botão de reconhecimento (ACK). Não há botão "Voltar ao Mural": basta fechar a janela.
-- `#container-investigacao-alarme`: Container do painel da investigação (`.inv-panel`, gerado por `criarPainelAlarmeAtivado`): resumo do alarme por origem (nível, vazão, comunicação) com o botão "Copiar Ordem de Serviço (OS)" em `.inv-taxonomia`, medidor de nível e parâmetros do boletim.
+- `#cco-lean-investigation-header` (class: `.cco-lean-investigation-header`): Cabeçalho contextual da investigação dedicada, exibindo severidade, nome do reservatório, "Alarme acionado em" (`#cco-investigation-date`, horário em que o CCO registrou o acionamento, de `ccoAlarmTriggerTimes`; não é horário de sensor), "Última atualização dos dados" (`#cco-investigation-updated-at`, horário do boletim), "Base de comparação" (`#cco-investigation-base`, base dos alarmes; avisa se o parâmetro for inválido) e o botão de reconhecimento (ACK, `#btn-ack-dedicated-<chave>`). Não há botão "Voltar ao Mural": basta fechar a janela.
+- `#container-investigacao-alarme`: Container do painel "Diagnóstico do Alarme" (`.inv-panel`, gerado por `criarPainelAlarmeAtivado`):
+  - `.inv-taxonomia`: resumo por origem (nível, vazão, comunicação) e o botão "Copiar Ordem de Serviço (OS)".
+  - `.inv-cards > div:nth-child(1)` (`.inv-card--center`): "Medidor de Nível", com status e tendência do nível (`.inv-gauge-trend`) abaixo do medidor.
+  - `.inv-cards > div:nth-child(2)`: "Parâmetros Operacionais" (`.inv-params`): vazão de saída, de entrada (N/A: não medida) e líquida com a origem do valor; projeção preditiva quando houver.
+
+### Mural de Alarmes (`#painel-alarmes`)
+- `#aviso-base-vazao-mural` (class: `.mural-base-warning`): faixa informativa com os reservatórios cuja vazão está sem base de comparação (alarme de vazão inativo). Não é alarme: não gera ACK, horário de acionamento nem contagem.
+- `#grid-alarmes`: cards dos alarmes ativos.
 
 ### Visão Analítica (`#painel-analitico`)
 - **`.focused-view-actions`**: Ações da janela focada, com modo CCO e fechamento.

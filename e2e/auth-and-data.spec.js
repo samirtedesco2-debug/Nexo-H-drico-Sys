@@ -759,6 +759,11 @@ test("investigação: tendência sob o medidor e vazão líquida com origem", as
   const parametros = page.locator("#container-investigacao-alarme .inv-cards > div").nth(1);
   await expect(medidor.locator(".inv-gauge-trend")).toContainText(/Tendência: (Subindo ↑|Descendo ↓|Estável →)/, { timeout: 15_000 });
   await expect(parametros).not.toContainText("Tendência:");
+  await expect(parametros.locator(".inv-card-title")).toHaveText("Parâmetros Operacionais");
+  // Limpeza: título curto e o nível só no medidor (a linha "Nível: X%" segue apenas na OS).
+  await expect(page.locator("#container-investigacao-alarme .inv-panel-title")).toHaveText("Diagnóstico do Alarme");
+  await expect(page.locator("#container-investigacao-alarme .inv-taxonomia")).not.toContainText(/Nível: \d/);
+  await expect(page.locator("#container-investigacao-alarme .inv-taxonomia")).toContainText("Projeção:");
 
   const liquida = parametros.locator(".inv-param").filter({ hasText: "Vazão Líquida:" });
   // Com medição de vazão: a entrada não é medida, então a líquida é a própria saída e diz isso.

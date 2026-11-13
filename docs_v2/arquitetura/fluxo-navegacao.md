@@ -34,9 +34,9 @@ Este documento descreve o mapa de navegação (*Sitemap*) e os fluxos de intera�
                  │         ├── Exportação Multiformato (Relatório HTML, CSV, Cópia de Plantão)
                  │         └── ──► [ Drill-Down: Clique em Alarme / Reservatório ]
                  │                   │
-                 │                   └──► [ Visão Operacional em Modo Investigação ]
-                 │                             (Parâmetro: ?view=operacional&origem=mural&reservatorio=R01-A)
-                 │                             ├── Exibe dados detalhados do reservatório investigado
+                 │                   └──► [ Visão Dedicada de Investigação de Alarme ]
+                 │                             (Parâmetro: ?view=investigacao&reservatorio=R01-A&origem=mural&data=dd/mm/aaaa)
+                 │                             ├── Diagnóstico do alarme, OS, medidor e parâmetros do boletim
                  │                             └── Fechar a janela ──► Retorna ao Mural de Alarmes
                  │
                  └──► 5. Configurações & Parâmetros Globais (ADMIN)
@@ -76,10 +76,10 @@ Este documento descreve o mapa de navegação (*Sitemap*) e os fluxos de intera�
 1. **Origem no Mural de Alarmes (`tab-alarmes`):**
    - O operador visualiza um alarme ativo (ex: reservatório `R-01`).
 2. **Ação de Clique no Card/Linha:**
-   - Ao clicar no card ou item do mural, o sistema abre diretamente a **Visão Dedicada de Investigação de Alarme** (`?view=investigacao&reservatorio=R01-A&origem=mural`), completamente isolada da Visão Operacional.
+   - Ao clicar no card ou item do mural, o sistema abre diretamente a **Visão Dedicada de Investigação de Alarme** (`?view=investigacao&reservatorio=R01-A&origem=mural&data=dd/mm/aaaa`), isolada da Visão Operacional (sem cabeçalho principal nem abas).
 3. **Painel Exclusivo & Retorno:**
-   - A tela exibe exclusivamente o cabeçalho CCO lean e o painel informativo do alarme (`reservoir-alarm-info`) com taxonomia, dados da leitura violada e tempo de resposta, sem poluição visual.
-   - O operador pode retornar rapidamente ao Mural de Alarmes fechando a janela ou pressionando a tecla **[Esc]**, restaurando o contexto operacional anterior sem perda de estado.
+   - A tela mostra o cabeçalho da investigação (severidade, reservatório, "Alarme acionado em", última atualização do boletim, base de comparação e botão Reconhecer) e o painel "Diagnóstico do Alarme" (`renderizarPainelInvestigacaoDedicado` / `criarPainelAlarmeAtivado`, em `ui.js`). O detalhe de cada elemento está em `docs_v2/modulos/ui.md`.
+   - Não há botão "Voltar ao Mural": para retornar, feche a janela. Reconhecimentos feitos no Mural e a troca da base dos alarmes em Parâmetros Globais atualizam a janela aberta.
 
 ---
 

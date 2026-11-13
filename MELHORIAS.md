@@ -164,3 +164,7 @@ Este documento registra o histórico cronológico de melhorias, refatorações e
 * **Tendência** (do nível, duas últimas leituras) saiu do card de parâmetros e fica abaixo do medidor, junto do status.
 * **Vazão líquida** no card de parâmetros, sempre com a origem: com medição de vazão a entrada não é medida, então mostra "X L/s = saída (entrada não medida)" sem afirmar enchendo/esvaziando (contradiria a tendência do nível); sem medição de vazão, "X L/s enchendo/esvaziando (pela variação do nível)"; sem capacidade útil ou leituras de nível, N/A com o motivo. `calcularAutonomiaEProjecao` passa a devolver `origemVazaoLiquida` ("saida", "nivel" ou null); a fórmula não mudou.
 * **Validação:** testes unitários de `origemVazaoLiquida` e E2E dos três casos na investigação.
+
+### Investigação: limpeza visual e docs_v2 atualizado
+* **Tela:** título "Diagnóstico do Alarme" (antes "Informações do Alarme Ativado e Diagnóstico Unificado"), rótulo do cabeçalho "Investigação de Alarme", card "Parâmetros Operacionais" (sem "Atuais": os dados são do boletim, não tempo real) e cards do medidor e dos parâmetros com a mesma altura. A linha "Nível: X% (estado)" saiu do resumo da tela, porque o medidor já mostra valor e status; continua na OS.
+* **docs_v2:** fluxo de navegação (view `?view=investigacao`, sem a tecla Esc), mapa do DOM (ids reais das abas, cabeçalho, cards da investigação e faixa do Mural), módulos `app`, `ui`, `ccoSync` e `regrasNegocio` alinhados ao código.

@@ -3,8 +3,9 @@
 O arquivo `src/app.js` atua como o **controlador principal (orquestrador)** da aplicação.
 
 ## Responsabilidades
-- Inicialização da aplicação ao carregar a página e verificação de query parameters (`?view=operacional`, `?view=analitico`, `?view=engenharia` e `?view=exceccoes`) para abrir a visualização solicitada.
-- Ao abrir uma investigação pelo Mural, `reservatorio` e `origem=mural` são aplicados antes da primeira renderização operacional, evitando exibir o boletim geral.
+- Inicialização da aplicação ao carregar a página e verificação de query parameters (`?view=operacional`, `?view=analitico`, `?view=engenharia`, `?view=alarmes` — `exceccoes` é aceito como sinônimo —, `?view=configuracoes` e `?view=investigacao`) para abrir a visualização solicitada.
+- `?view=investigacao&reservatorio=<chave>&data=<dd/mm/aaaa>` (aberta pelo Mural) esconde cabeçalho, abas e demais painéis e chama `renderizarPainelInvestigacaoDedicado` (`ui.js`); sem `data`, usa a última data do banco.
+- Escuta o evento `storage` de `nexo_hidrico_global_config`: quando o ADMIN troca a base dos alarmes em outra janela, atualiza o indicador `#indicador-base-alarme` e recalcula o dashboard e o Mural, ou a investigação aberta.
 - Carregamento inicial do estado de reconhecimentos, metadados e logs pelo `StorageRepository` antes de inicializar o banco de dados da aplicação. Quando esse estado foi carregado, ele tem precedência sobre `_estado_plantao` vindo da configuração no `apiClient.js`.
 - **Integração com Módulo CCO Sync (`src/ccoSync.js`)**:
   - Delegação da inicialização do `BroadcastChannel('nexo_hidrico_cco_link')` e do modo CCO/Fullscreen.

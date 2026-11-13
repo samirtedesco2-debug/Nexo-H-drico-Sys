@@ -3667,7 +3667,7 @@ body[data-view-scale="large-tv"] .kpi-box {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 20px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .inv-card {
