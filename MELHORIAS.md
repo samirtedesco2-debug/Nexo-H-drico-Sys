@@ -154,3 +154,8 @@ Este documento registra o histórico cronológico de melhorias, refatorações e
 * **Antes:** a base usava as terças (por exemplo) das últimas 4 semanas corridas; dia sem vazão reduzia a referência, e com menos de 2 dias válidos o alarme de vazão ficava inativo sem aviso no Mural.
 * **Agora:** por horário, entram os 4 dias mais recentes do mesmo dia da semana com vazão válida; se faltar dado, busca a semana anterior, até 8 semanas. Achando menos de 4, usa o que houver (mínimo de 2 por horário). Sem falta de dado o resultado é o mesmo de antes. A investigação (e a OS) mostra os dias usados e os que ficaram sem vazão válida; o Mural exibe uma faixa informativa quando a vazão de um reservatório fica sem base (não é alarme). A comparação de nível médio (desligada) e as estatísticas por horário do analítico seguem a mesma regra.
 * **Validação:** testes unitários (4 completas, terça sem vazão, horário isolado, menos de 4, sem base, bases de calendário sem limite) e E2E com os dados reais (busca da 5ª semana e faixa do Mural).
+
+### Investigação: vazão sem leitura como N/A e reconhecimento sincronizado
+* **Vazão de saída:** sem leitura válida no dia (vazia ou zerada), a investigação mostra "N/A (sem leitura válida)" em vez de "0 L/s".
+* **Reconhecimento entre janelas:** ACK ou revogação feitos no Mural (ou em outra janela) agora redesenham a janela de investigação aberta (`CcoSync.atualizarAposMudancaAck`). Antes o botão ficava com o estado antigo, e um clique gravava de novo um ACK já feito ou tentava revogar um já revogado. O fluxo de reconhecimento em si não mudou.
+* **Validação:** E2E com duas janelas (ACK e revogação no Mural refletidos na investigação; vazão zerada exibida como N/A); o teste falha sem a correção.

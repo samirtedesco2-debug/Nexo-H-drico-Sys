@@ -3327,7 +3327,8 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
   const nivel = obterUltimaLeituraNivel(reservatorio.leituras?.nivel);
   const { statusNivel, alertaVazao, alarmes, possuiLeiturasAusentes, referenciaVazao } =
     avaliarSituacaoAlarme(reservatorio, chave, banco, dataSelecionada, baseComparacao, horarios, excObj);
-  const vazaoAlvo = obterUltimaLeitura(filtrarLeiturasVazaoValidas(reservatorio.leituras?.vazao)) ?? 0;
+  // Sem leitura válida no dia: N/A, nunca 0 L/s (zero é leitura inconsistente, não vazão).
+  const vazaoAlvo = obterUltimaLeitura(filtrarLeiturasVazaoValidas(reservatorio.leituras?.vazao));
   const corStatusVazao =
     alertaVazao?.status === "Crítico"
       ? "var(--status-critical-color)"
@@ -3453,7 +3454,11 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
 
   const vazaoEntrada = predAlvo?.vazaoEntradaLs;
   paramsLista.append(
-    criarItemParametro("Vazão de Saída:", `${vazaoAlvo} L/s`, corStatusVazao),
+    criarItemParametro(
+      "Vazão de Saída:",
+      vazaoAlvo === null ? "N/A (sem leitura válida)" : `${vazaoAlvo} L/s`,
+      vazaoAlvo === null ? "var(--muted-color)" : corStatusVazao,
+    ),
     criarItemParametro(
       "Vazão de Entrada:",
       vazaoEntrada !== undefined && vazaoEntrada !== null ? `${Number(vazaoEntrada).toFixed(1)} L/s` : "N/A",

@@ -703,3 +703,42 @@ test("base mesmo dia da semana: busca a semana anterior quando falta vazão e av
   await expect(aviso).toContainText("alarme de vazão inativo");
   await expect(aviso).toContainText("R01-A (0 dia(s) com vazão válida)");
 });
+
+test("investigação aberta acompanha o reconhecimento feito no Mural e mostra N/A sem vazão válida", async ({ page, context }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify({
+      "R01-A": { nivelAtencao: 101, nivelCritico: 100, alertaNivelAtivo: true }
+    }));
+  });
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  await expect(page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: "R01-A" }).first())
+    .toBeVisible({ timeout: 15_000 });
+
+  const investigacao = await context.newPage();
+  await investigacao.goto("/?view=investigacao&reservatorio=R01-A");
+  const botaoAck = investigacao.locator("#btn-ack-dedicated-R01_A");
+  await expect(botaoAck).toHaveText("🚨 Reconhecer", { timeout: 15_000 });
+
+  // Reconhece no Mural (outra janela): a investigação recebe pelo BroadcastChannel e redesenha.
+  page.once("dialog", (dialogo) => dialogo.accept("teste e2e"));
+  await page.evaluate(() => toggleAckMural("R01-A", "Crítico", "R01-A"));
+  await expect(botaoAck).toHaveText(/^✓ /);
+  await expect(botaoAck).toHaveClass(/inv-btn--ack-done/);
+
+  // Revoga no Mural (ADMIN confirma): volta a "Reconhecer" na investigação.
+  page.once("dialog", (dialogo) => dialogo.accept());
+  await page.evaluate(() => toggleAckMural("R01-A", "Crítico", "R01-A"));
+  await expect(botaoAck).toHaveText("🚨 Reconhecer");
+
+  // Vazão sem leitura válida (zerada): N/A, nunca "0 L/s".
+  await investigacao.evaluate(() => {
+    const atual = window.nexoInvestigacaoAtual;
+    atual.banco.historico[atual.dataSelecionada].reservatorios["R01-A"].leituras.vazao = [0, 0, 0, 0, 0, 0];
+    window.renderizarPainelInvestigacaoDedicado(atual.chave, atual.dataSelecionada, atual.banco);
+  });
+  const vazaoSaida = investigacao.locator(".inv-param").filter({ hasText: "Vazão de Saída:" });
+  await expect(vazaoSaida).toContainText("N/A (sem leitura válida)");
+  await expect(vazaoSaida).not.toContainText("0 L/s");
+  await investigacao.close();
+});

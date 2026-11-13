@@ -14,26 +14,36 @@ window.CcoSync = {
         if (type === 'ACK_ALARM') {
           window.ccoReconhecidos.set(chave, severidade);
           if (metadados) window.ccoAckMetadata.set(chave, metadados);
-          if (typeof renderizarDashboardExceccoes === 'function') {
-            renderizarDashboardExceccoes();
-          }
+          window.CcoSync.atualizarAposMudancaAck();
         } else if (type === 'REVOKE_ACK') {
           window.ccoReconhecidos.delete(chave);
           window.ccoAckMetadata.delete(chave);
-          if (typeof renderizarDashboardExceccoes === 'function') {
-            renderizarDashboardExceccoes();
-          }
+          window.CcoSync.atualizarAposMudancaAck();
         } else if (type === 'SYNC_RECONHECIDOS') {
           window.ccoReconhecidos = new Map(Object.entries(reconhecidos || {}));
           window.ccoAckMetadata = new Map(Object.entries(ackMetadata || {}));
           if (Array.isArray(incidentsLog)) {
             window.nexoIncidentsLog = incidentsLog;
           }
-          if (typeof renderizarDashboardExceccoes === 'function') {
-            renderizarDashboardExceccoes();
-          }
+          window.CcoSync.atualizarAposMudancaAck();
         }
       };
+    }
+  },
+
+  // Reconhecimento feito em outra janela: redesenha o Mural e, na janela dedicada de
+  // investigação, o cabeçalho (botão Reconhecer/Reconhecido) com o estado novo.
+  atualizarAposMudancaAck() {
+    if (typeof renderizarDashboardExceccoes === 'function') {
+      renderizarDashboardExceccoes();
+    }
+    const atual = window.nexoInvestigacaoAtual;
+    if (
+      atual &&
+      document.body.classList.contains('is-cco-investigation-active') &&
+      typeof window.renderizarPainelInvestigacaoDedicado === 'function'
+    ) {
+      window.renderizarPainelInvestigacaoDedicado(atual.chave, atual.dataSelecionada, atual.banco);
     }
   },
 
