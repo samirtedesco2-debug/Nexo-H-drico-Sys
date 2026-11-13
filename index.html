@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="manual-imagens/nexo-hidrico-icon.png" />
 
     <!-- Estilos CSS -->
-    <link rel="stylesheet" href="styles.css?v=12" />
+    <link rel="stylesheet" href="styles.css?v=13" />
 
     <meta name="author" content="Samir Tedesco" />
 
@@ -336,7 +336,7 @@
             </select>
           </div>
           <div class="operational-comparison-control">
-            <label for="seletor-base-vazao">Base de comparação</label>
+            <label for="seletor-base-vazao">Base de comparação (análise)</label>
             <select id="seletor-base-vazao">
               <option value="7d-calendar">Últimos 7 dias corridos</option>
               <option value="30d-calendar">Últimos 30 dias corridos</option>
@@ -345,6 +345,7 @@
               </option>
               <option value="global">Histórico global</option>
             </select>
+            <small id="indicador-base-alarme" class="operational-comparison-hint" aria-live="polite"></small>
           </div>
           <div class="operational-comparison-control" style="display: flex; align-items: flex-end;">
             <button
@@ -811,15 +812,15 @@
     <script src="src/legacyMigration.js?v=1"></script>
     <script src="src/apiClient.js?v=7"></script>
     <script src="src/dados.js?v=5"></script>
-    <script src="src/regrasNegocio.js?v=13"></script>
+    <script src="src/regrasNegocio.js?v=14"></script>
     <script src="src/graficos.js?v=5"></script>
     <script src="src/storageRepository.js?v=7"></script>
     <script src="src/alarmTiming.js?v=1"></script>
-    <script src="src/ui.js?v=31"></script>
+    <script src="src/ui.js?v=32"></script>
     <script src="src/ccoSync.js?v=7"></script>
     <script src="src/authRepository.js?v=8"></script>
     <script src="src/rbac.js?v=6"></script>
     <script src="src/authUI.js?v=13"></script>
-    <script src="src/app.js?v=13"></script>
+    <script src="src/app.js?v=14"></script>
   </body>
 </html>

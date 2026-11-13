@@ -1938,7 +1938,8 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
 
   const horarios = dadosDoDia.horarios || [];
   const quantidadeSlots = horarios.length;
-  const baseComparacao = document.getElementById("seletor-base-vazao")?.value || "same-weekday-4";
+  // Alarmes usam a base parametrizada (Parâmetros Globais), não o seletor de análise da tela.
+  const baseComparacao = obterBaseComparacaoAlarme().base;
   const escopoOperacional = document.getElementById("seletor-escopo-operacional")?.value || "ambos";
 
   const exceccoesMap = new Map();
@@ -3149,7 +3150,7 @@ function gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) {
   const nome = reservatorio.nome || chave;
   const tag = obterConfiguracaoReservatorio(chave).tag || chave;
   const horarios = dadosDoDia.horarios || [];
-  const baseComparacao = document.getElementById("seletor-base-vazao")?.value || "dia_anterior";
+  const baseComparacao = obterBaseComparacaoAlarme().base;
 
   const excObj = obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada).find((e) => e.chave === chave);
   const { statusNivel, alertaVazao, alarmes, possuiLeiturasAusentes } =
@@ -3418,6 +3419,8 @@ function mostrarInvestigacaoIndisponivel(headerEnxuto, containerAlarme, motivo) 
 window.renderizarPainelInvestigacaoDedicado = function(chave, dataSelecionada, banco) {
   const painelInvestigacao = document.getElementById("painel-investigacao-alarme");
   if (!painelInvestigacao) return;
+  // Guardado para redesenhar quando a base dos alarmes mudar em outra janela (evento storage, app.js).
+  window.nexoInvestigacaoAtual = { chave, dataSelecionada, banco };
 
   const headerEnxuto = painelInvestigacao.querySelector("#cco-lean-investigation-header");
   const containerAlarme = painelInvestigacao.querySelector("#container-investigacao-alarme");
@@ -3476,7 +3479,13 @@ window.renderizarPainelInvestigacaoDedicado = function(chave, dataSelecionada, b
     itemData.append(criarElementoTexto("strong", "", "Alarme acionado em:"), " ", spanData);
     const itemAtualizacao = criarElementoTexto("span", "");
     itemAtualizacao.append(criarElementoTexto("strong", "", "Última atualização dos dados:"), " ", spanAtualizacao);
-    meta.append(itemData, itemAtualizacao);
+    const { base: baseAlarme, aviso: avisoBaseAlarme } = obterBaseComparacaoAlarme();
+    const rotuloBaseAlarme = typeof obterRotuloBaseComparacao === "function" ? obterRotuloBaseComparacao(baseAlarme) : baseAlarme;
+    const spanBase = criarElementoTexto("span", "", avisoBaseAlarme ? `${rotuloBaseAlarme} (⚠️ ${avisoBaseAlarme})` : rotuloBaseAlarme);
+    spanBase.id = "cco-investigation-base";
+    const itemBase = criarElementoTexto("span", "");
+    itemBase.append(criarElementoTexto("strong", "", "Base de comparação:"), " ", spanBase);
+    meta.append(itemData, itemAtualizacao, itemBase);
     bloco.append(topo, titulo, meta);
 
     const acoes = criarElementoTexto("div", "inv-actions");
@@ -3506,7 +3515,7 @@ window.renderizarPainelInvestigacaoDedicado = function(chave, dataSelecionada, b
   }
 
   if (containerAlarme) {
-    const baseComparacao = document.getElementById("seletor-base-vazao")?.value || "dia_anterior";
+    const baseComparacao = obterBaseComparacaoAlarme().base;
     containerAlarme.replaceChildren(
       criarPainelAlarmeAtivado(
         reservatorio,

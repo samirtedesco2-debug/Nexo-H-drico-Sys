@@ -580,3 +580,82 @@ test("configuração por reservatório valida os limites e preserva o arquivo vi
   await expect(mensagem).toContainText("apenas neste navegador");
   await expect(mensagem).toContainText("vazão média – atenção");
 });
+
+async function entrar(page, usuario, senha) {
+  await page.getByLabel("Usuário").fill(usuario);
+  await page.locator("#login-password").fill(senha);
+  const loginReload = page.waitForEvent("load");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
+  await loginReload;
+}
+
+test("base dos alarmes: só ADMIN altera em Parâmetros Globais e a troca é auditada", async ({ page }) => {
+  await page.goto("/?view=configuracoes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+
+  await page.getByRole("button", { name: /Parâmetros Globais/ }).click();
+  const seletor = page.locator("#cfg-base-comparacao-alarme");
+  await expect(seletor).toHaveValue("same-weekday-4");
+  await seletor.selectOption("7d-calendar");
+  await page.getByRole("button", { name: "Salvar Parâmetros Globais" }).click();
+  await expect(page.locator("#global-config-msg")).toContainText("salvos com sucesso");
+
+  const resultado = await page.evaluate(async () => ({
+    base: JSON.parse(localStorage.getItem("nexo_hidrico_global_config")).baseComparacaoAlarme,
+    auditoria: (await window.AuthRepository.obterLogsAuditoria())
+      .filter((log) => log.acao === "BASE_ALARME_ALTERADA")
+      .map((log) => ({ usuario: log.usuario, detalhes: log.detalhes })),
+  }));
+  expect(resultado.base).toBe("7d-calendar");
+  expect(resultado.auditoria).toEqual([
+    {
+      usuario: "admin.nexo",
+      detalhes: "Base de comparação dos alarmes: mesmo dia da semana nas últimas 4 semanas → últimos 7 dias corridos",
+    },
+  ]);
+});
+
+test("Agent não acessa a base dos alarmes em Parâmetros Globais", async ({ page }) => {
+  await page.goto("/?view=configuracoes");
+  await entrar(page, "operador.nexo", "Agent@2026");
+  await expect(page.locator("#painel-configuracoes")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: /Parâmetros Globais/ })).toHaveCount(0);
+  await expect(page.locator("#cfg-base-comparacao-alarme")).toHaveCount(0);
+});
+
+test("investigação mostra a base dos alarmes, avisa valor inválido e acompanha a troca em outra janela", async ({ page, context }) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("e2e-semeado")) return;
+    sessionStorage.setItem("e2e-semeado", "1");
+    localStorage.setItem("nexo_hidrico_global_config", JSON.stringify({ baseComparacaoAlarme: "dia_anterior" }));
+  });
+  await page.goto("/");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  await aguardarBancoDisponivel(page);
+
+  // Seletor de análise segue livre; o indicador diz qual base os alarmes usam e avisa o valor inválido.
+  await expect(page.locator("#indicador-base-alarme")).toContainText("inválida");
+  await expect(page.locator("#indicador-base-alarme")).toContainText("mesmo dia da semana nas últimas 4 semanas");
+
+  const investigacao = await context.newPage();
+  await investigacao.goto("/?view=investigacao&reservatorio=R01-A");
+  const base = investigacao.locator("#cco-investigation-base");
+  await expect(base).toContainText("mesmo dia da semana nas últimas 4 semanas", { timeout: 15_000 });
+  await expect(base).toContainText("inválida");
+
+  // Mudança salva em outra janela chega pelo evento storage e redesenha a investigação.
+  await page.evaluate(() => {
+    localStorage.setItem("nexo_hidrico_global_config", JSON.stringify({ baseComparacaoAlarme: "30d-calendar" }));
+  });
+  await expect(base).toHaveText("últimos 30 dias corridos");
+
+  // E no sentido inverso: a janela principal atualiza o indicador (o evento não dispara na janela que gravou).
+  await investigacao.evaluate(() => {
+    localStorage.setItem("nexo_hidrico_global_config", JSON.stringify({ baseComparacaoAlarme: "global" }));
+  });
+  await expect(page.locator("#indicador-base-alarme")).toHaveText(
+    "Alarmes usam: histórico global (Parâmetros Globais).",
+  );
+  await investigacao.close();
+});

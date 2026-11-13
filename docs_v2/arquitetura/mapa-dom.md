@@ -53,7 +53,8 @@ Este documento fornece um mapa completo de todos os elementos estruturais (`head
   - **`.operational-filter-controls`**: Controles de escopo e comparação.
     - **`.operational-comparison-control`**: Grupo de controle de escopo.
       - `#seletor-escopo-operacional`: Seleciona indicadores exibidos (ambos, nível, vazão).
-      - `#seletor-base-vazao`: Seleciona base de comparação estatística.
+      - `#seletor-base-vazao`: Seleciona base de comparação estatística **só para análise** (cartões, boletim, analítico); não muda os alarmes.
+      - `#indicador-base-alarme`: Mostra a base usada pelos alarmes (Parâmetros Globais) e avisa se o parâmetro salvo for inválido.
   - `#global-predictive-banner` (class: `.global-predictive-banner`): Banner global de alertas preditivos.
   - `#operational-summary` (class: `.operational-summary`): Resumo executivo em cartões.
   - `#operational-details` (class: `.operational-details`): Detalhes operacionais.

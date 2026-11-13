@@ -730,6 +730,23 @@ function inicializarDashboard() {
 
   seletorBaseComparacao.addEventListener("change", renderizarDashboard);
   seletorEscopo.addEventListener("change", renderizarDashboard);
+  atualizarIndicadorBaseAlarme();
+
+  // A base dos alarmes é salva na janela de configurações; o evento "storage" chega às
+  // demais janelas (principal, Mural, investigação) para recalcularem com a nova base.
+  window.addEventListener("storage", (evento) => {
+    if (evento.key !== "nexo_hidrico_global_config") return;
+    atualizarIndicadorBaseAlarme();
+    if (document.body.classList.contains("is-cco-investigation-active")) {
+      const atual = window.nexoInvestigacaoAtual;
+      if (atual && typeof window.renderizarPainelInvestigacaoDedicado === "function") {
+        window.renderizarPainelInvestigacaoDedicado(atual.chave, atual.dataSelecionada, atual.banco);
+      }
+      return;
+    }
+    renderizarDashboard();
+    if (typeof renderizarDashboardExceccoes === "function") renderizarDashboardExceccoes();
+  });
 
   const btnToggleGrid = document.getElementById("btn-toggle-grid-reservatorios");
   const gridReservatorios = document.getElementById("grid-reservatorios");
@@ -755,7 +772,8 @@ function inicializarDashboard() {
     const dadosDoDia = banco?.historico?.[dataSelecionada];
     if (!dadosDoDia) return null;
 
-    const baseComparacao = document.getElementById("seletor-base-vazao")?.value || "same-weekday-4";
+    // O resumo de plantão relata alarmes: usa a base parametrizada dos alarmes.
+    const baseComparacao = obterBaseComparacaoAlarme().base;
     const escopoOperacional = document.getElementById("seletor-escopo-operacional")?.value || "ambos";
 
     const criticos = [];
@@ -1697,13 +1715,14 @@ async function renderizarDashboard() {
     containerGrid.insertAdjacentHTML("beforeend", cardHTML);
 
     if (selecionado) {
+      // Informativo do alarme segue a mesma base do Mural (parâmetro dos alarmes).
       const painelAlarme = criarPainelInformativoAlarme(
         res,
         chave,
         horarios,
         banco,
         dataSelecionada,
-        baseComparacao,
+        obterBaseComparacaoAlarme().base,
       );
       containerGrid.append(painelAlarme);
 
@@ -2154,6 +2173,17 @@ function obterReservatoriosSelecionados(container) {
     container.querySelectorAll('input[type="checkbox"]:checked'),
     (checkbox) => checkbox.value,
   );
+}
+
+/** Mostra, abaixo do seletor de análise, qual base os alarmes usam (e o aviso se o parâmetro for inválido). */
+function atualizarIndicadorBaseAlarme() {
+  const indicador = document.getElementById("indicador-base-alarme");
+  if (!indicador) return;
+  const { base, aviso } = obterBaseComparacaoAlarme();
+  indicador.textContent = aviso
+    ? `⚠️ ${aviso} Alarmes usam: ${obterRotuloBaseComparacao(base)}.`
+    : `Alarmes usam: ${obterRotuloBaseComparacao(base)} (Parâmetros Globais).`;
+  indicador.classList.toggle("is-warning", Boolean(aviso));
 }
 
 function obterRotuloBaseComparacao(base) {
@@ -3057,6 +3087,18 @@ function renderizarFormularioParametrosGlobais() {
           </div>
         </fieldset>
 
+        <!-- Base de comparação dos alarmes (regra de alarme: só ADMIN chega a este formulário) -->
+        <fieldset class="config-fieldset" style="background: var(--surface-bg);">
+          <legend>Alarmes de Vazão</legend>
+          <div class="config-field">
+            <label for="cfg-base-comparacao-alarme">Base de comparação dos alarmes</label>
+            <select id="cfg-base-comparacao-alarme" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);"></select>
+            <small id="cfg-base-comparacao-alarme-ajuda" style="display: block; margin-top: 6px; color: var(--muted-color);">
+              Vale para o Mural, a investigação, a OS e o resumo de plantão. O seletor da tela operacional é só para análise.
+            </small>
+          </div>
+        </fieldset>
+
       </div>
 
       <div id="global-config-msg" style="display: none; padding: 10px 14px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 16px;"></div>
@@ -3067,8 +3109,38 @@ function renderizarFormularioParametrosGlobais() {
     </form>
   `;
 
-  document.getElementById("form-parametros-globais").onsubmit = (e) => {
+  const { base: baseAlarmeAtual, aviso: avisoBaseAlarme } = obterBaseComparacaoAlarme();
+  const seletorBaseAlarme = document.getElementById("cfg-base-comparacao-alarme");
+  BASES_COMPARACAO_VALIDAS.forEach((base) => {
+    const opcao = document.createElement("option");
+    opcao.value = base;
+    opcao.textContent = obterRotuloBaseComparacao(base) + (base === BASE_COMPARACAO_ALARME_PADRAO ? " (padrão)" : "");
+    seletorBaseAlarme.append(opcao);
+  });
+  seletorBaseAlarme.value = baseAlarmeAtual;
+  if (avisoBaseAlarme) {
+    const ajuda = document.getElementById("cfg-base-comparacao-alarme-ajuda");
+    ajuda.textContent = `⚠️ ${avisoBaseAlarme} Salve para corrigir.`;
+    ajuda.style.color = "var(--status-attention-color)";
+  }
+
+  document.getElementById("form-parametros-globais").onsubmit = async (e) => {
     e.preventDefault();
+    let sessao = null;
+    try {
+      sessao = JSON.parse(localStorage.getItem("nexo_hidrico_session") || "null");
+    } catch (erro) {
+      sessao = null;
+    }
+    const msgErro = document.getElementById("global-config-msg");
+    if (sessao?.role !== "ADMIN") {
+      msgErro.style.display = "block";
+      msgErro.style.background = "var(--status-critical-background)";
+      msgErro.style.color = "var(--status-critical-color)";
+      msgErro.style.border = "1px solid var(--status-critical-color)";
+      msgErro.textContent = "Somente ADMIN pode alterar os parâmetros globais.";
+      return;
+    }
     const emailsPlantao = document.getElementById("cfg-emails-plantao").value;
     const timer1 = document.getElementById("cfg-timer-1").value;
     const timer2 = document.getElementById("cfg-timer-2").value;
@@ -3076,6 +3148,7 @@ function renderizarFormularioParametrosGlobais() {
     const caminhoLocal = document.getElementById("cfg-caminho-local").value;
     const emailsManutencao = document.getElementById("cfg-emails-manutencao").value;
     const cronDia = document.getElementById("cfg-cron-dia").value;
+    const baseComparacaoAlarme = document.getElementById("cfg-base-comparacao-alarme").value;
 
     const novaGlobal = {
       emailsPlantao,
@@ -3084,10 +3157,21 @@ function renderizarFormularioParametrosGlobais() {
       timer3,
       caminhoLocal,
       emailsManutencao,
-      cronDia
+      cronDia,
+      baseComparacaoAlarme,
     };
 
     localStorage.setItem("nexo_hidrico_global_config", JSON.stringify(novaGlobal));
+    atualizarIndicadorBaseAlarme();
+
+    // Trocar a base muda quais alarmes disparam: fica registrado na auditoria.
+    if (baseComparacaoAlarme !== baseAlarmeAtual || avisoBaseAlarme) {
+      await window.AuthRepository?.registrarAuditoria(
+        "BASE_ALARME_ALTERADA",
+        sessao.username,
+        `Base de comparação dos alarmes: ${obterRotuloBaseComparacao(baseAlarmeAtual)} → ${obterRotuloBaseComparacao(baseComparacaoAlarme)}`,
+      );
+    }
 
     const msgEl = document.getElementById("global-config-msg");
     msgEl.style.display = "block";

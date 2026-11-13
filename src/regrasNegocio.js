@@ -5,6 +5,40 @@ const LIMITE_CRITICO_NIVEL_PERCENTUAL = 50;
 const LIMITE_ATENCAO_VAZAO_PERCENTUAL = 20;
 const LIMITE_CRITICO_VAZAO_PERCENTUAL = 35;
 
+// Base de comparação usada pelos ALARMES (Mural, investigação, OS, informativo e resumo de plantão).
+// É um parâmetro global (só ADMIN altera em Parâmetros Globais); o seletor "Base de comparação"
+// da tela operacional serve apenas para análise e não muda os alarmes.
+const BASES_COMPARACAO_VALIDAS = ["7d-calendar", "30d-calendar", "same-weekday-4", "global"];
+const BASE_COMPARACAO_ALARME_PADRAO = "same-weekday-4";
+
+/**
+ * Lê a base dos alarmes em nexo_hidrico_global_config.baseComparacaoAlarme.
+ * Sem valor salvo usa o padrão; valor inválido ou configuração ilegível também usa o padrão,
+ * mas devolve `aviso` para a UI exibir (não é um fallback silencioso).
+ * @returns {{ base: string, aviso: string|null }}
+ */
+function obterBaseComparacaoAlarme() {
+  let salvo;
+  try {
+    salvo = JSON.parse(localStorage.getItem("nexo_hidrico_global_config") || "{}")?.baseComparacaoAlarme;
+  } catch (erro) {
+    return {
+      base: BASE_COMPARACAO_ALARME_PADRAO,
+      aviso: "Parâmetros globais ilegíveis; alarmes usando a base padrão.",
+    };
+  }
+  if (salvo === undefined || salvo === null || salvo === "") {
+    return { base: BASE_COMPARACAO_ALARME_PADRAO, aviso: null };
+  }
+  if (!BASES_COMPARACAO_VALIDAS.includes(salvo)) {
+    return {
+      base: BASE_COMPARACAO_ALARME_PADRAO,
+      aviso: `Base de comparação dos alarmes inválida ("${salvo}"); alarmes usando a base padrão.`,
+    };
+  }
+  return { base: salvo, aviso: null };
+}
+
 function obterConfiguracaoReservatorio(idReservatorio) {
   try {
     const salvos = JSON.parse(

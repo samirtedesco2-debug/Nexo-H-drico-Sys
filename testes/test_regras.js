@@ -10,6 +10,36 @@ function carregarRegrasNegocio() {
   return contexto;
 }
 
+function executarTestesBaseComparacaoAlarme() {
+  const carregarCom = (valorGlobal) => {
+    const contexto = {
+      window: {},
+      localStorage: { getItem: (chave) => (chave === 'nexo_hidrico_global_config' ? valorGlobal : null) },
+      console, Map, Date,
+    };
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../src/regrasNegocio.js'), 'utf8'), contexto);
+    return JSON.parse(JSON.stringify(contexto.obterBaseComparacaoAlarme()));
+  };
+
+  // Sem parâmetro salvo: padrão (mesmo dia da semana, 4 semanas), sem aviso.
+  assert.deepStrictEqual(carregarCom(null), { base: 'same-weekday-4', aviso: null });
+  assert.deepStrictEqual(carregarCom(JSON.stringify({ caminhoLocal: 'C:/x' })), { base: 'same-weekday-4', aviso: null });
+
+  // Valor válido salvo pelo ADMIN é usado.
+  assert.deepStrictEqual(carregarCom(JSON.stringify({ baseComparacaoAlarme: '7d-calendar' })), { base: '7d-calendar', aviso: null });
+  assert.deepStrictEqual(carregarCom(JSON.stringify({ baseComparacaoAlarme: 'global' })), { base: 'global', aviso: null });
+
+  // Valor inválido (ex.: o antigo "dia_anterior") cai no padrão COM aviso, nunca em base vazia.
+  const invalido = carregarCom(JSON.stringify({ baseComparacaoAlarme: 'dia_anterior' }));
+  assert.strictEqual(invalido.base, 'same-weekday-4');
+  assert.ok(invalido.aviso && invalido.aviso.includes('dia_anterior'));
+
+  // JSON ilegível também avisa.
+  const ilegivel = carregarCom('{quebrado');
+  assert.strictEqual(ilegivel.base, 'same-weekday-4');
+  assert.ok(ilegivel.aviso);
+}
+
 function executarTestesClassificacaoAlarmes() {
   const regras = carregarRegrasNegocio();
   const { obterDirecaoDesvioVazao } = regras;
@@ -316,6 +346,7 @@ function executarTestesRegras() {
   executarTestesValidacaoConfiguracao();
   executarTestesAutonomiaPreditiva();
   executarTestesVazaoPorHorario();
+  executarTestesBaseComparacaoAlarme();
 
   console.log("✓ Regras de Negócio e Roteamento: Todos os testes passaram!");
 }

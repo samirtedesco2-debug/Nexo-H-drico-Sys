@@ -612,6 +612,16 @@ header h1 {
   width: min(100%, 360px);
 }
 
+.operational-comparison-hint {
+  color: var(--muted-color);
+  font-size: 0.72rem;
+}
+
+.operational-comparison-hint.is-warning {
+  color: var(--status-attention-color);
+  font-weight: 600;
+}
+
 .operational-comparison-control label {
   color: var(--muted-color);
   font-size: 0.72rem;
