@@ -2262,6 +2262,170 @@ function obterTempoRespostaMs(chave) {
   );
 }
 
+/** Elemento com estilo inline fixo e texto via textContent: dados dinâmicos (nome, nota do ACK) nunca viram HTML. */
+function criarElementoComEstilo(tag, estilo, texto) {
+  const elemento = criarElementoTexto(tag, "", texto);
+  if (estilo) elemento.style.cssText = estilo;
+  return elemento;
+}
+
+// Tamanhos dos cards do Mural por modo (o visual é o mesmo de antes).
+const ESTILOS_CARD_MURAL = {
+  grade: {
+    nome: "font-weight: 700; font-size: 1rem; color: var(--text-color);",
+    badge: "padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;",
+    acionado: "font-size: 0.8rem; color: var(--muted-color);",
+    mensagens: "font-size: 0.85rem; color: var(--muted-color); display: flex; flex-direction: column; gap: 4px;",
+    rodape: "display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px;",
+    botao: "padding: 6px 14px; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2);",
+    rotuloAck: "🚨 Reconhecer Alarme",
+    prefixoId: "btn-footer-ack-",
+  },
+  kanban: {
+    nome: "font-weight: 700; font-size: 0.9rem; color: var(--text-color);",
+    badge: "padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;",
+    acionado: "font-size: 0.75rem; color: var(--muted-color);",
+    mensagens: "font-size: 0.8rem; color: var(--muted-color); display: flex; flex-direction: column; gap: 2px;",
+    rodape: "display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid var(--border-color); padding-top: 8px;",
+    botao: "padding: 4px 10px; border: none; border-radius: 4px; font-size: 0.7rem; font-weight: 700; cursor: pointer;",
+    rotuloAck: "🚨 Reconhecer",
+    prefixoId: "btn-kanban-ack-",
+  },
+  tabela: {
+    botao: "padding: 6px 12px; border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;",
+    rotuloAck: "🚨 Reconhecer",
+  },
+};
+
+/** Botão de ACK do Mural (evento por addEventListener, nunca onclick em atributo). */
+function criarBotaoAckMural({ chave, nome, severidade, ackDet }, estilos, id) {
+  const botao = criarElementoComEstilo("button", estilos.botao, ackDet.reconhecido ? ackDet.texto : estilos.rotuloAck);
+  botao.type = "button";
+  if (id) botao.id = id;
+  if (ackDet.titulo) botao.title = ackDet.titulo;
+  botao.style.background = ackDet.reconhecido ? "rgba(115,191,105,0.2)" : "var(--accent-color)";
+  botao.style.color = ackDet.reconhecido ? "var(--status-normal-color)" : "#fff";
+  botao.addEventListener("click", async (evento) => {
+    evento.stopPropagation();
+    await toggleAckMural(chave, severidade, nome);
+  });
+  return botao;
+}
+
+/** Selo de severidade com as cores internas da severidade (não vêm do usuário). */
+function criarSeloSeveridadeMural(severidade, cor, bg, estilo) {
+  const selo = criarElementoComEstilo("span", estilo, severidade);
+  selo.style.background = bg;
+  selo.style.color = cor;
+  return selo;
+}
+
+/** Nota do ACK (texto livre do operador): sempre como texto. */
+function criarNotaAckMural(nota, prefixo, estilo) {
+  return criarElementoComEstilo("span", estilo, `📝 ${prefixo}${nota}`);
+}
+
+/** Conteúdo dos cards do Mural (modos grade e kanban). */
+function preencherCardAlarmeMural(card, alarme, modo) {
+  const estilos = ESTILOS_CARD_MURAL[modo];
+  const { chave, nome, severidade, cor, bg, mensagens, ackDet, triggerTime } = alarme;
+
+  const topo = criarElementoComEstilo("div", "display: flex; justify-content: space-between; align-items: center;");
+  topo.append(
+    criarElementoComEstilo("span", estilos.nome, nome),
+    criarSeloSeveridadeMural(severidade, cor, bg, estilos.badge),
+  );
+
+  const acionado = criarElementoComEstilo("div", estilos.acionado, "Acionado em: ");
+  acionado.append(criarElementoTexto("strong", "", triggerTime));
+
+  const listaMensagens = criarElementoComEstilo("div", estilos.mensagens);
+  (mensagens || []).forEach((mensagem) => listaMensagens.append(criarElementoTexto("div", "", `• ${mensagem}`)));
+  if (ackDet.nota) {
+    const nota = criarNotaAckMural(ackDet.nota, "", "display: block; font-style: italic; color: var(--accent-color); margin-top: 2px;");
+    nota.classList.add("mural-ack-nota");
+    listaMensagens.append(nota);
+  }
+
+  const rodape = criarElementoComEstilo("div", estilos.rodape);
+  rodape.append(criarBotaoAckMural({ chave, nome, severidade, ackDet }, estilos, `${estilos.prefixoId}${chave}`));
+
+  card.replaceChildren(topo, acionado, listaMensagens, rodape);
+}
+
+/** Tabela do Mural (modo tabela). */
+function criarTabelaAlarmesMural(exceccoesFiltradas, dataSelecionada) {
+  const envoltorio = criarElementoComEstilo("div", "background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow-x: auto;");
+  envoltorio.className = "engineering-table-wrap";
+  const tabela = criarElementoComEstilo("table", "width: 100%; border-collapse: collapse; font-size: 0.85rem;");
+  tabela.className = "comparison-table";
+
+  const cabecalho = document.createElement("thead");
+  const linhaCabecalho = criarElementoComEstilo("tr", "background: var(--surface-inset); text-align: left;");
+  ["Acionado em", "TAG / Reservatório", "Severidade", "Diagnósticos / Mensagens", "Ação (ACK)"].forEach((titulo, indice) => {
+    linhaCabecalho.append(criarElementoComEstilo("th", `padding: 12px;${indice === 4 ? " text-align: center;" : ""}`, titulo));
+  });
+  cabecalho.append(linhaCabecalho);
+
+  const corpo = document.createElement("tbody");
+  exceccoesFiltradas.forEach(({ chave, nome, severidade, cor, bg, mensagens }) => {
+    const ackDet = obterDetalhesAck(chave);
+    const reconhecido = ackDet.reconhecido;
+    const triggerTime = window.ccoAlarmTriggerTimes?.get(`${dataSelecionada}_${chave}`) || window.ccoAlarmTriggerTimes?.get(chave) || "—";
+
+    const linha = criarElementoComEstilo("tr", "border-top: 1px solid var(--border-color); cursor: pointer;");
+    linha.className = "mural-table-row";
+    linha.dataset.reservatorio = chave;
+    linha.tabIndex = 0;
+    linha.setAttribute("aria-label", `Alarme ${nome}, severidade ${severidade}${reconhecido ? ", reconhecido" : ", não reconhecido"}. Pressione Enter ou Espaço para abrir os detalhes.`);
+
+    const celulaNome = criarElementoComEstilo("td", "padding: 12px; font-weight: 700; color: var(--text-color);");
+    const botaoAbrir = criarElementoTexto("button", "mural-row-open", nome);
+    botaoAbrir.type = "button";
+    botaoAbrir.setAttribute("aria-label", `Abrir detalhes de ${nome} (${chave})`);
+    botaoAbrir.addEventListener("click", () => window.abrirReservatorioMural(chave));
+    celulaNome.append(botaoAbrir);
+
+    const celulaSeveridade = criarElementoComEstilo("td", "padding: 12px;");
+    celulaSeveridade.append(
+      criarSeloSeveridadeMural(severidade, cor, bg, "padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;"),
+    );
+
+    const celulaMensagens = criarElementoComEstilo("td", "padding: 12px; color: var(--text-color);", (mensagens || []).join(" | "));
+    if (ackDet.nota) {
+      const nota = criarNotaAckMural(ackDet.nota, "Nota: ", "display: block; font-style: italic; color: var(--accent-color); font-size: 0.8rem;");
+      nota.classList.add("mural-ack-nota");
+      celulaMensagens.append(nota);
+    }
+
+    const celulaAck = criarElementoComEstilo("td", "padding: 12px; text-align: center;");
+    celulaAck.append(criarBotaoAckMural({ chave, nome, severidade, ackDet }, ESTILOS_CARD_MURAL.tabela));
+
+    linha.append(
+      criarElementoComEstilo("td", "padding: 12px; font-weight: 600; color: var(--text-color);", triggerTime),
+      celulaNome,
+      celulaSeveridade,
+      celulaMensagens,
+      celulaAck,
+    );
+    linha.addEventListener("click", (evento) => {
+      if (evento.target.closest("button")) return;
+      window.abrirReservatorioMural(chave);
+    });
+    linha.addEventListener("keydown", (evento) => {
+      if (evento.target === linha && (evento.key === "Enter" || evento.key === " ")) {
+        evento.preventDefault();
+        window.abrirReservatorioMural(chave);
+      }
+    });
+    corpo.append(linha);
+  });
+
+  tabela.append(cabecalho, corpo);
+  envoltorio.append(tabela);
+  return envoltorio;
+}
+
 function renderizarDashboardExceccoes() {
   const banco = window.bancoDeDados;
   const seletorData = document.getElementById("seletor-data");
@@ -2537,33 +2701,8 @@ function renderizarDashboardExceccoes() {
 
           const triggerKey = `${dataSelecionada}_${chave}`;
           const triggerTime = window.ccoAlarmTriggerTimes?.get(triggerKey) || window.ccoAlarmTriggerTimes?.get(chave) || "—";
-          const btnFooterId = `btn-kanban-ack-${chave}`;
-          card.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-color);">${nome}</span>
-              <span style="background: ${bg}; color: ${cor}; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">${severidade}</span>
-            </div>
-            <div style="font-size: 0.75rem; color: var(--muted-color);">Acionado em: <strong>${triggerTime}</strong></div>
-            <div style="font-size: 0.8rem; color: var(--muted-color); display: flex; flex-direction: column; gap: 2px;">
-              ${mensagens.map(m => `<div>• ${m}</div>`).join("")}
-              ${ackDet.nota ? `<div style="font-style: italic; color: var(--accent-color); margin-top: 2px;">📝 ${ackDet.nota}</div>` : ''}
-            </div>
-            <div style="display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid var(--border-color); padding-top: 8px;">
-              <button type="button" id="${btnFooterId}" title="${ackDet.titulo}" style="padding: 4px 10px; background: ${reconhecido ? 'rgba(115,191,105,0.2)' : 'var(--accent-color)'}; color: ${reconhecido ? 'var(--status-normal-color)' : '#fff'}; border: none; border-radius: 4px; font-size: 0.7rem; font-weight: 700; cursor: pointer;">
-                ${ackDet.reconhecido ? ackDet.texto : '🚨 Reconhecer'}
-              </button>
-            </div>
-          `;
-
+          preencherCardAlarmeMural(card, { chave, nome, severidade, cor, bg, mensagens, ackDet, triggerTime }, "kanban");
           cardsContainer.appendChild(card);
-
-          const btnAck = card.querySelector(`#${CSS.escape(btnFooterId)}`);
-          if (btnAck) {
-            btnAck.addEventListener("click", async (e) => {
-              e.stopPropagation();
-              await toggleAckMural(chave, severidade, nome);
-            });
-          }
         });
       }
 
@@ -2575,60 +2714,7 @@ function renderizarDashboardExceccoes() {
 
   if (window.ccoMuralModoVisualizacao === "tabela") {
     gridAlarmes.style.display = "block";
-    gridAlarmes.innerHTML = `
-      <div class="engineering-table-wrap" style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow-x: auto;">
-        <table class="comparison-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-          <thead>
-            <tr style="background: var(--surface-inset); text-align: left;">
-              <th style="padding: 12px;">Acionado em</th>
-              <th style="padding: 12px;">TAG / Reservatório</th>
-              <th style="padding: 12px;">Severidade</th>
-              <th style="padding: 12px;">Diagnósticos / Mensagens</th>
-              <th style="padding: 12px; text-align: center;">Ação (ACK)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${exceccoesFiltradas.map(({ chave, nome, severidade, cor, bg, mensagens }) => {
-              const ackDet = obterDetalhesAck(chave);
-              const reconhecido = ackDet.reconhecido;
-              const triggerKey = `${dataSelecionada}_${chave}`;
-              const triggerTime = window.ccoAlarmTriggerTimes?.get(triggerKey) || window.ccoAlarmTriggerTimes?.get(chave) || "—";
-              return `
-                <tr class="mural-table-row" data-reservatorio="${chave}" tabindex="0" aria-label="Alarme ${nome}, severidade ${severidade}${reconhecido ? ", reconhecido" : ", não reconhecido"}. Pressione Enter ou Espaço para abrir os detalhes." style="border-top: 1px solid var(--border-color); cursor: pointer;">
-                  <td style="padding: 12px; font-weight: 600; color: var(--text-color);">${triggerTime}</td>
-                    <td style="padding: 12px; font-weight: 700; color: var(--text-color);">
-                      <button type="button" class="mural-row-open" onclick="abrirReservatorioMural('${chave}')" aria-label="Abrir detalhes de ${nome} (${chave})">${nome}</button>
-                    </td>
-                    <td style="padding: 12px;"><span style="background: ${bg}; color: ${cor}; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${severidade}</span></td>
-                    <td style="padding: 12px; color: var(--text-color);">
-                      ${mensagens.join(" | ")}
-                      ${ackDet.nota ? `<br><span style="font-style: italic; color: var(--accent-color); font-size: 0.8rem;">📝 Nota: ${ackDet.nota}</span>` : ''}
-                    </td>
-                    <td style="padding: 12px; text-align: center;">
-                    <button type="button" onclick="toggleAckMural('${chave}', '${severidade}')" title="${ackDet.titulo}" style="padding: 6px 12px; background: ${reconhecido ? 'rgba(115,191,105,0.2)' : 'var(--accent-color)'}; color: ${reconhecido ? 'var(--status-normal-color)' : '#fff'}; border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
-                      ${ackDet.reconhecido ? ackDet.texto : '🚨 Reconhecer'}
-                    </button>
-                  </td>
-                </tr>
-              `;
-            }).join("")}
-          </tbody>
-        </table>
-      </div>
-    `;
-    gridAlarmes.querySelectorAll(".mural-table-row").forEach((row) => {
-      const chave = row.dataset.reservatorio;
-      row.addEventListener("click", (event) => {
-        if (event.target.closest("button")) return;
-        window.abrirReservatorioMural(chave);
-      });
-      row.addEventListener("keydown", (event) => {
-        if (event.target === row && (event.key === "Enter" || event.key === " ")) {
-          event.preventDefault();
-          window.abrirReservatorioMural(chave);
-        }
-      });
-    });
+    gridAlarmes.replaceChildren(criarTabelaAlarmesMural(exceccoesFiltradas, dataSelecionada));
     return;
   }
 
@@ -2674,33 +2760,8 @@ function renderizarDashboardExceccoes() {
       window.abrirReservatorioMural(chave);
     });
 
-    const btnFooterId = `btn-footer-ack-${chave}`;
-    card.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 700; font-size: 1rem; color: var(--text-color);">${nome}</span>
-        <span style="background: ${bg}; color: ${cor}; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${severidade}</span>
-      </div>
-      <div style="font-size: 0.8rem; color: var(--muted-color);">Acionado em: <strong>${triggerTime}</strong></div>
-      <div style="font-size: 0.85rem; color: var(--muted-color); display: flex; flex-direction: column; gap: 4px;">
-        ${mensagens.map(m => `<div>• ${m}</div>`).join("")}
-        ${ackDet.nota ? `<div style="font-style: italic; color: var(--accent-color); margin-top: 2px;">📝 ${ackDet.nota}</div>` : ''}
-      </div>
-      <div style="display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px;">
-        <button type="button" id="${btnFooterId}" title="${ackDet.titulo}" style="padding: 6px 14px; background: ${reconhecido ? 'rgba(115,191,105,0.2)' : 'var(--accent-color)'}; color: ${reconhecido ? 'var(--status-normal-color)' : '#fff'}; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-          ${ackDet.reconhecido ? ackDet.texto : '🚨 Reconhecer Alarme'}
-        </button>
-      </div>
-    `;
-
+    preencherCardAlarmeMural(card, { chave, nome, severidade, cor, bg, mensagens, ackDet, triggerTime }, "grade");
     gridAlarmes.append(card);
-
-    const btnFooterAck = card.querySelector(`#${CSS.escape(btnFooterId)}`);
-    if (btnFooterAck) {
-      btnFooterAck.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        await toggleAckMural(chave, severidade, nome);
-      });
-    }
   });
 }
 
@@ -2967,10 +3028,12 @@ window.mostrarToast = function(mensagem, tipo = "sucesso") {
 
   const toast = document.createElement("div");
   toast.className = `nexo-toast ${tipo}`;
-  toast.innerHTML = `
-    <span>${mensagem}</span>
-    <button type="button" style="background:none;border:none;color:inherit;cursor:pointer;font-weight:bold;font-size:1rem;" aria-label="Fechar notificação">&times;</button>
-  `;
+  // A mensagem pode trazer nome de usuário ou de reservatório: sempre como texto.
+  const botaoFechar = criarElementoTexto("button", "", "×");
+  botaoFechar.type = "button";
+  botaoFechar.style.cssText = "background:none;border:none;color:inherit;cursor:pointer;font-weight:bold;font-size:1rem;";
+  botaoFechar.setAttribute("aria-label", "Fechar notificação");
+  toast.append(criarElementoTexto("span", "", String(mensagem ?? "")), botaoFechar);
 
   const fechar = () => {
     toast.style.animation = "toastOut 0.2s ease-in forwards";

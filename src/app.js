@@ -913,7 +913,7 @@ function inicializarDashboard() {
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório de Passagem de Plantão - ${dados.dataSelecionada}</title>
+<title>Relatório de Passagem de Plantão - ${escaparHtml(dados.dataSelecionada)}</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 30px; color: #111; background: #fff; }
   .header-institucional { border-bottom: 3px solid #0877b9; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
@@ -946,9 +946,9 @@ function inicializarDashboard() {
       </div>
     </div>
     <div class="meta-info" style="text-align: right;">
-      Data do Boletim: <strong>${dados.dataSelecionada} (${dados.ultimaAtualizacao})</strong><br>
+      Data do Boletim: <strong>${escaparHtml(dados.dataSelecionada)} (${escaparHtml(dados.ultimaAtualizacao)})</strong><br>
       Emitido em: ${new Date().toLocaleString("pt-BR")}<br>
-      Operador Responsável: <strong>${usuarioLogado}</strong>
+      Operador Responsável: <strong>${escaparHtml(usuarioLogado)}</strong>
     </div>
   </div>
 
@@ -960,17 +960,17 @@ function inicializarDashboard() {
 
   <div class="secao-titulo" style="color: #b42318;">🔴 Alertas Críticos (${dados.criticos.length})</div>
   <ul>
-    ${dados.criticos.length > 0 ? dados.criticos.map(c => `<li class="critico-li"><strong>${c.rotuloFormatado}</strong> — ${c.diagTexto}</li>`).join("") : '<li>Nenhum alarme crítico registrado no plantão.</li>'}
+    ${dados.criticos.length > 0 ? dados.criticos.map(c => `<li class="critico-li"><strong>${escaparHtml(c.rotuloFormatado)}</strong> — ${escaparHtml(c.diagTexto)}</li>`).join("") : '<li>Nenhum alarme crítico registrado no plantão.</li>'}
   </ul>
 
   <div class="secao-titulo" style="color: #8a4b00;">🟡 Alertas de Atenção (${dados.atencao.length})</div>
   <ul>
-    ${dados.atencao.length > 0 ? dados.atencao.map(a => `<li class="atencao-li"><strong>${a.rotuloFormatado}</strong> — ${a.diagTexto}</li>`).join("") : '<li>Nenhum alarme de atenção registrado no plantão.</li>'}
+    ${dados.atencao.length > 0 ? dados.atencao.map(a => `<li class="atencao-li"><strong>${escaparHtml(a.rotuloFormatado)}</strong> — ${escaparHtml(a.diagTexto)}</li>`).join("") : '<li>Nenhum alarme de atenção registrado no plantão.</li>'}
   </ul>
 
   <div class="secao-titulo" style="color: #1d4ed8;">⚠️ Registros Incompletos / Falhas de Telemetria (${dados.incompletos.length})</div>
   <ul>
-    ${dados.incompletos.length > 0 ? dados.incompletos.map(i => `<li class="incompleto-li"><strong>${i.rotuloFormatado}</strong> — ${i.razaoIncompleto}</li>`).join("") : '<li>Nenhuma falha de telemetria registrada no plantão.</li>'}
+    ${dados.incompletos.length > 0 ? dados.incompletos.map(i => `<li class="incompleto-li"><strong>${escaparHtml(i.rotuloFormatado)}</strong> — ${escaparHtml(i.razaoIncompleto)}</li>`).join("") : '<li>Nenhuma falha de telemetria registrada no plantão.</li>'}
   </ul>
 
   <footer>
@@ -1015,7 +1015,7 @@ function inicializarDashboard() {
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório Oficial de Passagem de Plantão - ${dados.dataSelecionada}</title>
+<title>Relatório Oficial de Passagem de Plantão - ${escaparHtml(dados.dataSelecionada)}</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 30px; color: #111; background: #fff; }
   .header-institucional { border-bottom: 3px solid #0877b9; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
@@ -1052,9 +1052,9 @@ function inicializarDashboard() {
       </div>
     </div>
     <div class="meta-info" style="text-align: right;">
-      Data do Boletim: <strong>${dados.dataSelecionada} (${dados.ultimaAtualizacao})</strong><br>
+      Data do Boletim: <strong>${escaparHtml(dados.dataSelecionada)} (${escaparHtml(dados.ultimaAtualizacao)})</strong><br>
       Emitido em: ${new Date().toLocaleString("pt-BR")}<br>
-      Operador Responsável: <strong>${usuarioLogado}</strong>
+      Operador Responsável: <strong>${escaparHtml(usuarioLogado)}</strong>
     </div>
   </div>
 
@@ -1066,17 +1066,17 @@ function inicializarDashboard() {
 
   <div class="secao-titulo" style="color: #b42318;">🔴 Alertas Críticos (${dados.criticos.length})</div>
   <ul>
-    ${dados.criticos.length > 0 ? dados.criticos.map(c => `<li class="critico-li"><strong>${c.rotuloFormatado}</strong> — ${c.diagTexto}</li>`).join("") : '<li>Nenhum alarme crítico registrado no plantão.</li>'}
+    ${dados.criticos.length > 0 ? dados.criticos.map(c => `<li class="critico-li"><strong>${escaparHtml(c.rotuloFormatado)}</strong> — ${escaparHtml(c.diagTexto)}</li>`).join("") : '<li>Nenhum alarme crítico registrado no plantão.</li>'}
   </ul>
 
   <div class="secao-titulo" style="color: #8a4b00;">🟡 Alertas de Atenção (${dados.atencao.length})</div>
   <ul>
-    ${dados.atencao.length > 0 ? dados.atencao.map(a => `<li class="atencao-li"><strong>${a.rotuloFormatado}</strong> — ${a.diagTexto}</li>`).join("") : '<li>Nenhum alarme de atenção registrado no plantão.</li>'}
+    ${dados.atencao.length > 0 ? dados.atencao.map(a => `<li class="atencao-li"><strong>${escaparHtml(a.rotuloFormatado)}</strong> — ${escaparHtml(a.diagTexto)}</li>`).join("") : '<li>Nenhum alarme de atenção registrado no plantão.</li>'}
   </ul>
 
   <div class="secao-titulo" style="color: #1d4ed8;">⚠️ Registros Incompletos / Falhas de Telemetria (${dados.incompletos.length})</div>
   <ul>
-    ${dados.incompletos.length > 0 ? dados.incompletos.map(i => `<li class="incompleto-li"><strong>${i.rotuloFormatado}</strong> — ${i.razaoIncompleto}</li>`).join("") : '<li>Nenhuma falha de telemetria registrada no plantão.</li>'}
+    ${dados.incompletos.length > 0 ? dados.incompletos.map(i => `<li class="incompleto-li"><strong>${escaparHtml(i.rotuloFormatado)}</strong> — ${escaparHtml(i.razaoIncompleto)}</li>`).join("") : '<li>Nenhuma falha de telemetria registrada no plantão.</li>'}
   </ul>
 
   <footer>
@@ -1137,8 +1137,9 @@ function inicializarDashboard() {
       
       let csvContent = "\uFEFFData;Chave;Reservatório;Severidade;Diagnóstico;Tendência\n";
       exceccoes.forEach(exc => {
-        const diag = (exc.mensagens || []).join(" | ").replace(/;/g, ",");
-        csvContent += `${dataSelecionada};${exc.chave};"${exc.nome}";${exc.severidade};"${diag}";"${exc.predicao?.tendencia || 'N/A'}"\n`;
+        const diag = (exc.mensagens || []).join(" | ");
+        csvContent += [dataSelecionada, exc.chave, exc.nome, exc.severidade, diag, exc.predicao?.tendencia || "N/A"]
+          .map(celulaCsv).join(";") + "\n";
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1178,7 +1179,7 @@ function inicializarDashboard() {
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório Corporativo de Alertas CCO - ${dataSelecionada}</title>
+<title>Relatório Corporativo de Alertas CCO - ${escaparHtml(dataSelecionada)}</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 30px; color: #111; background: #fff; }
   .header-institucional { border-bottom: 3px solid #0877b9; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
@@ -1213,9 +1214,9 @@ function inicializarDashboard() {
       </div>
     </div>
     <div class="meta-info" style="text-align: right;">
-      Data de Referência: <strong>${dataSelecionada}</strong><br>
+      Data de Referência: <strong>${escaparHtml(dataSelecionada)}</strong><br>
       Emitido em: ${new Date().toLocaleString("pt-BR")}<br>
-      Operador Responsável: <strong>${usuarioLogado}</strong>
+      Operador Responsável: <strong>${escaparHtml(usuarioLogado)}</strong>
     </div>
   </div>
 
@@ -1243,16 +1244,16 @@ function inicializarDashboard() {
         const triggerTime = window.ccoAlarmTriggerTimes?.get(triggerKey) || window.ccoAlarmTriggerTimes?.get(exc.chave) || '—';
         const ackDet = typeof obterDetalhesAck === 'function' ? obterDetalhesAck(exc.chave) : { reconhecido: false };
         const statusAck = ackDet.reconhecido 
-          ? `<span style="color: #16a34a; font-weight: bold;">✓ Reconhecido</span>${ackDet.nota ? '<br><em>Nota: ' + ackDet.nota + '</em>' : ''}<br><small>Por: ${ackDet.operador || 'Operador'} (${ackDet.timestamp || '—'})</small>`
+          ? `<span style="color: #16a34a; font-weight: bold;">✓ Reconhecido</span>${ackDet.nota ? '<br><em>Nota: ' + escaparHtml(ackDet.nota) + '</em>' : ''}<br><small>Por: ${escaparHtml(ackDet.operador || 'Operador')} (${escaparHtml(ackDet.timestamp || '—')})</small>`
           : `<span style="color: #b42318; font-weight: bold;">Pendente</span>`;
         return `
           <tr>
-            <td><strong>${exc.nome}</strong><br><small>${exc.chave}</small></td>
-            <td><span class="badge ${exc.severidade === 'Crítico' ? 'critico' : exc.severidade === 'Atenção' ? 'atencao' : 'incompleto'}">${exc.severidade}</span></td>
-            <td>${triggerTime}</td>
-            <td>${(exc.mensagens || []).join("<br>")}</td>
+            <td><strong>${escaparHtml(exc.nome)}</strong><br><small>${escaparHtml(exc.chave)}</small></td>
+            <td><span class="badge ${exc.severidade === 'Crítico' ? 'critico' : exc.severidade === 'Atenção' ? 'atencao' : 'incompleto'}">${escaparHtml(exc.severidade)}</span></td>
+            <td>${escaparHtml(triggerTime)}</td>
+            <td>${(exc.mensagens || []).map(escaparHtml).join("<br>")}</td>
             <td>${statusAck}</td>
-            <td>${exc.predicao?.tendencia || 'N/A'} (${exc.predicao?.iconeTendencia || '→'})</td>
+            <td>${escaparHtml(exc.predicao?.tendencia || 'N/A')} (${escaparHtml(exc.predicao?.iconeTendencia || '→')})</td>
           </tr>
         `;
       }).join("")}
@@ -2175,6 +2176,27 @@ function obterReservatoriosSelecionados(container) {
   );
 }
 
+/** Escapa texto para HTML gerado como string (relatórios exportados/impressos): nota do ACK, usuário, nomes, mensagens. */
+function escaparHtml(valor) {
+  return String(valor ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Célula de CSV (separador ";") segura para abrir no Excel/LibreOffice: sempre entre aspas, aspas internas
+ * dobradas e, se começar com = + - @ tab ou quebra de linha, prefixada com apóstrofo para não virar fórmula
+ * (ex.: usuário digitado num login com falha, que vai para a trilha de auditoria).
+ */
+function celulaCsv(valor) {
+  let texto = String(valor ?? "");
+  if (/^[=+\-@\t\r\n]/.test(texto)) texto = `'${texto}`;
+  return `"${texto.replace(/"/g, '""')}"`;
+}
+
 /** Mostra, abaixo do seletor de análise, qual base os alarmes usam (e o aviso se o parâmetro for inválido). */
 function atualizarIndicadorBaseAlarme() {
   const indicador = document.getElementById("indicador-base-alarme");
@@ -3062,19 +3084,19 @@ function renderizarFormularioParametrosGlobais() {
           <legend>FORMULÁRIO I (Passagem de Plantão)</legend>
           <div class="config-field" style="margin-bottom: 12px;">
             <label for="cfg-emails-plantao">E-mails de Destino (separados por vírgula)</label>
-            <input type="text" id="cfg-emails-plantao" value="${globalConfig.emailsPlantao || 'operacao@exemplo.com'}" placeholder="operacao@exemplo.com" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
+            <input type="text" id="cfg-emails-plantao" placeholder="operacao@exemplo.com" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
           </div>
           <div class="config-field" style="margin-bottom: 12px;">
             <label>Grade de Timers (Disparos Diários Agendados)</label>
             <div style="display: flex; gap: 8px; margin-top: 4px;">
-              <input type="time" id="cfg-timer-1" value="${globalConfig.timer1 || '05:00'}" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
-              <input type="time" id="cfg-timer-2" value="${globalConfig.timer2 || '13:00'}" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
-              <input type="time" id="cfg-timer-3" value="${globalConfig.timer3 || '21:00'}" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
+              <input type="time" id="cfg-timer-1" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
+              <input type="time" id="cfg-timer-2" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
+              <input type="time" id="cfg-timer-3" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
             </div>
           </div>
           <div class="config-field">
             <label for="cfg-caminho-local">Caminho Físico de Diretório Local</label>
-            <input type="text" id="cfg-caminho-local" value="${globalConfig.caminhoLocal || 'C:/NexoHidrico/Relatorios/Plantao'}" placeholder="C:/NexoHidrico/Relatorios/Plantao" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
+            <input type="text" id="cfg-caminho-local" placeholder="C:/NexoHidrico/Relatorios/Plantao" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
           </div>
         </fieldset>
 
@@ -3083,14 +3105,14 @@ function renderizarFormularioParametrosGlobais() {
           <legend>FORMULÁRIO II (Log de Erros e SLA)</legend>
           <div class="config-field" style="margin-bottom: 12px;">
             <label for="cfg-emails-manutencao">E-mails Analíticos da Manutenção</label>
-            <input type="text" id="cfg-emails-manutencao" value="${globalConfig.emailsManutencao || 'manutencao@exemplo.com'}" placeholder="manutencao@exemplo.com" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
+            <input type="text" id="cfg-emails-manutencao" placeholder="manutencao@exemplo.com" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
           </div>
           <div class="config-field-row" style="margin-bottom: 12px;">
             <div class="config-field" style="flex: 1;">
               <label for="cfg-cron-dia">Dia da Semana (Cron)</label>
               <select id="cfg-cron-dia" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);">
-                <option value="diario" ${globalConfig.cronDia === 'diario' ? 'selected' : ''}>Diário (Todos os dias)</option>
-                <option value="util" ${globalConfig.cronDia === 'util' ? 'selected' : ''}>Dias Úteis (Seg-Sex)</option>
+                <option value="diario">Diário (Todos os dias)</option>
+                <option value="util">Dias Úteis (Seg-Sex)</option>
               </select>
             </div>
           </div>
@@ -3117,6 +3139,20 @@ function renderizarFormularioParametrosGlobais() {
       </button>
     </form>
   `;
+
+  // Valores salvos entram pelos campos (.value), nunca no HTML: aspas ou tags num valor não quebram o formulário.
+  const valoresIniciais = {
+    "cfg-emails-plantao": globalConfig.emailsPlantao || "operacao@exemplo.com",
+    "cfg-timer-1": globalConfig.timer1 || "05:00",
+    "cfg-timer-2": globalConfig.timer2 || "13:00",
+    "cfg-timer-3": globalConfig.timer3 || "21:00",
+    "cfg-caminho-local": globalConfig.caminhoLocal || "C:/NexoHidrico/Relatorios/Plantao",
+    "cfg-emails-manutencao": globalConfig.emailsManutencao || "manutencao@exemplo.com",
+    "cfg-cron-dia": globalConfig.cronDia === "util" ? "util" : "diario",
+  };
+  Object.entries(valoresIniciais).forEach(([id, valor]) => {
+    document.getElementById(id).value = valor;
+  });
 
   const { base: baseAlarmeAtual, aviso: avisoBaseAlarme } = obterBaseComparacaoAlarme();
   const seletorBaseAlarme = document.getElementById("cfg-base-comparacao-alarme");
@@ -3758,14 +3794,29 @@ async function renderizarPainelLogsAuditoria() {
       return;
     }
 
-    tbody.innerHTML = filtrados.map(l => `
-      <tr style="border-top: 1px solid var(--border-color);">
-        <td style="padding: 12px; white-space: nowrap; color: var(--muted-color);">${new Date(l.timestamp).toLocaleString("pt-BR")}</td>
-        <td style="padding: 12px; font-weight: 600; color: var(--text-color);">${l.usuario || l.admin || 'sistema'}</td>
-        <td style="padding: 12px;"><span style="background: var(--surface-inset); padding: 3px 8px; border-radius: 4px; font-weight: 700; color: var(--accent-color); font-size: 0.75rem;">${l.acao}</span></td>
-        <td style="padding: 12px; color: var(--text-color);">${l.detalhes || ''}</td>
-      </tr>
-    `).join("");
+    // Usuário e detalhes podem vir de texto digitado (ex.: usuário de login com falha): só textContent.
+    const celula = (estilo, texto) => {
+      const td = document.createElement("td");
+      td.style.cssText = estilo;
+      td.textContent = texto;
+      return td;
+    };
+    tbody.replaceChildren(...filtrados.map((l) => {
+      const linha = document.createElement("tr");
+      linha.style.borderTop = "1px solid var(--border-color)";
+      const celulaAcao = celula("padding: 12px;", "");
+      const selo = document.createElement("span");
+      selo.style.cssText = "background: var(--surface-inset); padding: 3px 8px; border-radius: 4px; font-weight: 700; color: var(--accent-color); font-size: 0.75rem;";
+      selo.textContent = l.acao ?? "";
+      celulaAcao.append(selo);
+      linha.append(
+        celula("padding: 12px; white-space: nowrap; color: var(--muted-color);", new Date(l.timestamp).toLocaleString("pt-BR")),
+        celula("padding: 12px; font-weight: 600; color: var(--text-color);", l.usuario || l.admin || "sistema"),
+        celulaAcao,
+        celula("padding: 12px; color: var(--text-color);", l.detalhes || ""),
+      );
+      return linha;
+    }));
   }
 
   inputBusca.oninput = filtrarE1Renderizar;
@@ -3809,9 +3860,7 @@ window.baixarLogsFiltradosCSV = function(dados) {
   dados.forEach(l => {
     const dataFmt = new Date(l.timestamp).toLocaleString("pt-BR");
     const user = l.usuario || l.admin || 'sistema';
-    const acao = l.acao || '';
-    const det = (l.detalhes || '').replace(/;/g, ",");
-    csvContent += `"${dataFmt}";"${user}";"${acao}";"${det}"\n`;
+    csvContent += [dataFmt, user, l.acao || "", l.detalhes || ""].map(celulaCsv).join(";") + "\n";
   });
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -3870,9 +3919,9 @@ window.baixarLogsFiltradosPDF = function(dados) {
       ${dados.map(l => `
         <tr>
           <td style="white-space: nowrap;">${new Date(l.timestamp).toLocaleString("pt-BR")}</td>
-          <td><strong>${l.usuario || l.admin || 'sistema'}</strong></td>
-          <td><code>${l.acao}</code></td>
-          <td>${l.detalhes || ''}</td>
+          <td><strong>${escaparHtml(l.usuario || l.admin || 'sistema')}</strong></td>
+          <td><code>${escaparHtml(l.acao)}</code></td>
+          <td>${escaparHtml(l.detalhes || '')}</td>
         </tr>
       `).join("")}
     </tbody>

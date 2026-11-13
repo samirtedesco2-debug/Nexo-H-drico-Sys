@@ -784,3 +784,99 @@ test("investigação: tendência sob o medidor e vazão líquida com origem", as
   await redesenhar({ nivelAtencao: 101, nivelCritico: 100, alertaNivelAtivo: true, possuiMedicaoVazao: false });
   await expect(liquida).toContainText("N/A (capacidade útil não configurada)");
 });
+
+const TEXTO_MALICIOSO = `<img src=x onerror="window.__xss=1">vazão < 10 & "ok"`;
+
+test("nota do ACK com HTML aparece como texto nos 3 modos do Mural e no relatório exportado", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify({
+      "R01-A": { nivelAtencao: 101, nivelCritico: 100, alertaNivelAtivo: true }
+    }));
+  });
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  await expect(page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: "R01-A" }).first())
+    .toBeVisible({ timeout: 15_000 });
+
+  for (const modo of ["grade", "tabela", "kanban"]) {
+    await page.evaluate(({ nota, modo }) => {
+      window.ccoReconhecidos.set("R01-A", "Crítico");
+      window.ccoAckMetadata.set("R01-A", { timestamp: "01/01/2026 00:00:00", operador: "admin.nexo", nota });
+      salvarReconhecidosLocalStorage();
+      window.ccoMuralModoVisualizacao = modo === "grade" ? "grid" : modo;
+      renderizarDashboardExceccoes();
+    }, { nota: TEXTO_MALICIOSO, modo });
+    const nota = page.locator("#grid-alarmes .mural-ack-nota").first();
+    await expect(nota, `modo ${modo}`).toContainText(TEXTO_MALICIOSO);
+    await expect(page.locator("#grid-alarmes img")).toHaveCount(0);
+  }
+
+  const download = page.waitForEvent("download");
+  await page.evaluate(() => document.getElementById("btn-exportar-html").click());
+  const arquivo = await (await download).path();
+  const html = require("fs").readFileSync(arquivo, "utf8");
+  expect(html).toContain("&lt;img src=x onerror=&quot;window.__xss=1&quot;&gt;vazão &lt; 10 &amp; &quot;ok&quot;");
+  expect(html).not.toContain("<img src=x");
+
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+});
+
+test("usuário de login com HTML aparece como texto na trilha de auditoria", async ({ page }) => {
+  await page.goto("/?view=configuracoes");
+  await page.getByLabel("Usuário").fill(TEXTO_MALICIOSO);
+  await page.locator("#login-password").fill("qualquer");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page.getByRole("alert")).toContainText("Usuário ou senha inválidos");
+
+  await entrar(page, "admin.nexo", "Admin@2026");
+  await page.getByRole("button", { name: /Logs de Auditoria/ }).click();
+  const linha = page.locator("tr").filter({ hasText: "LOGIN_FALHOU" }).filter({ hasText: "vazão < 10" }).first();
+  await expect(linha).toContainText(TEXTO_MALICIOSO, { timeout: 15_000 });
+  await expect(page.locator("#config-detalhe-container img")).toHaveCount(0);
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+});
+
+test("Parâmetros Globais com aspas e tags no valor salvo não quebram o formulário", async ({ page }) => {
+  await page.addInitScript((valor) => {
+    if (sessionStorage.getItem("e2e-global")) return;
+    sessionStorage.setItem("e2e-global", "1");
+    localStorage.setItem("nexo_hidrico_global_config", JSON.stringify({ emailsPlantao: valor, caminhoLocal: valor }));
+  }, `"><img src=x onerror="window.__xss=1">`);
+  await page.goto("/?view=configuracoes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  await page.getByRole("button", { name: /Parâmetros Globais/ }).click();
+  await expect(page.locator("#cfg-emails-plantao")).toHaveValue(`"><img src=x onerror="window.__xss=1">`);
+  await expect(page.locator("#cfg-caminho-local")).toHaveValue(`"><img src=x onerror="window.__xss=1">`);
+  await expect(page.locator("#cfg-timer-1")).toHaveValue("05:00");
+  await expect(page.locator("#form-parametros-globais img")).toHaveCount(0);
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+});
+
+test("CSV da auditoria e de alarmes não deixa texto digitado virar fórmula", async ({ page }) => {
+  const formula = `=HYPERLINK("http://exemplo.invalid";"clique")`;
+  await page.goto("/?view=configuracoes");
+  await page.getByLabel("Usuário").fill(formula);
+  await page.locator("#login-password").fill("qualquer");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page.getByRole("alert")).toContainText("Usuário ou senha inválidos");
+  await entrar(page, "admin.nexo", "Admin@2026");
+
+  const lerDownload = async (acao) => {
+    const download = page.waitForEvent("download");
+    await page.evaluate(acao);
+    return require("fs").readFileSync(await (await download).path(), "utf8");
+  };
+
+  const auditoria = await lerDownload(() => window.baixarLogsAuditoriaAdmin());
+  const linhaFalha = auditoria.split("\n").find((linha) => linha.includes("HYPERLINK"));
+  // Apóstrofo antes do "=", aspas dobradas, célula inteira entre aspas: o Excel mostra texto, não executa.
+  expect(linhaFalha).toContain(`"'=HYPERLINK(""http://exemplo.invalid"";""clique"")"`);
+  expect(auditoria.split("\n").some((linha) => /(^|;)=/.test(linha))).toBe(false);
+
+  await page.goto("/?view=alarmes");
+  await aguardarBancoDisponivel(page);
+  const alarmes = await lerDownload(() => document.getElementById("btn-exportar-csv").click());
+  const [cabecalho, primeira] = alarmes.replace(/^﻿/, "").split("\n");
+  expect(cabecalho).toBe("Data;Chave;Reservatório;Severidade;Diagnóstico;Tendência");
+  expect(primeira).toMatch(/^"\d{2}\/\d{2}\/\d{4}";"[^"]+";/);
+});
