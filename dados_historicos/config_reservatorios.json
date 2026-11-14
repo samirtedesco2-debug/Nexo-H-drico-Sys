@@ -1,6 +1,6 @@
 {
   "R01-A": {
-    "capacidadeUtil": "500",
+    "capacidadeUtil": "1260",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -24,7 +24,7 @@
     "nivelAlertaTempoCritico": 30
   },
   "R01-B": {
-    "capacidadeUtil": "600",
+    "capacidadeUtil": "432",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -48,7 +48,7 @@
     "nivelAlertaTempoCritico": 30
   },
   "R02": {
-    "capacidadeUtil": "700",
+    "capacidadeUtil": "2000",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -72,7 +72,7 @@
     "nivelAlertaTempoCritico": 30
   },
   "R03-B": {
-    "capacidadeUtil": "800",
+    "capacidadeUtil": "4000",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -96,7 +96,7 @@
     "nivelAlertaTempoCritico": 30
   },
   "ERAT R303 - Rua Rinaldo Bogo": {
-    "capacidadeUtil": "900",
+    "capacidadeUtil": "200",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -120,7 +120,7 @@
     "nivelAlertaTempoCritico": 30
   },
   "EAT - R314 - Boa Vista, Rua Domingos Rosa": {
-    "capacidadeUtil": "1000",
+    "capacidadeUtil": "200",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -144,7 +144,7 @@
     "nivelAlertaTempoCritico": 30
   },
   "ERAT Figueira": {
-    "capacidadeUtil": "1100",
+    "capacidadeUtil": "600",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -168,7 +168,7 @@
     "nivelAlertaTempoCritico": 30
   },
   "EAT R316 - (ERAT Krause) Rua Martim Kochella, Bairro Krause": {
-    "capacidadeUtil": "1200",
+    "capacidadeUtil": "550",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -187,7 +187,7 @@
     "emManutencao": false
   },
   "ERAT R306 - (ERAT Águas Claras) Rua Águas Claras": {
-    "capacidadeUtil": "1300",
+    "capacidadeUtil": "280",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -206,7 +206,7 @@
     "emManutencao": false
   },
   "R14 - Reservatório Caravágio": {
-    "capacidadeUtil": "1400",
+    "capacidadeUtil": "50",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -225,101 +225,6 @@
     "emManutencao": false
   },
   "R04": {
-    "capacidadeUtil": "1500",
-    "nivelAtencao": 60,
-    "nivelCritico": 50,
-    "nivelMedioAtencao": 15,
-    "nivelMedioCritico": 25,
-    "vazaoEntradaAtencao": 20,
-    "vazaoEntradaCritico": 35,
-    "vazaoSaidaAtencao": 20,
-    "vazaoSaidaCritico": 35,
-    "vazaoMediaAtencao": 20,
-    "vazaoMediaCritico": 35,
-    "alertaNivelAtivo": true,
-    "alertaNivelMedioAtivo": true,
-    "alertaVazaoEntradaAtivo": true,
-    "alertaVazaoSaidaAtivo": true,
-    "alertaVazaoMediaAtivo": true,
-    "emManutencao": false
-  },
-  "EAT R413 - Rua Paulo Voltolini, Bairro Ribeirão Cavalo": {
-    "capacidadeUtil": "1600",
-    "nivelAtencao": 60,
-    "nivelCritico": 50,
-    "nivelMedioAtencao": 15,
-    "nivelMedioCritico": 25,
-    "vazaoEntradaAtencao": 20,
-    "vazaoEntradaCritico": 35,
-    "vazaoSaidaAtencao": 20,
-    "vazaoSaidaCritico": 35,
-    "vazaoMediaAtencao": 20,
-    "vazaoMediaCritico": 35,
-    "alertaNivelAtivo": true,
-    "alertaNivelMedioAtivo": true,
-    "alertaVazaoEntradaAtivo": true,
-    "alertaVazaoSaidaAtivo": true,
-    "alertaVazaoMediaAtivo": true,
-    "emManutencao": false
-  },
-  "R05": {
-    "capacidadeUtil": "1700",
-    "nivelAtencao": 60,
-    "nivelCritico": 50,
-    "nivelMedioAtencao": 15,
-    "nivelMedioCritico": 25,
-    "vazaoEntradaAtencao": 20,
-    "vazaoEntradaCritico": 35,
-    "vazaoSaidaAtencao": 20,
-    "vazaoSaidaCritico": 35,
-    "vazaoMediaAtencao": 20,
-    "vazaoMediaCritico": 35,
-    "alertaNivelAtivo": true,
-    "alertaNivelMedioAtivo": true,
-    "alertaVazaoEntradaAtivo": true,
-    "alertaVazaoSaidaAtivo": true,
-    "alertaVazaoMediaAtivo": true,
-    "emManutencao": false
-  },
-  "R06": {
-    "capacidadeUtil": "1800",
-    "nivelAtencao": 60,
-    "nivelCritico": 50,
-    "nivelMedioAtencao": 15,
-    "nivelMedioCritico": 25,
-    "vazaoEntradaAtencao": 20,
-    "vazaoEntradaCritico": 35,
-    "vazaoSaidaAtencao": 20,
-    "vazaoSaidaCritico": 35,
-    "vazaoMediaAtencao": 20,
-    "vazaoMediaCritico": 35,
-    "alertaNivelAtivo": true,
-    "alertaNivelMedioAtivo": true,
-    "alertaVazaoEntradaAtivo": true,
-    "alertaVazaoSaidaAtivo": true,
-    "alertaVazaoMediaAtivo": true,
-    "emManutencao": false
-  },
-  "ETA Sul": {
-    "capacidadeUtil": "1900",
-    "nivelAtencao": 60,
-    "nivelCritico": 50,
-    "nivelMedioAtencao": 15,
-    "nivelMedioCritico": 25,
-    "vazaoEntradaAtencao": 20,
-    "vazaoEntradaCritico": 35,
-    "vazaoSaidaAtencao": 20,
-    "vazaoSaidaCritico": 35,
-    "vazaoMediaAtencao": 20,
-    "vazaoMediaCritico": 35,
-    "alertaNivelAtivo": true,
-    "alertaNivelMedioAtivo": true,
-    "alertaVazaoEntradaAtivo": true,
-    "alertaVazaoSaidaAtivo": true,
-    "alertaVazaoMediaAtivo": true,
-    "emManutencao": false
-  },
-  "EAT ES03 - Rua Francisco Hruschka, Bairro São Luís": {
     "capacidadeUtil": "2000",
     "nivelAtencao": 60,
     "nivelCritico": 50,
@@ -338,8 +243,103 @@
     "alertaVazaoMediaAtivo": true,
     "emManutencao": false
   },
+  "EAT R413 - Rua Paulo Voltolini, Bairro Ribeirão Cavalo": {
+    "capacidadeUtil": "200",
+    "nivelAtencao": 60,
+    "nivelCritico": 50,
+    "nivelMedioAtencao": 15,
+    "nivelMedioCritico": 25,
+    "vazaoEntradaAtencao": 20,
+    "vazaoEntradaCritico": 35,
+    "vazaoSaidaAtencao": 20,
+    "vazaoSaidaCritico": 35,
+    "vazaoMediaAtencao": 20,
+    "vazaoMediaCritico": 35,
+    "alertaNivelAtivo": true,
+    "alertaNivelMedioAtivo": true,
+    "alertaVazaoEntradaAtivo": true,
+    "alertaVazaoSaidaAtivo": true,
+    "alertaVazaoMediaAtivo": true,
+    "emManutencao": false
+  },
+  "R05": {
+    "capacidadeUtil": "4500",
+    "nivelAtencao": 60,
+    "nivelCritico": 50,
+    "nivelMedioAtencao": 15,
+    "nivelMedioCritico": 25,
+    "vazaoEntradaAtencao": 20,
+    "vazaoEntradaCritico": 35,
+    "vazaoSaidaAtencao": 20,
+    "vazaoSaidaCritico": 35,
+    "vazaoMediaAtencao": 20,
+    "vazaoMediaCritico": 35,
+    "alertaNivelAtivo": true,
+    "alertaNivelMedioAtivo": true,
+    "alertaVazaoEntradaAtivo": true,
+    "alertaVazaoSaidaAtivo": true,
+    "alertaVazaoMediaAtivo": true,
+    "emManutencao": false
+  },
+  "R06": {
+    "capacidadeUtil": "2000",
+    "nivelAtencao": 60,
+    "nivelCritico": 50,
+    "nivelMedioAtencao": 15,
+    "nivelMedioCritico": 25,
+    "vazaoEntradaAtencao": 20,
+    "vazaoEntradaCritico": 35,
+    "vazaoSaidaAtencao": 20,
+    "vazaoSaidaCritico": 35,
+    "vazaoMediaAtencao": 20,
+    "vazaoMediaCritico": 35,
+    "alertaNivelAtivo": true,
+    "alertaNivelMedioAtivo": true,
+    "alertaVazaoEntradaAtivo": true,
+    "alertaVazaoSaidaAtivo": true,
+    "alertaVazaoMediaAtivo": true,
+    "emManutencao": false
+  },
+  "ETA Sul": {
+    "capacidadeUtil": "3000",
+    "nivelAtencao": 60,
+    "nivelCritico": 50,
+    "nivelMedioAtencao": 15,
+    "nivelMedioCritico": 25,
+    "vazaoEntradaAtencao": 20,
+    "vazaoEntradaCritico": 35,
+    "vazaoSaidaAtencao": 20,
+    "vazaoSaidaCritico": 35,
+    "vazaoMediaAtencao": 20,
+    "vazaoMediaCritico": 35,
+    "alertaNivelAtivo": true,
+    "alertaNivelMedioAtivo": true,
+    "alertaVazaoEntradaAtivo": true,
+    "alertaVazaoSaidaAtivo": true,
+    "alertaVazaoMediaAtivo": true,
+    "emManutencao": false
+  },
+  "EAT ES03 - Rua Francisco Hruschka, Bairro São Luís": {
+    "capacidadeUtil": "200",
+    "nivelAtencao": 60,
+    "nivelCritico": 50,
+    "nivelMedioAtencao": 15,
+    "nivelMedioCritico": 25,
+    "vazaoEntradaAtencao": 20,
+    "vazaoEntradaCritico": 35,
+    "vazaoSaidaAtencao": 20,
+    "vazaoSaidaCritico": 35,
+    "vazaoMediaAtencao": 20,
+    "vazaoMediaCritico": 35,
+    "alertaNivelAtivo": true,
+    "alertaNivelMedioAtivo": true,
+    "alertaVazaoEntradaAtivo": true,
+    "alertaVazaoSaidaAtivo": true,
+    "alertaVazaoMediaAtivo": true,
+    "emManutencao": false
+  },
   "ERAT ES01 - Rua Alvino Flor da Silva, Bairro Jaraguá 84": {
-    "capacidadeUtil": "2100",
+    "capacidadeUtil": "30",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -358,7 +358,7 @@
     "emManutencao": false
   },
   "R08 - Presídio": {
-    "capacidadeUtil": "2200",
+    "capacidadeUtil": "100",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -377,7 +377,7 @@
     "emManutencao": false
   },
   "ERAT ES02 (Parque de Eventos) - Rua Walter Marquardt, Bairro Barra do Rio Molha": {
-    "capacidadeUtil": "2300",
+    "capacidadeUtil": "200",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -396,7 +396,7 @@
     "emManutencao": false
   },
   "ERAT ES03 - (ERAT Molha Intermediária) Rua RI069, Barra do Rio Molha": {
-    "capacidadeUtil": "2400",
+    "capacidadeUtil": "500",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -415,7 +415,7 @@
     "emManutencao": false
   },
   "ERAT ES04 - (SI Molha) Rua Pedro Chiodini, Bairro Barra do Rio Molha": {
-    "capacidadeUtil": "2500",
+    "capacidadeUtil": "450",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,
@@ -434,7 +434,7 @@
     "emManutencao": false
   },
   "R17 - Reservatório Aldrovandi": {
-    "capacidadeUtil": "2600",
+    "capacidadeUtil": "60",
     "nivelAtencao": 60,
     "nivelCritico": 50,
     "nivelMedioAtencao": 15,

@@ -188,3 +188,8 @@ Este documento registra o histórico cronológico de melhorias, refatorações e
 * **Antes:** confirmação de logout, erros (falha ao gravar o reconhecimento, ao copiar o resumo, pop-up bloqueado, navegador sem suporte, falha ao vincular arquivo) e avisos de "sem dados" usavam `alert`/`confirm` do navegador.
 * **Agora:** a janela do reconhecimento virou a janela do painel (`abrirDialogoCco`, `#dialogo-cco`, `.dialogo-cco*`). Logout pede confirmação nela (Cancelar mantém a sessão; foco inicial em Cancelar); os erros aparecem como aviso com "Entendi", que não some sozinho; os avisos de "Nenhum dado carregado/para exportar" viram toast de atenção. Nenhum fluxo mudou, só a forma de exibir.
 * **Validação:** E2E de logout (Cancelar e Sair), falha simulada ao gravar a revogação (aviso visível, estado preservado) e toast de exportação vazia.
+
+### Capacidade útil real dos reservatórios
+* **Antes:** `capacidadeUtil` em `dados_historicos/config_reservatorios.json` tinha valores provisórios em sequência (500, 600, … 2600 m³).
+* **Agora:** capacidades informadas pela operação para os 22 reservatórios (ex.: R01-A 1260 m³, R05 4500 m³, ERAT ES01 30 m³). Só esse campo mudou; limites de nível e de vazão seguem provisórios. A capacidade entra na vazão líquida estimada pela variação do nível e na autonomia preditiva.
+* **Atenção:** a configuração salva no navegador (`nexo_hidrico_reservatorios_config`) substitui o arquivo inteiro para o reservatório; quem já salvou um reservatório em Configurações continua vendo a capacidade antiga até corrigir lá ou limpar essa configuração.
