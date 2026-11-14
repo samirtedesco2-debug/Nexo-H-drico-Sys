@@ -376,6 +376,84 @@ function executarTestesVazaoPorHorario() {
   assert.strictEqual(avaliar([10, 10, 10], unico).status, 'Sem comparação');
 }
 
+function executarTestesLeiturasAusentes() {
+  const { descreverLeiturasAusentes: d } = carregarRegrasNegocio();
+  const N = (h) => ({ tipo: 'Nível', horario: h });
+  const V = (h) => ({ tipo: 'Vazão', horario: h });
+  assert.strictEqual(d([], 6), null);
+  assert.strictEqual(d(undefined, 6), null);
+  // Nível e vazão faltando nos mesmos horários: uma frase só.
+  assert.strictEqual(d([N('05:15'), V('05:15')], 6), 'Leitura ausente às 05:15');
+  assert.strictEqual(d([N('04:15'), N('05:15'), V('04:15'), V('05:15')], 6), 'Leituras ausentes às 04:15 e 05:15');
+  // Só um tipo, ou horários diferentes por tipo: diz qual.
+  assert.strictEqual(d([N('05:15')], 6), 'Nível ausente às 05:15');
+  assert.strictEqual(d([V('01:15'), V('02:15'), V('03:15')], 6), 'Vazão ausente às 01:15, 02:15 e 03:15');
+  assert.strictEqual(d([N('05:15'), V('03:15'), V('05:15')], 6), 'Nível ausente às 05:15 · Vazão ausente às 03:15 e 05:15');
+  // 4 ou mais horários: quantidade e intervalo.
+  const todos = ['00:15', '01:15', '02:15', '03:15', '04:15', '05:15'];
+  assert.strictEqual(d([...todos.map(N), ...todos.map(V)], 6), 'Leituras ausentes em 6 de 6 horários (00:15 a 05:15)');
+  assert.strictEqual(d(todos.slice(2).map(V), 6), 'Vazão ausente em 4 de 6 horários (02:15 a 05:15)');
+  console.log('✓ Texto de leitura ausente (ALM-DAT-01) lista os horários sem afirmar a causa.');
+}
+
+function executarTestesUltimaLeitura() {
+  const { obterHorarioUltimaLeitura: ultima } = carregarRegrasNegocio();
+  const horarios = ['00:15', '01:15', '02:15', '03:15', '04:15', '05:15'];
+  assert.strictEqual(ultima({ nivel: [1, 2, 3, 4, 5, 6], vazao: [] }, horarios), '05:15');
+  // Boletim de 04/11: 05:15 vazio em nível e vazão -> a última leitura real é 04:15.
+  assert.strictEqual(ultima({ nivel: [80, 80, 80, 80, 80, null], vazao: [5, 5, 5, 5, 5, null] }, horarios), '04:15');
+  // Vale nível ou vazão, o que tiver o horário mais tardio.
+  assert.strictEqual(ultima({ nivel: [80, 80, null, null, null, null], vazao: [5, 5, 5, 5, null, null] }, horarios), '03:15');
+  assert.strictEqual(ultima({ nivel: [null, null], vazao: [null, null] }, horarios), null);
+  assert.strictEqual(ultima(undefined, horarios), null);
+  assert.strictEqual(ultima({ nivel: [80, 81, 82] }, []), 'Leitura 3');
+  console.log('✓ Última leitura do dia vem das leituras reais, não do rótulo gravado na importação.');
+}
+
+function executarTestesBoletimIncompleto() {
+  const { detectarHorariosAusentesNoBoletim: detectarBruto, descreverLeiturasAusentes: d } = carregarRegrasNegocio();
+  // O resultado nasce no contexto isolado (vm): normaliza para o deepStrictEqual comparar só os valores.
+  const detectar = (...args) => JSON.parse(JSON.stringify(detectarBruto(...args)));
+  const horarios = ['00:15', '01:15', '02:15', '03:15', '04:15', '05:15'];
+  const completo = () => ({ nivel: [80, 80, 80, 80, 80, 80], vazao: [5, 5, 5, 5, 5, 5] });
+  const sem05 = () => ({ nivel: [80, 80, 80, 80, 80, null], vazao: [5, 5, 5, 5, 5, null] });
+  const repetir = (fabrica, n) => Array.from({ length: n }, fabrica);
+
+  // Todos sem o 05:15: boletim incompleto naquele horário.
+  assert.deepStrictEqual(detectar(repetir(sem05, 22), horarios), [{ horario: '05:15', ausentes: 22, total: 22 }]);
+  // Falha de um reservatório só: não é boletim incompleto.
+  assert.deepStrictEqual(detectar([sem05(), ...repetir(completo, 21)], horarios), []);
+  // Limite de 90%: 9 de 10 entra, 8 de 10 não.
+  assert.strictEqual(detectar([...repetir(sem05, 9), completo()], horarios).length, 1);
+  assert.strictEqual(detectar([...repetir(sem05, 8), ...repetir(completo, 2)], horarios).length, 0);
+  // Poucos reservatórios (menos de 5) não bastam, mesmo todos sem leitura.
+  assert.deepStrictEqual(detectar(repetir(sem05, 4), horarios), []);
+  assert.strictEqual(detectar(repetir(sem05, 5), horarios).length, 1);
+  // Só conta como "sem leitura" quando nível E vazão faltam: vazão presente segura o reservatório.
+  const soNivelNulo = () => ({ nivel: [80, 80, 80, 80, 80, null], vazao: [5, 5, 5, 5, 5, 5] });
+  assert.deepStrictEqual(detectar(repetir(soNivelNulo, 22), horarios), []);
+  // Reservatório sem vazão nenhuma continua avaliado pelo nível.
+  const semVazao = () => ({ nivel: [80, 80, 80, 80, 80, null], vazao: [null, null, null, null, null, null] });
+  assert.strictEqual(detectar(repetir(semVazao, 10), horarios).length, 1);
+  // Vários horários e lista vazia/inválida.
+  const sem0405 = () => ({ nivel: [80, 80, 80, 80, null, null], vazao: [5, 5, 5, 5, null, null] });
+  assert.deepStrictEqual(detectar(repetir(sem0405, 10), horarios).map((h) => h.horario), ['04:15', '05:15']);
+  assert.deepStrictEqual(detectar([], horarios), []);
+  assert.deepStrictEqual(detectar(undefined, horarios), []);
+
+  // Texto: horário comum é marcado "(boletim)"; falha própria vem antes, sem se misturar.
+  const N = (h) => ({ tipo: 'Nível', horario: h });
+  const V = (h) => ({ tipo: 'Vazão', horario: h });
+  assert.strictEqual(d([N('05:15'), V('05:15')], 6, ['05:15']), 'Leitura ausente às 05:15 (boletim)');
+  assert.strictEqual(
+    d([N('05:15'), V('03:15'), V('05:15')], 6, ['05:15']),
+    'Vazão ausente às 03:15 · Leitura ausente às 05:15 (boletim)',
+  );
+  assert.strictEqual(d([V('03:15')], 6, ['05:15']), 'Vazão ausente às 03:15');
+  assert.strictEqual(d([N('05:15'), V('05:15')], 6, []), 'Leitura ausente às 05:15');
+  console.log('✓ Boletim incompleto separado da falha de um reservatório (só informativo).');
+}
+
 function executarTestesRegras() {
   console.log("-> Executando testes de Regras de Negócio e Roteamento de Configuração...");
   
@@ -405,6 +483,9 @@ function executarTestesRegras() {
   executarTestesVazaoPorHorario();
   executarTestesBaseComparacaoAlarme();
   executarTestesBaseMesmoDiaSemana();
+  executarTestesLeiturasAusentes();
+  executarTestesBoletimIncompleto();
+  executarTestesUltimaLeitura();
 
   console.log("✓ Regras de Negócio e Roteamento: Todos os testes passaram!");
 }

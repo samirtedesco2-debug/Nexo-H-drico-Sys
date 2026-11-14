@@ -78,7 +78,7 @@ Este documento descreve o mapa de navegação (*Sitemap*) e os fluxos de intera�
 2. **Ação de Clique no Card/Linha:**
    - Ao clicar no card ou item do mural, o sistema abre diretamente a **Visão Dedicada de Investigação de Alarme** (`?view=investigacao&reservatorio=R01-A&origem=mural&data=dd/mm/aaaa`), isolada da Visão Operacional (sem cabeçalho principal nem abas).
 3. **Painel Exclusivo & Retorno:**
-   - A tela mostra o cabeçalho da investigação (severidade, reservatório, "Alarme acionado em", última atualização do boletim, base de comparação e botão Reconhecer) e o painel "Diagnóstico do Alarme" (`renderizarPainelInvestigacaoDedicado` / `criarPainelAlarmeAtivado`, em `ui.js`). O detalhe de cada elemento está em `docs_v2/modulos/ui.md`.
+   - A tela mostra o cabeçalho da investigação (severidade, reservatório, "Alarme registrado no CCO em", última atualização do boletim, base de comparação e botão Reconhecer) e o painel "Diagnóstico do Alarme" (`renderizarPainelInvestigacaoDedicado` / `criarPainelAlarmeAtivado`, em `ui.js`). O detalhe de cada elemento está em `docs_v2/modulos/ui.md`.
    - Não há botão "Voltar ao Mural": para retornar, feche a janela. Reconhecimentos feitos no Mural e a troca da base dos alarmes em Parâmetros Globais atualizam a janela aberta.
 
 ---

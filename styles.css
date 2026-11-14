@@ -19,6 +19,8 @@
   --status-attention-background: rgba(255, 153, 0, 0.2);
   --status-critical-color: #f24949;
   --status-critical-background: rgba(242, 73, 73, 0.2);
+  --ack-bg: rgba(142, 142, 142, 0.18);
+  --ack-text: #b4b6ba;
 }
 
 :root[data-theme="light"] {
@@ -38,6 +40,8 @@
   --status-attention-background: rgba(138, 75, 0, 0.1);
   --status-critical-color: #b42318;
   --status-critical-background: rgba(180, 35, 24, 0.1);
+  --ack-bg: rgba(95, 107, 117, 0.14);
+  --ack-text: #4b5660;
 }
 
 * {
@@ -3279,7 +3283,7 @@ body.is-config-window-active .view-tabs {
   }
 }
 
-.view-tab#tab-exceccoes.animar-pulso-tab {
+.view-tab#tab-alarmes.animar-pulso-tab {
   animation: pulsarAlertaTab 1.6s infinite ease-in-out;
   border-color: var(--status-critical-color);
   color: var(--status-critical-color);
@@ -3557,8 +3561,8 @@ body[data-view-scale="large-tv"] .kpi-box {
 
 .inv-btn--ack-done {
   border-color: transparent;
-  background: color-mix(in srgb, var(--status-normal-color) 20%, transparent);
-  color: var(--status-normal-color);
+  background: var(--ack-bg);
+  color: var(--ack-text);
   font-weight: 700;
 }
 
@@ -3920,6 +3924,160 @@ body[data-view-scale="large-tv"] .kpi-box {
 
 @media (prefers-reduced-motion: reduce) {
   .dialogo-cco__caixa {
+    animation: none;
+  }
+}
+
+/* Botão desabilitado da janela (ex.: motivo do cancelamento ainda curto demais) */
+.dialogo-cco__botao:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Alarmes cancelados por ADMIN (lista abaixo do Mural) */
+.mural-cancelados {
+  margin-top: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface-bg);
+}
+
+.mural-cancelados > summary {
+  padding: 10px 14px;
+  color: var(--muted-color);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mural-cancelados-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
+.mural-cancelado-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--muted-color);
+  border-radius: 6px;
+  background: var(--surface-inset);
+  font-size: 0.85rem;
+}
+
+.mural-cancelado-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mural-cancelado-meta,
+.mural-cancelado-msg {
+  color: var(--muted-color);
+}
+
+.mural-cancelado-motivo {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.mural-cancelado-reativar {
+  align-self: flex-end;
+  padding: 5px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-color);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Cartões do Mural: nome em até 2 linhas, selo no topo, rodapé sempre embaixo */
+.mural-card-nome {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
+
+.mural-card-selo {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.mural-card-rodape {
+  margin-top: auto;
+}
+
+.mural-card-rodape button,
+.engineering-table-wrap button {
+  white-space: nowrap;
+}
+
+/* Reconhecido em cinza neutro (o verde se confundia com "Normal"); a borda do cartão segue a severidade */
+.mural-btn-ack-feito {
+  background: var(--ack-bg);
+  color: var(--ack-text);
+  box-shadow: none !important;
+}
+
+/* Contadores "pendentes / total" dos filtros do Mural */
+.cco-count-pend {
+  color: var(--heading-color);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.cco-count-total {
+  color: var(--muted-color);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Alarme novo (registrado há menos de 10 s e sem reconhecimento): pulsa com a cor da severidade e para sozinho */
+@keyframes pulsarAlarmeNovo {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--cor-pulso, var(--accent-color)) 65%, transparent); }
+  70% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--cor-pulso, var(--accent-color)) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--cor-pulso, var(--accent-color)) 0%, transparent); }
+}
+
+@keyframes pulsarLinhaNovaMural {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: color-mix(in srgb, var(--cor-pulso, var(--accent-color)) 18%, transparent); }
+}
+
+.mural-alarm-card.animar-pulso {
+  animation: pulsarAlarmeNovo 1.6s ease-out infinite;
+}
+
+.mural-table-row.animar-pulso {
+  animation: pulsarLinhaNovaMural 1.6s ease-in-out infinite;
+}
+
+/* Sem movimento (preferência do sistema): destaque fixo pelos mesmos 10 s */
+@media (prefers-reduced-motion: reduce) {
+  .mural-alarm-card.animar-pulso {
+    animation: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cor-pulso, var(--accent-color)) 55%, transparent);
+  }
+
+  .mural-table-row.animar-pulso {
+    animation: none;
+    background-color: color-mix(in srgb, var(--cor-pulso, var(--accent-color)) 18%, transparent);
+  }
+
+  .view-tab#tab-alarmes.animar-pulso-tab {
     animation: none;
   }
 }

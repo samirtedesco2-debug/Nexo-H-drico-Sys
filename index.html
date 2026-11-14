@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="manual-imagens/nexo-hidrico-icon.png" />
 
     <!-- Estilos CSS -->
-    <link rel="stylesheet" href="styles.css?v=18" />
+    <link rel="stylesheet" href="styles.css?v=21" />
 
     <meta name="author" content="Samir Tedesco" />
 
@@ -400,19 +400,19 @@
           <h2 style="margin-bottom: 8px;">Mural de Alertas Ativos</h2>
           <div class="cco-filter-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button type="button" class="cco-filter-btn is-active" data-filter="TODOS" style="padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--surface-inset); color: var(--text-color); font-weight: 600; cursor: pointer;">
-              📊 Totais (<span id="count-filtro-totais">0</span>)
+              📊 Pendentes <strong class="cco-count-pend" id="count-pendentes-totais">0</strong> <span class="cco-count-total">/ Total <span id="count-filtro-totais">0</span></span>
             </button>
             <button type="button" class="cco-filter-btn" data-filter="Crítico" style="padding: 6px 14px; border-radius: 6px; border: 1px solid var(--status-critical-color); background: var(--status-critical-background); color: var(--status-critical-color); font-weight: 600; cursor: pointer;">
-              🔴 Críticos (<span id="count-filtro-criticos">0</span>)
+              🔴 Críticos <strong class="cco-count-pend" id="count-pendentes-criticos">0</strong> <span class="cco-count-total">/ <span id="count-filtro-criticos">0</span></span>
             </button>
             <button type="button" class="cco-filter-btn" data-filter="Atenção" style="padding: 6px 14px; border-radius: 6px; border: 1px solid var(--status-attention-color); background: var(--status-attention-background); color: var(--status-attention-color); font-weight: 600; cursor: pointer;">
-              🟡 Atenção (<span id="count-filtro-atencao">0</span>)
+              🟡 Atenção <strong class="cco-count-pend" id="count-pendentes-atencao">0</strong> <span class="cco-count-total">/ <span id="count-filtro-atencao">0</span></span>
             </button>
             <button type="button" class="cco-filter-btn" data-filter="Inconsistente" style="padding: 6px 14px; border-radius: 6px; border: 1px solid #3b82f6; background: rgba(59, 130, 246, 0.15); color: #3b82f6; font-weight: 600; cursor: pointer;">
-              🔵 Inconsistentes (<span id="count-filtro-incompletos">0</span>)
+              🔵 Inconsistentes <strong class="cco-count-pend" id="count-pendentes-incompletos">0</strong> <span class="cco-count-total">/ <span id="count-filtro-incompletos">0</span></span>
             </button>
           </div>
-          <p class="cco-filter-count-note">Contagens de alarmes ativos, incluindo os já reconhecidos.</p>
+          <p class="cco-filter-count-note">Pendentes são os alarmes ainda sem reconhecimento; o total inclui os já reconhecidos. Alarmes cancelados ficam em lista própria, abaixo.</p>
         </div>
 
 
@@ -487,9 +487,11 @@
         </div>
       </div>
       <div id="aviso-base-vazao-mural" class="mural-base-warning" role="status" hidden></div>
+      <div id="aviso-boletim-incompleto-mural" class="mural-base-warning" role="status" hidden></div>
       <div id="grid-alarmes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 10px;">
         <!-- Injetado dinamicamente via ui.js -->
       </div>
+      <details id="secao-alarmes-cancelados" class="mural-cancelados" hidden></details>
     </main>
 
     <!-- Painel Dedicado de Investigação de Alarme -->
@@ -813,15 +815,15 @@
     <script src="src/legacyMigration.js?v=1"></script>
     <script src="src/apiClient.js?v=7"></script>
     <script src="src/dados.js?v=5"></script>
-    <script src="src/regrasNegocio.js?v=16"></script>
+    <script src="src/regrasNegocio.js?v=19"></script>
     <script src="src/graficos.js?v=5"></script>
     <script src="src/storageRepository.js?v=7"></script>
-    <script src="src/alarmTiming.js?v=1"></script>
-    <script src="src/ui.js?v=40"></script>
+    <script src="src/alarmTiming.js?v=2"></script>
+    <script src="src/ui.js?v=47"></script>
     <script src="src/ccoSync.js?v=8"></script>
     <script src="src/authRepository.js?v=8"></script>
     <script src="src/rbac.js?v=7"></script>
     <script src="src/authUI.js?v=13"></script>
-    <script src="src/app.js?v=19"></script>
+    <script src="src/app.js?v=21"></script>
   </body>
 </html>

@@ -4,7 +4,7 @@ O arquivo `src/storageRepository.js` persiste reconhecimentos de alarmes e event
 
 ## Persistência
 - O banco `NexoCCOStorageDB` usa a versão 2. A atualização cria stores ausentes sem apagar as existentes.
-- A store `reconhecidos` salva severidade e metadados do ACK (horário e operador). Revogações são registradas como tombstones para impedir que cópias antigas do `localStorage` reativem um ACK removido.
+- A store `reconhecidos` salva severidade e metadados do ACK (horário, operador, nota e, quando existem, `codigos` dos alarmes ativos e, no cancelamento por ADMIN, `tipo: "cancelado"` com `motivo`). Revogações são registradas como tombstones para impedir que cópias antigas do `localStorage` reativem um ACK removido.
 - A store `logs` recebe um registro por ação explícita de reconhecimento ou revogação. A leitura elimina duplicatas idênticas já existentes entre IndexedDB e `localStorage`.
 - O `localStorage` mantém os snapshots em chaves `nexo_hidrico_*`, incluindo reconhecimentos, metadados, revogações e histórico de incidentes.
 - Na primeira inicialização após a troca de identidade, `legacyMigration.js` copia o conteúdo do banco e das chaves anteriores para os novos identificadores. Os dados legados não são apagados.

@@ -25,9 +25,9 @@
   },
   "ALM-DAT-01": {
     "codigo": "ALM-DAT-01",
-    "categoria": "Sem Comunicação",
+    "categoria": "Leitura Ausente",
     "severidade": "Inconsistente",
-    "template": "Sem Comunicação"
+    "template": "Leitura Ausente"
   },
   "ALM-DAT-02": {
     "codigo": "ALM-DAT-02",

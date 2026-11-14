@@ -1,5 +1,10 @@
 // regrasNegocio.js - Centraliza cálculos e regras operacionais
 
+// Boletim incompleto (só exibição, não gera alarme): um horário sem nenhuma leitura em pelo menos
+// esta proporção dos reservatórios avaliados, com um mínimo de reservatórios. Valores provisórios:
+// com telemetria real devem vir de requisito aprovado.
+const BOLETIM_INCOMPLETO_PROPORCAO = 0.9;
+const BOLETIM_INCOMPLETO_MIN_RESERVATORIOS = 5;
 const LIMITE_ATENCAO_NIVEL_PERCENTUAL = 60;
 const LIMITE_CRITICO_NIVEL_PERCENTUAL = 50;
 const LIMITE_ATENCAO_VAZAO_PERCENTUAL = 20;
@@ -736,6 +741,90 @@ function classificarAlarmesAtivos({
     alarmes.push({ codigo: "ALM-DAT-01", severidade: "Inconsistente", origem: "dados" });
   }
   return alarmes;
+}
+
+/**
+ * Rótulo do último horário do dia com leitura real (nível ou vazão), ou null se não houver nenhuma.
+ * Diferente de `ultimaAtualizacao` do boletim, que é um valor gravado na importação.
+ * @param {{nivel?: any[], vazao?: any[]}} leituras
+ * @param {string[]} horarios
+ */
+function obterHorarioUltimaLeitura(leituras, horarios = []) {
+  const temValor = (v) => v !== null && v !== undefined && v !== "" && Number.isFinite(Number(v));
+  const slots = Math.max(horarios.length, leituras?.nivel?.length ?? 0, leituras?.vazao?.length ?? 0);
+  for (let i = slots - 1; i >= 0; i -= 1) {
+    if (temValor(leituras?.nivel?.[i]) || temValor(leituras?.vazao?.[i])) return horarios[i] ?? `Leitura ${i + 1}`;
+  }
+  return null;
+}
+
+/**
+ * Horários do boletim sem leitura em quase todos os reservatórios. "Sem leitura" = nível e vazão
+ * ausentes naquele horário. Só informativo: não altera nenhum alarme.
+ * @param {{nivel?: any[], vazao?: any[]}[]} listaLeituras  leituras dos reservatórios avaliados
+ * @param {string[]} horarios  rótulos dos horários do dia
+ * @returns {{horario: string, ausentes: number, total: number}[]}
+ */
+function detectarHorariosAusentesNoBoletim(listaLeituras, horarios = []) {
+  const lista = Array.isArray(listaLeituras) ? listaLeituras : [];
+  const total = lista.length;
+  if (total < BOLETIM_INCOMPLETO_MIN_RESERVATORIOS) return [];
+  const temValor = (v) => v !== null && v !== undefined && v !== "" && Number.isFinite(Number(v));
+  const slots = Math.max(
+    horarios.length,
+    ...lista.map((l) => Math.max(l?.nivel?.length ?? 0, l?.vazao?.length ?? 0)),
+  );
+  const resultado = [];
+  for (let i = 0; i < slots; i += 1) {
+    const ausentes = lista.filter((l) => !temValor(l?.nivel?.[i]) && !temValor(l?.vazao?.[i])).length;
+    if (ausentes / total >= BOLETIM_INCOMPLETO_PROPORCAO) {
+      resultado.push({ horario: horarios[i] ?? `Leitura ${i + 1}`, ausentes, total });
+    }
+  }
+  return resultado;
+}
+
+/**
+ * Texto do ALM-DAT-01 a partir dos horários sem leitura (não afirma a causa, ex.: falha de comunicação).
+ * @param {{tipo: "Nível"|"Vazão", horario: string}[]} ausentes  saída de obterLeiturasAusentes
+ * @param {number} totalHorarios  horários esperados no boletim (para "N de M")
+ * @returns {string|null} ex.: "Leitura ausente às 05:15"; "Nível ausente às 05:15 · Vazão ausente às 03:15 e 05:15"
+ */
+function descreverLeiturasAusentes(ausentes, totalHorarios, horariosBoletim = []) {
+  if (!Array.isArray(ausentes) || ausentes.length === 0) return null;
+  // Horários que faltam em quase todos os reservatórios (boletim incompleto) são marcados, para o
+  // operador separar o problema geral da falha própria do reservatório.
+  const doBoletim = new Set(horariosBoletim || []);
+  const comuns = ausentes.filter((a) => doBoletim.has(a.horario));
+  if (comuns.length) {
+    const proprias = ausentes.filter((a) => !doBoletim.has(a.horario));
+    const textoComum = `${descreverLeiturasAusentes(comuns, totalHorarios)} (boletim)`;
+    return proprias.length ? `${descreverLeiturasAusentes(proprias, totalHorarios)} · ${textoComum}` : textoComum;
+  }
+  const horariosDe = (tipo) => [...new Set(ausentes.filter((a) => a.tipo === tipo).map((a) => a.horario))];
+  const lista = (horarios) => {
+    if (horarios.length >= 4) {
+      const total = Math.max(Number(totalHorarios) || 0, horarios.length);
+      return `em ${horarios.length} de ${total} horários (${horarios[0]} a ${horarios[horarios.length - 1]})`;
+    }
+    if (horarios.length === 1) return `às ${horarios[0]}`;
+    return `às ${horarios.slice(0, -1).join(", ")} e ${horarios[horarios.length - 1]}`;
+  };
+  const frase = (rotulo, horarios) => {
+    const plural = horarios.length > 1;
+    if (rotulo === "Leitura") return `${plural ? "Leituras ausentes" : "Leitura ausente"} ${lista(horarios)}`;
+    return `${rotulo} ausente ${lista(horarios)}`;
+  };
+
+  const nivel = horariosDe("Nível");
+  const vazao = horariosDe("Vazão");
+  const outros = [...new Set(ausentes.filter((a) => a.tipo !== "Nível" && a.tipo !== "Vazão").map((a) => a.horario))];
+  if (outros.length) return frase("Leitura", [...new Set([...nivel, ...vazao, ...outros])]);
+  if (nivel.length && vazao.length) {
+    const iguais = nivel.length === vazao.length && nivel.every((h, i) => h === vazao[i]);
+    return iguais ? frase("Leitura", nivel) : `${frase("Nível", nivel)} · ${frase("Vazão", vazao)}`;
+  }
+  return nivel.length ? frase("Nível", nivel) : frase("Vazão", vazao);
 }
 
 function calcularMediaMovel(valores, janela = 3) {

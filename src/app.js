@@ -790,7 +790,12 @@ function inicializarDashboard() {
     const horarios = dadosDoDia.horarios || [];
     const quantidadeSlots = horarios.length;
 
+    // Alarmes cancelados por ADMIN não entram nas listas ativas; aparecem na seção própria, com o motivo.
+    const cancelados = listarAlarmesCancelados();
+    const chavesCanceladas = new Set(cancelados.map((c) => c.chave));
+
     Object.entries(dadosDoDia.reservatorios || {}).forEach(([chave, res]) => {
+      if (chavesCanceladas.has(chave)) return;
       const nomeRes = res.nome || chave;
       const tagMatch = nomeRes.match(/\b(?:R\d{1,3}(?:-[A-Z])?|ES\d{2}|EAT\s+R\d{1,3}|ETA\s+[A-Z0-9\s-]+)\b/i);
       const tagLimpa = tagMatch ? tagMatch[0].trim() : nomeRes.replace(/\s*\(.*?\)/g, '').split('-')[0].trim();
@@ -860,9 +865,15 @@ function inicializarDashboard() {
       textoResumo += `⚠️ INCOMPLETOS: Nenhum\n\n`;
     }
 
+    if (cancelados.length > 0) {
+      textoResumo += `🚫 CANCELADOS POR ADMIN (${cancelados.length}):\n` + cancelados
+        .map((c) => `- ${c.nome} (${c.severidade}): cancelado por ${c.operador} em ${c.timestamp || '—'}. Motivo: ${c.motivo || '—'}`)
+        .join("\n") + `\n\n`;
+    }
+
     textoResumo += `*(Gerado automaticamente pelo Sistema de Monitoramento CCO)*`;
 
-    return { dataSelecionada, ultimaAtualizacao: dadosDoDia.ultimaAtualizacao || '05:15', criticos, atencao, incompletos, textoResumo };
+    return { dataSelecionada, ultimaAtualizacao: dadosDoDia.ultimaAtualizacao || '05:15', criticos, atencao, incompletos, cancelados, textoResumo };
   };
 
   const executarCopiaResumo = (botaoAlvo) => {
@@ -980,6 +991,11 @@ function inicializarDashboard() {
   <ul>
     ${dados.incompletos.length > 0 ? dados.incompletos.map(i => `<li class="incompleto-li"><strong>${escaparHtml(i.rotuloFormatado)}</strong> — ${escaparHtml(i.razaoIncompleto)}</li>`).join("") : '<li>Nenhuma falha de telemetria registrada no plantão.</li>'}
   </ul>
+${dados.cancelados.length > 0 ? `
+  <div class="secao-titulo" style="color: #475569;">🚫 Alarmes cancelados por ADMIN (${dados.cancelados.length})</div>
+  <ul>
+    ${dados.cancelados.map(c => `<li class="incompleto-li"><strong>${escaparHtml(c.nome)}</strong> (${escaparHtml(c.severidade)}) — cancelado por ${escaparHtml(c.operador)} em ${escaparHtml(c.timestamp || '—')}. Motivo: ${escaparHtml(c.motivo || '—')}</li>`).join("")}
+  </ul>` : ''}
 
   <footer>
     <span>Nexo Hídrico — Documento Oficial de Passagem de Plantão CCO</span>
@@ -1086,6 +1102,11 @@ function inicializarDashboard() {
   <ul>
     ${dados.incompletos.length > 0 ? dados.incompletos.map(i => `<li class="incompleto-li"><strong>${escaparHtml(i.rotuloFormatado)}</strong> — ${escaparHtml(i.razaoIncompleto)}</li>`).join("") : '<li>Nenhuma falha de telemetria registrada no plantão.</li>'}
   </ul>
+${dados.cancelados.length > 0 ? `
+  <div class="secao-titulo" style="color: #475569;">🚫 Alarmes cancelados por ADMIN (${dados.cancelados.length})</div>
+  <ul>
+    ${dados.cancelados.map(c => `<li class="incompleto-li"><strong>${escaparHtml(c.nome)}</strong> (${escaparHtml(c.severidade)}) — cancelado por ${escaparHtml(c.operador)} em ${escaparHtml(c.timestamp || '—')}. Motivo: ${escaparHtml(c.motivo || '—')}</li>`).join("")}
+  </ul>` : ''}
 
   <footer>
     <span>Nexo Hídrico — Documento Oficial de Passagem de Plantão CCO</span>
@@ -1145,7 +1166,7 @@ function inicializarDashboard() {
       
       let csvContent = "\uFEFFData;Chave;Reservatório;Severidade;Diagnóstico;Tendência\n";
       exceccoes.forEach(exc => {
-        const diag = (exc.mensagens || []).join(" | ");
+        const diag = obterMensagensRelatorioAlarme(exc).join(" | ");
         csvContent += [dataSelecionada, exc.chave, exc.nome, exc.severidade, diag, exc.predicao?.tendencia || "N/A"]
           .map(celulaCsv).join(";") + "\n";
       });
@@ -1240,7 +1261,7 @@ function inicializarDashboard() {
       <tr>
         <th>TAG / Reservatório</th>
         <th>Severidade</th>
-        <th>Acionado em</th>
+        <th>Registrado no CCO em</th>
         <th>Diagnósticos e Mensagens</th>
         <th>Status / Nota de ACK</th>
         <th>Tendência</th>
@@ -1248,8 +1269,7 @@ function inicializarDashboard() {
     </thead>
     <tbody>
       ${exceccoes.map(exc => {
-        const triggerKey = `${dataSelecionada}_${exc.chave}`;
-        const triggerTime = window.ccoAlarmTriggerTimes?.get(triggerKey) || window.ccoAlarmTriggerTimes?.get(exc.chave) || '—';
+        const triggerTime = obterHorarioRegistroCco(exc.chave, dataSelecionada) || '—';
         const ackDet = typeof obterDetalhesAck === 'function' ? obterDetalhesAck(exc.chave) : { reconhecido: false };
         const statusAck = ackDet.reconhecido 
           ? `<span style="color: #16a34a; font-weight: bold;">✓ Reconhecido</span>${ackDet.nota ? '<br><em>Nota: ' + escaparHtml(ackDet.nota) + '</em>' : ''}<br><small>Por: ${escaparHtml(ackDet.operador || 'Operador')} (${escaparHtml(ackDet.timestamp || '—')})</small>`
@@ -1258,8 +1278,8 @@ function inicializarDashboard() {
           <tr>
             <td><strong>${escaparHtml(exc.nome)}</strong><br><small>${escaparHtml(exc.chave)}</small></td>
             <td><span class="badge ${exc.severidade === 'Crítico' ? 'critico' : exc.severidade === 'Atenção' ? 'atencao' : 'incompleto'}">${escaparHtml(exc.severidade)}</span></td>
-            <td>${escaparHtml(triggerTime)}</td>
-            <td>${(exc.mensagens || []).map(escaparHtml).join("<br>")}</td>
+            <td>${escaparHtml(triggerTime)}<br><small>Última leitura: ${escaparHtml(exc.ultimaLeitura || '—')}</small></td>
+            <td>${obterMensagensRelatorioAlarme(exc).map(escaparHtml).join("<br>")}</td>
             <td>${statusAck}</td>
             <td>${escaparHtml(exc.predicao?.tendencia || 'N/A')} (${escaparHtml(exc.predicao?.iconeTendencia || '→')})</td>
           </tr>

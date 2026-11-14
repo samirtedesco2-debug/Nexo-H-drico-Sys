@@ -2,7 +2,9 @@ window.AlarmTiming = {
   calcularTempoRespostaMs(chave, tempos, dataSelecionada, agora = Date.now()) {
     if (!(tempos instanceof Map)) return null;
 
-    const valor = (dataSelecionada && tempos.get(`${dataSelecionada}_${chave}`)) || tempos.get(chave);
+    // Só vale o registro da data + reservatório. A chave antiga (só o reservatório) não é usada: poderia
+    // trazer o horário de outro dia e produzir um tempo de resposta errado.
+    const valor = dataSelecionada ? tempos.get(`${dataSelecionada}_${chave}`) : undefined;
     let timestamp;
     if (typeof valor === "number") {
       timestamp = valor;

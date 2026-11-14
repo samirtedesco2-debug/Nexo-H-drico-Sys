@@ -1957,6 +1957,36 @@ function obterReservatoriosSemBaseVazao(banco, dataSelecionada) {
 }
 
 /** Faixa informativa do Mural: vazão sem base de comparação (não é alarme; não gera ACK nem tempo de resposta). */
+/** Horários sem leitura em quase todos os reservatórios avaliados (em manutenção ficam de fora). */
+function obterHorariosBoletimIncompleto(banco, dataSelecionada) {
+  const dadosDoDia = banco?.historico?.[dataSelecionada];
+  if (!dadosDoDia?.reservatorios) return [];
+  const leituras = Object.entries(dadosDoDia.reservatorios)
+    .filter(([chave]) => !obterConfiguracaoReservatorio(chave).emManutencao)
+    .map(([, res]) => res?.leituras);
+  return detectarHorariosAusentesNoBoletim(leituras, dadosDoDia.horarios || []);
+}
+
+/** Faixa informativa (não é alarme): o boletim chegou sem leitura em quase todos os reservatórios. */
+function renderizarAvisoBoletimIncompletoMural(banco, dataSelecionada) {
+  const aviso = document.getElementById("aviso-boletim-incompleto-mural");
+  if (!aviso) return;
+  const horarios = obterHorariosBoletimIncompleto(banco, dataSelecionada);
+  aviso.hidden = horarios.length === 0;
+  if (!horarios.length) {
+    aviso.replaceChildren();
+    return;
+  }
+  const lista = horarios
+    .map(({ horario, ausentes, total }) => `${horario} em ${ausentes} de ${total} reservatórios`)
+    .join(" · ");
+  aviso.replaceChildren(
+    criarElementoTexto("strong", "", `ℹ️ Boletim de ${dataSelecionada} incompleto: `),
+    `sem leitura às ${lista}. Provável falha na geração do boletim, não de campo. `,
+    criarElementoTexto("span", "", "Os alarmes de cada reservatório continuam ativos."),
+  );
+}
+
 function renderizarAvisoBaseVazaoMural(banco, dataSelecionada) {
   const aviso = document.getElementById("aviso-base-vazao-mural");
   if (!aviso) return;
@@ -1987,6 +2017,8 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
   const escopoOperacional = document.getElementById("seletor-escopo-operacional")?.value || "ambos";
 
   const exceccoesMap = new Map();
+  const horariosBoletim = obterHorariosBoletimIncompleto(banco, dataSelecionada).map((h) => h.horario);
+  const ehDataMaisRecente = dataSelecionada === obterDataMaisRecenteBanco(banco);
 
   Object.entries(dadosDoDia.reservatorios).forEach(([chave, res]) => {
     const nome = res.nome || obterIdentificacaoReservatorio(chave);
@@ -2082,7 +2114,10 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
             return obterMensagemTaxonomia(alarme.codigo, { nome, valorAtual: nivelAtual ?? "N/A" }) || "Leituras de nível inconsistentes ou fora da faixa válida (0-110%)";
           case "ALM-DAT-01":
             if (vazaoSemLeituraValida) return "Vazão sem leitura válida no boletim (zerada ou inconsistente).";
-            return obterMensagemTaxonomia(alarme.codigo, { nome }) || `${ausentesSelecionadas.length} leitura(s) ausente(s) por falha de telemetria`;
+            // Diz quais horários faltaram; não afirma a causa (falha de comunicação não é comprovada).
+            return descreverLeiturasAusentes(ausentesSelecionadas, esperadasPorVariavel, horariosBoletim)
+              || obterMensagemTaxonomia(alarme.codigo, { nome })
+              || "Leitura ausente no boletim";
           default:
             return obterMensagemTaxonomia(alarme.codigo, { nome, valorAtual: vazaoAtual, variacao: varAbs }) || `Vazão atual (${vazaoAtual} L/s) está desviada (${statusVazao})`;
         }
@@ -2093,6 +2128,12 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
         mensagens.push(predicao.mensagemPreditiva);
       }
       alarmes.filter((a) => a.codigo === "ALM-DAT-01").forEach((a) => mensagens.push(textoAlarme(a)));
+      // Alarme novo depois do reconhecimento/cancelamento: o ACK continua valendo, mas o operador é avisado.
+      const alarmesNovos = obterAlarmesNovosDesdeAck(chave, alarmes, ehDataMaisRecente);
+      if (alarmesNovos.length) {
+        const aposAcao = ehAlarmeCancelado(chave) ? "cancelamento" : "reconhecimento";
+        mensagens.push(`⚠️ Novo desde o ${aposAcao}: ${alarmesNovos.map(textoAlarme).join(" · ")}`);
+      }
 
       exceccoesMap.set(chave, {
         chave,
@@ -2106,6 +2147,13 @@ function obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada) {
         statusVazao,
         alarmes,
         ausentes: ausentesSelecionadas,
+        horariosEsperados: esperadasPorVariavel,
+        horariosBoletim,
+        alarmesNovos: alarmesNovos.map((a) => a.codigo),
+        ultimaLeitura: (() => {
+          const horario = obterHorarioUltimaLeitura(leituras, horarios);
+          return horario ? `${dataSelecionada} ${horario}` : "sem leitura no boletim";
+        })(),
         vazaoSemLeituraValida,
         mensagens,
       });
@@ -2121,21 +2169,18 @@ function atualizarBadgeAlarmes() {
   if (!banco || !banco.historico || !seletorData) return;
   const dataSelecionada = seletorData.value;
 
-  const exceccoes = obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada);
+  const exceccoes = obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada)
+    .filter((e) => !ehAlarmeCancelado(e.chave));
   const totalExceccoes = exceccoes.length;
 
   const badge = document.getElementById("badge-alarmes-ativos");
   const countTab = document.getElementById("count-tab-alarmes");
-  const tabAlarmes = document.getElementById("tab-alarmes");
   if (badge) {
     badge.textContent = totalExceccoes;
     badge.style.display = totalExceccoes > 0 ? "inline-block" : "none";
   }
   if (countTab) {
     countTab.textContent = totalExceccoes;
-  }
-  if (tabAlarmes) {
-    tabAlarmes.classList.toggle("animar-pulso-tab", totalExceccoes > 0);
   }
 }
 
@@ -2220,6 +2265,137 @@ function obterMensagemTaxonomia(codigo, dados) {
   return tax[codigo].template;
 }
 
+/**
+ * Momento (relógio do CCO) em que o alarme foi registrado pela primeira vez para esta data, ou null.
+ * Só a chave data + reservatório: a chave antiga (só o reservatório) pode ser de outro dia.
+ */
+function obterHorarioRegistroCco(chave, dataSelecionada) {
+  return window.ccoAlarmTriggerTimes?.get?.(`${dataSelecionada}_${chave}`) || null;
+}
+
+// Alarme novo = registrado pelo CCO há menos de 10 s e ainda sem reconhecimento: só esses pulsam.
+const DURACAO_PULSO_ALARME_NOVO_MS = 10000;
+
+/** Quanto falta (ms) do pulso do alarme; 0 se já passou, se não há registro ou se já foi reconhecido. */
+function obterMsRestantesPulsoAlarme(chave, dataSelecionada) {
+  if (window.ccoReconhecidos?.has?.(chave)) return 0;
+  if (!window.AlarmTiming || !(window.ccoAlarmTriggerTimes instanceof Map)) return 0;
+  // calcularTempoRespostaMs devolve o tempo desde o registro do alarme (null se não houver registro por data).
+  const idade = window.AlarmTiming.calcularTempoRespostaMs(chave, window.ccoAlarmTriggerTimes, dataSelecionada);
+  return idade === null ? 0 : Math.max(0, DURACAO_PULSO_ALARME_NOVO_MS - idade);
+}
+
+/** Liga o pulso no elemento pelo que falta dos 10 s e o desliga sozinho. A cor do brilho é a da severidade. */
+function aplicarPulsoAlarmeNovo(elemento, chave, dataSelecionada, cor) {
+  const restante = obterMsRestantesPulsoAlarme(chave, dataSelecionada);
+  if (restante <= 0) return;
+  elemento.classList.add("animar-pulso");
+  if (cor) elemento.style.setProperty("--cor-pulso", cor);
+  setTimeout(() => elemento.classList.remove("animar-pulso"), restante);
+}
+
+/** Aba "Alarmes": pulsa só enquanto houver alarme novo (e não mais o tempo todo). */
+function atualizarPulsoAbaAlarmes(exceccoes, dataSelecionada) {
+  const aba = document.getElementById("tab-alarmes");
+  if (!aba) return;
+  const restante = Math.max(0, ...exceccoes.map((e) => obterMsRestantesPulsoAlarme(e.chave, dataSelecionada)));
+  aba.classList.toggle("animar-pulso-tab", restante > 0);
+  clearTimeout(window.ccoTimerPulsoAba);
+  if (restante > 0) {
+    window.ccoTimerPulsoAba = setTimeout(() => aba.classList.remove("animar-pulso-tab"), restante);
+  }
+}
+
+/** Sessão local {username, role}. Controle de navegador, não segurança de servidor. */
+function obterSessaoAtual() {
+  try {
+    const sessao = JSON.parse(localStorage.getItem("nexo_hidrico_session") || "{}");
+    return sessao && typeof sessao === "object" ? sessao : {};
+  } catch (error) {
+    console.warn("Não foi possível ler a sessão local.", error);
+    return {};
+  }
+}
+
+/** Data mais recente do banco: o estado "atual" dos alarmes, independente da data escolhida na tela. */
+function obterDataMaisRecenteBanco(banco) {
+  const datas = banco?.datasDisponiveis?.length ? banco.datasDisponiveis : Object.keys(banco?.historico || {});
+  return datas.length ? datas[datas.length - 1] : null;
+}
+
+/** O alarme foi cancelado por um ADMIN (registro de reconhecimento com tipo "cancelado")? */
+function ehAlarmeCancelado(chave) {
+  const reconhecidos = window.ccoReconhecidos;
+  const metadados = window.ccoAckMetadata;
+  const reconhecido = reconhecidos instanceof Map ? reconhecidos.has(chave) : Boolean(reconhecidos && chave in reconhecidos);
+  const meta = metadados instanceof Map ? metadados.get(chave) : metadados?.[chave];
+  return Boolean(reconhecido && meta && typeof meta === "object" && meta.tipo === "cancelado");
+}
+
+/** Alarmes cancelados com quem cancelou, quando e por quê (para relatórios e resumo de plantão). */
+function listarAlarmesCancelados() {
+  const reconhecidos = window.ccoReconhecidos instanceof Map ? window.ccoReconhecidos : new Map();
+  const banco = window.bancoDeDados;
+  const dia = banco?.historico?.[obterDataMaisRecenteBanco(banco)];
+  return [...reconhecidos.entries()]
+    .filter(([chave]) => ehAlarmeCancelado(chave))
+    .map(([chave, severidade]) => {
+      const meta = window.ccoAckMetadata.get(chave) || {};
+      return {
+        chave,
+        nome: dia?.reservatorios?.[chave]?.nome || obterIdentificacaoReservatorio(chave) || chave,
+        severidade,
+        operador: meta.operador || "Admin",
+        timestamp: meta.timestamp || "",
+        motivo: meta.motivo || "",
+      };
+    });
+}
+
+/** Mensagens do alarme para relatórios: inclui a linha do cancelamento (quem, quando, motivo). */
+function obterMensagensRelatorioAlarme(exc) {
+  const mensagens = [...(exc?.mensagens || [])];
+  if (exc && ehAlarmeCancelado(exc.chave)) {
+    const meta = window.ccoAckMetadata.get(exc.chave) || {};
+    mensagens.push(`🚫 Cancelado por ${meta.operador || "Admin"} em ${meta.timestamp || "—"}: ${meta.motivo || "sem motivo registrado"}`);
+  }
+  return mensagens;
+}
+
+/**
+ * Códigos dos alarmes ativos do reservatório no estado mais recente (gravados no reconhecimento
+ * para avisar depois se surgir um alarme novo). null quando não dá para saber.
+ */
+function obterCodigosAlarmeAtuais(chave) {
+  const banco = window.bancoDeDados;
+  const data = obterDataMaisRecenteBanco(banco);
+  if (!banco || !data) return null;
+  try {
+    const exc = obterReservatoriosComAlertaOuExcecao(banco, data).find((e) => e.chave === chave);
+    return exc ? (exc.alarmes || []).map((a) => a.codigo) : null;
+  } catch (error) {
+    console.warn("Não foi possível obter os códigos do alarme para o reconhecimento.", error);
+    return null;
+  }
+}
+
+/** Alarmes que apareceram depois do reconhecimento/cancelamento (o ACK continua, mas avisa). */
+function obterAlarmesNovosDesdeAck(chave, alarmes, dataEhMaisRecente) {
+  if (!dataEhMaisRecente) return [];
+  const reconhecidos = window.ccoReconhecidos;
+  const metadados = window.ccoAckMetadata;
+  if (!(reconhecidos instanceof Map) || !reconhecidos.has(chave) || !(metadados instanceof Map)) return [];
+  const meta = metadados.get(chave);
+  if (!meta || !Array.isArray(meta.codigos)) return [];
+  return (alarmes || []).filter((alarme) => !meta.codigos.includes(alarme.codigo));
+}
+
+/** "14/11/2026 01:29:24" -> "14/11 01:29" (o horário completo fica no título do botão). */
+function formatarHorarioCurtoAck(timestamp) {
+  const partes = String(timestamp || "").match(/^(\d{2}\/\d{2})\/\d{4}\s+(\d{2}:\d{2})/);
+  return partes ? `${partes[1]} ${partes[2]}` : String(timestamp || "—");
+}
+
 function obterDetalhesAck(chave) {
   window.ccoReconhecidos = window.ccoReconhecidos || new Map();
   if (!(window.ccoReconhecidos instanceof Map)) {
@@ -2233,13 +2409,25 @@ function obterDetalhesAck(chave) {
   }
 
   const meta = window.ccoAckMetadata.get(chave);
+  if (meta && typeof meta === 'object' && meta.tipo === 'cancelado') {
+    return {
+      reconhecido: true,
+      cancelado: true,
+      timestamp: meta.timestamp || '',
+      operador: meta.operador || 'Admin',
+      nota: '',
+      motivo: meta.motivo || '',
+      texto: `🚫 Cancelado · ${meta.operador || 'Admin'} · ${formatarHorarioCurtoAck(meta.timestamp)}`.trim(),
+      titulo: `Cancelado em ${meta.timestamp || '—'} por ${meta.operador || 'Admin'} | Motivo: ${meta.motivo || '—'}. Apenas ADMIN pode reativar.`
+    };
+  }
   if (meta && typeof meta === 'object') {
     return {
       reconhecido: true,
       timestamp: meta.timestamp || '',
       operador: meta.operador || 'Operador',
       nota: meta.nota || '',
-      texto: `✓ (${meta.timestamp || ''} - ${meta.operador || ''})`,
+      texto: `✓ ${meta.operador || 'Operador'} · ${formatarHorarioCurtoAck(meta.timestamp)}`.trim(),
       titulo: `Reconhecido em ${meta.timestamp || '—'} por ${meta.operador || 'Operador'}${meta.nota ? ' | Nota: ' + meta.nota : ''}. Apenas ADMIN pode revogar.`
     };
   }
@@ -2278,7 +2466,7 @@ const ESTILOS_CARD_MURAL = {
     mensagens: "font-size: 0.85rem; color: var(--muted-color); display: flex; flex-direction: column; gap: 4px;",
     rodape: "display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px;",
     botao: "padding: 6px 14px; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2);",
-    rotuloAck: "🚨 Reconhecer Alarme",
+    rotuloAck: "🚨 Reconhecer",
     prefixoId: "btn-footer-ack-",
   },
   kanban: {
@@ -2303,13 +2491,79 @@ function criarBotaoAckMural({ chave, nome, severidade, ackDet }, estilos, id) {
   botao.type = "button";
   if (id) botao.id = id;
   if (ackDet.titulo) botao.title = ackDet.titulo;
-  botao.style.background = ackDet.reconhecido ? "rgba(115,191,105,0.2)" : "var(--accent-color)";
-  botao.style.color = ackDet.reconhecido ? "var(--status-normal-color)" : "#fff";
+  if (ackDet.reconhecido) {
+    botao.classList.add("mural-btn-ack-feito"); // cinza neutro: o verde se confundia com "Normal"
+  } else {
+    botao.style.background = "var(--accent-color)";
+    botao.style.color = "#fff";
+  }
   botao.addEventListener("click", async (evento) => {
     evento.stopPropagation();
     await toggleAckMural(chave, severidade, nome);
   });
   return botao;
+}
+
+/** Botão "Cancelar" do Mural: só aparece para ADMIN (controle local); exige o motivo na janela. */
+function criarBotaoCancelarAlarmeMural({ chave, nome, severidade }, estilos) {
+  if (obterSessaoAtual().role !== "ADMIN") return null;
+  const botao = criarElementoComEstilo("button", estilos.botao, "🚫 Cancelar");
+  botao.type = "button";
+  botao.classList.add("mural-btn-cancelar");
+  botao.title = "Cancelar alarme (ADMIN): exige o motivo. Sai da lista ativa até normalizar ou piorar.";
+  botao.style.background = "transparent";
+  botao.style.color = "var(--text-color)";
+  botao.style.border = "1px solid var(--border-color)";
+  botao.style.boxShadow = "none";
+  botao.addEventListener("click", async (evento) => {
+    evento.stopPropagation();
+    await window.cancelarAlarmeMural(chave, severidade, nome);
+  });
+  return botao;
+}
+
+/** Lista "Alarmes cancelados" (abaixo do Mural): quem cancelou, quando e o motivo. Texto livre sempre como texto. */
+function renderizarAlarmesCanceladosMural(canceladas) {
+  const secao = document.getElementById("secao-alarmes-cancelados");
+  if (!secao) return;
+  secao.hidden = canceladas.length === 0;
+  if (!canceladas.length) {
+    secao.replaceChildren();
+    return;
+  }
+  const ehAdmin = obterSessaoAtual().role === "ADMIN";
+  const comAlarmeNovo = canceladas.filter((e) => (e.alarmesNovos || []).length > 0).length;
+  const resumo = criarElementoTexto(
+    "summary",
+    "",
+    `🚫 Alarmes cancelados (${canceladas.length})${comAlarmeNovo ? ` · ${comAlarmeNovo} com alarme novo` : ""}`,
+  );
+  const lista = criarElementoTexto("div", "mural-cancelados-lista", "");
+  canceladas.forEach((exc) => {
+    const det = obterDetalhesAck(exc.chave);
+    const item = criarElementoTexto("div", "mural-cancelado-item", "");
+    item.dataset.reservatorio = exc.chave;
+
+    const topo = criarElementoTexto("div", "mural-cancelado-topo", "");
+    topo.append(
+      criarElementoTexto("strong", "", exc.nome),
+      criarSeloSeveridadeMural(exc.severidade, exc.cor, exc.bg, "padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;"),
+    );
+    item.append(
+      topo,
+      criarElementoTexto("div", "mural-cancelado-meta", `Cancelado por ${det.operador} em ${det.timestamp || "—"}`),
+      criarElementoTexto("div", "mural-cancelado-motivo", `Motivo: ${det.motivo || "—"}`),
+    );
+    (exc.mensagens || []).forEach((mensagem) => item.append(criarElementoTexto("div", "mural-cancelado-msg", `• ${mensagem}`)));
+    if (ehAdmin) {
+      const reativar = criarElementoTexto("button", "mural-cancelado-reativar", "↩️ Reativar alarme");
+      reativar.type = "button";
+      reativar.addEventListener("click", () => toggleAckMural(exc.chave, exc.severidade, exc.nome));
+      item.append(reativar);
+    }
+    lista.append(item);
+  });
+  secao.replaceChildren(resumo, lista);
 }
 
 /** Selo de severidade com as cores internas da severidade (não vêm do usuário). */
@@ -2328,16 +2582,24 @@ function criarNotaAckMural(nota, prefixo, estilo) {
 /** Conteúdo dos cards do Mural (modos grade e kanban). */
 function preencherCardAlarmeMural(card, alarme, modo) {
   const estilos = ESTILOS_CARD_MURAL[modo];
-  const { chave, nome, severidade, cor, bg, mensagens, ackDet, triggerTime } = alarme;
+  const { chave, nome, severidade, cor, bg, mensagens, ackDet, triggerTime, ultimaLeitura } = alarme;
 
-  const topo = criarElementoComEstilo("div", "display: flex; justify-content: space-between; align-items: center;");
-  topo.append(
-    criarElementoComEstilo("span", estilos.nome, nome),
-    criarSeloSeveridadeMural(severidade, cor, bg, estilos.badge),
-  );
+  // Selo alinhado à primeira linha do nome; nome em até 2 linhas (o completo fica no title).
+  const topo = criarElementoComEstilo("div", "display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;");
+  const nomeEl = criarElementoComEstilo("span", estilos.nome, nome);
+  nomeEl.classList.add("mural-card-nome");
+  nomeEl.title = nome;
+  const seloEl = criarSeloSeveridadeMural(severidade, cor, bg, estilos.badge);
+  seloEl.classList.add("mural-card-selo");
+  topo.append(nomeEl, seloEl);
 
-  const acionado = criarElementoComEstilo("div", estilos.acionado, "Acionado em: ");
+  // Horário do relógio do CCO na primeira vez que viu o alarme: não é o horário do sensor nem do alarme.
+  const acionado = criarElementoComEstilo("div", estilos.acionado, "Registrado no CCO em: ");
+  acionado.title = "Horário do relógio do CCO em que o alarme foi visto pela primeira vez; não é o horário do sensor.";
   acionado.append(criarElementoTexto("strong", "", triggerTime));
+  const leitura = criarElementoComEstilo("div", estilos.acionado, "Última leitura: ");
+  leitura.title = "Último horário do boletim com leitura de nível ou vazão.";
+  leitura.append(criarElementoTexto("strong", "", ultimaLeitura || "—"));
 
   const listaMensagens = criarElementoComEstilo("div", estilos.mensagens);
   (mensagens || []).forEach((mensagem) => listaMensagens.append(criarElementoTexto("div", "", `• ${mensagem}`)));
@@ -2348,9 +2610,15 @@ function preencherCardAlarmeMural(card, alarme, modo) {
   }
 
   const rodape = criarElementoComEstilo("div", estilos.rodape);
+  rodape.classList.add("mural-card-rodape"); // sempre no fim do cartão
+  const botaoCancelar = criarBotaoCancelarAlarmeMural({ chave, nome, severidade }, estilos);
+  if (botaoCancelar) {
+    rodape.style.gap = "8px";
+    rodape.append(botaoCancelar);
+  }
   rodape.append(criarBotaoAckMural({ chave, nome, severidade, ackDet }, estilos, `${estilos.prefixoId}${chave}`));
 
-  card.replaceChildren(topo, acionado, listaMensagens, rodape);
+  card.replaceChildren(topo, acionado, leitura, listaMensagens, rodape);
 }
 
 /** Tabela do Mural (modo tabela). */
@@ -2362,19 +2630,20 @@ function criarTabelaAlarmesMural(exceccoesFiltradas, dataSelecionada) {
 
   const cabecalho = document.createElement("thead");
   const linhaCabecalho = criarElementoComEstilo("tr", "background: var(--surface-inset); text-align: left;");
-  ["Acionado em", "TAG / Reservatório", "Severidade", "Diagnósticos / Mensagens", "Ação (ACK)"].forEach((titulo, indice) => {
+  ["Registrado no CCO em", "TAG / Reservatório", "Severidade", "Diagnósticos / Mensagens", "Ação (ACK)"].forEach((titulo, indice) => {
     linhaCabecalho.append(criarElementoComEstilo("th", `padding: 12px;${indice === 4 ? " text-align: center;" : ""}`, titulo));
   });
   cabecalho.append(linhaCabecalho);
 
   const corpo = document.createElement("tbody");
-  exceccoesFiltradas.forEach(({ chave, nome, severidade, cor, bg, mensagens }) => {
+  exceccoesFiltradas.forEach(({ chave, nome, severidade, cor, bg, mensagens, ultimaLeitura }) => {
     const ackDet = obterDetalhesAck(chave);
     const reconhecido = ackDet.reconhecido;
-    const triggerTime = window.ccoAlarmTriggerTimes?.get(`${dataSelecionada}_${chave}`) || window.ccoAlarmTriggerTimes?.get(chave) || "—";
+    const triggerTime = obterHorarioRegistroCco(chave, dataSelecionada) || "—";
 
     const linha = criarElementoComEstilo("tr", "border-top: 1px solid var(--border-color); cursor: pointer;");
     linha.className = "mural-table-row";
+    aplicarPulsoAlarmeNovo(linha, chave, dataSelecionada, cor);
     linha.dataset.reservatorio = chave;
     linha.tabIndex = 0;
     linha.setAttribute("aria-label", `Alarme ${nome}, severidade ${severidade}${reconhecido ? ", reconhecido" : ", não reconhecido"}. Pressione Enter ou Espaço para abrir os detalhes.`);
@@ -2399,10 +2668,18 @@ function criarTabelaAlarmesMural(exceccoesFiltradas, dataSelecionada) {
     }
 
     const celulaAck = criarElementoComEstilo("td", "padding: 12px; text-align: center;");
+    const botaoCancelarTabela = criarBotaoCancelarAlarmeMural({ chave, nome, severidade }, ESTILOS_CARD_MURAL.tabela);
+    if (botaoCancelarTabela) {
+      botaoCancelarTabela.style.marginRight = "6px";
+      celulaAck.append(botaoCancelarTabela);
+    }
     celulaAck.append(criarBotaoAckMural({ chave, nome, severidade, ackDet }, ESTILOS_CARD_MURAL.tabela));
 
+    const celulaRegistro = criarElementoComEstilo("td", "padding: 12px; font-weight: 600; color: var(--text-color);", triggerTime);
+    celulaRegistro.append(criarElementoComEstilo("div", "font-size: 0.75rem; font-weight: 400; color: var(--muted-color); margin-top: 2px;", `Última leitura: ${ultimaLeitura || "—"}`));
+
     linha.append(
-      criarElementoComEstilo("td", "padding: 12px; font-weight: 600; color: var(--text-color);", triggerTime),
+      celulaRegistro,
       celulaNome,
       celulaSeveridade,
       celulaMensagens,
@@ -2440,14 +2717,15 @@ function renderizarDashboardExceccoes() {
   if (!dadosDoDia) return;
   gridAlarmes.innerHTML = "";
 
-  const exceccoes = obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada);
+  const exceccoesTodas = obterReservatoriosComAlertaOuExcecao(banco, dataSelecionada);
   atualizarBadgeAlarmes();
   renderizarAvisoBaseVazaoMural(banco, dataSelecionada);
+  renderizarAvisoBoletimIncompletoMural(banco, dataSelecionada);
 
   // Rastreamento de Timestamp de Acionamento (Persistente e Imutável por Data + Reservatório)
   window.ccoAlarmTriggerTimes = window.ccoAlarmTriggerTimes || new Map();
   let triggerTimesAlterados = false;
-  exceccoes.forEach(e => {
+  exceccoesTodas.forEach(e => {
     const triggerKey = `${dataSelecionada}_${e.chave}`;
     if (!window.ccoAlarmTriggerTimes.has(triggerKey)) {
       const agora = new Date();
@@ -2460,13 +2738,18 @@ function renderizarDashboardExceccoes() {
     salvarReconhecidosLocalStorage();
   }
 
-  // Auto-reset de reconhecimentos que não correspondem mais a alarmes ativos.
-  const chavesAtuais = new Set(exceccoes.map(e => e.chave));
+  // Auto-reset de reconhecimentos/cancelamentos que não correspondem mais a alarmes ativos. Vale o estado
+  // mais recente do banco, não a data escolhida na tela: olhar um dia antigo não pode apagar um reconhecimento.
+  const dataMaisRecente = obterDataMaisRecenteBanco(banco);
+  const exceccoesEstadoAtual = !dataMaisRecente || dataMaisRecente === dataSelecionada
+    ? exceccoesTodas
+    : obterReservatoriosComAlertaOuExcecao(banco, dataMaisRecente);
+  const chavesAtuais = new Set(exceccoesEstadoAtual.map(e => e.chave));
   let reconhecimentosAlterados = false;
   window.ccoReconhecidos.forEach((sevAntiga, chave) => {
     let remover = !chavesAtuais.has(chave);
     if (!remover) {
-      const exc = exceccoes.find(e => e.chave === chave);
+      const exc = exceccoesEstadoAtual.find(e => e.chave === chave);
       const pesoSev = (s) => s === "Crítico" ? 1 : s === "Atenção" ? 2 : 3;
       remover = Boolean(exc && pesoSev(exc.severidade) < pesoSev(sevAntiga));
     }
@@ -2485,10 +2768,18 @@ function renderizarDashboardExceccoes() {
     salvarReconhecidosLocalStorage();
   }
 
+  // Alarmes cancelados por ADMIN saem da lista ativa e dos contadores; ficam na lista própria, com o motivo.
+  const exceccoes = exceccoesTodas.filter(e => !ehAlarmeCancelado(e.chave));
+  renderizarAlarmesCanceladosMural(exceccoesTodas.filter(e => ehAlarmeCancelado(e.chave)));
+  atualizarPulsoAbaAlarmes(exceccoes, dataSelecionada);
+
   const totalCount = exceccoes.length;
   const criticoCount = exceccoes.filter(e => e.severidade === "Crítico").length;
   const atencaoCount = exceccoes.filter(e => e.severidade === "Atenção").length;
   const inconsistenteCount = exceccoes.filter(e => e.severidade === "Inconsistente").length;
+  // Pendentes = ainda sem reconhecimento (o que precisa de atenção no plantão); o total inclui os reconhecidos.
+  const pendentes = (severidade) => exceccoes.filter(e =>
+    (!severidade || e.severidade === severidade) && !window.ccoReconhecidos.has(e.chave)).length;
 
   const elTotais = document.getElementById("count-filtro-totais");
   const elCriticos = document.getElementById("count-filtro-criticos");
@@ -2499,6 +2790,15 @@ function renderizarDashboardExceccoes() {
   if (elCriticos) elCriticos.textContent = criticoCount;
   if (elAtencao) elAtencao.textContent = atencaoCount;
   if (elIncompletos) elIncompletos.textContent = inconsistenteCount;
+  [
+    ["count-pendentes-totais", pendentes()],
+    ["count-pendentes-criticos", pendentes("Crítico")],
+    ["count-pendentes-atencao", pendentes("Atenção")],
+    ["count-pendentes-incompletos", pendentes("Inconsistente")],
+  ].forEach(([id, valor]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = valor;
+  });
 
   if (window.ccoFiltroAtual === undefined) {
     window.ccoFiltroAtual = "TODOS";
@@ -2635,10 +2935,8 @@ function renderizarDashboardExceccoes() {
   }
 
   exceccoesFiltradas.sort((a, b) => {
-    const keyA = `${dataSelecionada}_${a.chave}`;
-    const keyB = `${dataSelecionada}_${b.chave}`;
-    const tA = window.ccoAlarmTriggerTimes?.get(keyA) || window.ccoAlarmTriggerTimes?.get(a.chave) || "";
-    const tB = window.ccoAlarmTriggerTimes?.get(keyB) || window.ccoAlarmTriggerTimes?.get(b.chave) || "";
+    const tA = obterHorarioRegistroCco(a.chave, dataSelecionada) || "";
+    const tB = obterHorarioRegistroCco(b.chave, dataSelecionada) || "";
 
     if (window.ccoMuralModoOrdenacao === "horario") {
       return tA.localeCompare(tB);
@@ -2678,15 +2976,16 @@ function renderizarDashboardExceccoes() {
       if (itensColuna.length === 0) {
         cardsContainer.innerHTML = `<div style="text-align: center; color: var(--muted-color); font-size: 0.85rem; padding: 30px 0;">Nenhum alarme nesta coluna</div>`;
       } else {
-        itensColuna.forEach(({ chave, nome, severidade, cor, bg, mensagens }) => {
+        itensColuna.forEach(({ chave, nome, severidade, cor, bg, mensagens, ultimaLeitura }) => {
           const card = document.createElement("article");
           const ackDet = obterDetalhesAck(chave);
           const reconhecido = ackDet.reconhecido;
 
-          card.className = `mural-alarm-card${reconhecido ? "" : " animar-pulso"}`;
+          card.className = "mural-alarm-card";
           card.setAttribute("tabindex", "0");
           card.setAttribute("aria-label", `Alarme ${nome}, severidade ${severidade}${reconhecido ? ", reconhecido" : ", não reconhecido"}. Pressione Enter ou Espaço para abrir os detalhes.`);
           card.style.cssText = `background: var(--card-bg); border: 1px solid var(--border-color); border-left: 5px solid ${cor}; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;`;
+          aplicarPulsoAlarmeNovo(card, chave, dataSelecionada, cor);
           
           card.addEventListener("click", (e) => {
             if (e.target.closest("button")) return;
@@ -2699,9 +2998,8 @@ function renderizarDashboardExceccoes() {
             }
           });
 
-          const triggerKey = `${dataSelecionada}_${chave}`;
-          const triggerTime = window.ccoAlarmTriggerTimes?.get(triggerKey) || window.ccoAlarmTriggerTimes?.get(chave) || "—";
-          preencherCardAlarmeMural(card, { chave, nome, severidade, cor, bg, mensagens, ackDet, triggerTime }, "kanban");
+          const triggerTime = obterHorarioRegistroCco(chave, dataSelecionada) || "—";
+          preencherCardAlarmeMural(card, { chave, nome, severidade, cor, bg, mensagens, ackDet, triggerTime, ultimaLeitura }, "kanban");
           cardsContainer.appendChild(card);
         });
       }
@@ -2719,17 +3017,17 @@ function renderizarDashboardExceccoes() {
   }
 
   gridAlarmes.style.display = "grid";
-  exceccoesFiltradas.forEach(({ chave, nome, severidade, cor, bg, mensagens, predicao }) => {
+  exceccoesFiltradas.forEach(({ chave, nome, severidade, cor, bg, mensagens, predicao, ultimaLeitura }) => {
     const card = document.createElement("article");
     const ackDet = obterDetalhesAck(chave);
     const reconhecido = ackDet.reconhecido;
-    const triggerKey = `${dataSelecionada}_${chave}`;
-    const triggerTime = window.ccoAlarmTriggerTimes?.get(triggerKey) || window.ccoAlarmTriggerTimes?.get(chave) || "—";
+    const triggerTime = obterHorarioRegistroCco(chave, dataSelecionada) || "—";
 
-    card.className = `mural-alarm-card${reconhecido ? "" : " animar-pulso"}`;
+    card.className = "mural-alarm-card";
     card.setAttribute("tabindex", "0");
     card.setAttribute("aria-label", `Alarme ${nome}, severidade ${severidade}${reconhecido ? ", reconhecido" : ", não reconhecido"}. Pressione Enter ou Espaço para abrir os detalhes.`);
     card.style.cssText = `background: var(--card-bg); border: 1px solid var(--border-color); border-left: 6px solid ${cor}; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;`;
+    aplicarPulsoAlarmeNovo(card, chave, dataSelecionada, cor);
     card.title = "Clique ou pressione Enter para abrir detalhes operacionais";
 
     card.addEventListener("focus", () => {
@@ -2760,7 +3058,7 @@ function renderizarDashboardExceccoes() {
       window.abrirReservatorioMural(chave);
     });
 
-    preencherCardAlarmeMural(card, { chave, nome, severidade, cor, bg, mensagens, ackDet, triggerTime }, "grade");
+    preencherCardAlarmeMural(card, { chave, nome, severidade, cor, bg, mensagens, ackDet, triggerTime, ultimaLeitura }, "grade");
     gridAlarmes.append(card);
   });
 }
@@ -2816,7 +3114,10 @@ window.abrirReservatorioMural = function(chave) {
  * Resolve { confirmado, nota }. Esc, ✕ e Cancelar resolvem confirmado: false; clique fora não fecha,
  * para a nota digitada não se perder. Ctrl+Enter confirma. Uma janela por vez.
  */
-function abrirDialogoCco({ titulo, subtitulo = "", mensagem = "", comNota = false, rotuloConfirmar = "OK", rotuloCancelar = "Cancelar" }) {
+function abrirDialogoCco({
+  titulo, subtitulo = "", mensagem = "", comNota = false, rotuloConfirmar = "OK", rotuloCancelar = "Cancelar",
+  notaMinima = 0, rotuloNota = "Nota (opcional)", placeholderNota = "Ex.: Válvula manobrada pela equipe",
+}) {
   const existente = document.getElementById("dialogo-cco");
   if (existente) {
     existente.querySelector("textarea, .dialogo-cco__confirmar")?.focus();
@@ -2867,15 +3168,18 @@ function abrirDialogoCco({ titulo, subtitulo = "", mensagem = "", comNota = fals
       const rotulo = document.createElement("label");
       rotulo.className = "dialogo-cco__rotulo";
       rotulo.htmlFor = "dialogo-cco-nota";
-      rotulo.textContent = "Nota (opcional)";
+      rotulo.textContent = rotuloNota;
       campo = document.createElement("textarea");
       campo.id = "dialogo-cco-nota";
       campo.className = "dialogo-cco__nota";
       campo.rows = 4;
-      campo.placeholder = "Ex.: Válvula manobrada pela equipe";
+      campo.placeholder = placeholderNota;
+      if (notaMinima > 0) campo.setAttribute("aria-required", "true");
       const dica = document.createElement("p");
       dica.className = "dialogo-cco__dica";
-      dica.textContent = "Ctrl+Enter confirma · Esc cancela";
+      dica.textContent = notaMinima > 0
+        ? `Obrigatório (mínimo ${notaMinima} caracteres) · Ctrl+Enter confirma · Esc cancela`
+        : "Ctrl+Enter confirma · Esc cancela";
       corpo.append(rotulo, campo, dica);
     }
 
@@ -2899,6 +3203,13 @@ function abrirDialogoCco({ titulo, subtitulo = "", mensagem = "", comNota = fals
     fundo.append(caixa);
     document.body.append(fundo);
 
+    // Nota obrigatória: confirmar só vale com o texto mínimo preenchido (botão e Ctrl+Enter).
+    const notaValida = () => !campo || campo.value.trim().length >= notaMinima;
+    if (notaMinima > 0 && campo) {
+      confirmar.disabled = true;
+      campo.addEventListener("input", () => { confirmar.disabled = !notaValida(); });
+    }
+
     const concluir = (confirmado) => {
       fundo.remove();
       if (focoAnterior && typeof focoAnterior.focus === "function" && document.contains(focoAnterior)) {
@@ -2911,14 +3222,14 @@ function abrirDialogoCco({ titulo, subtitulo = "", mensagem = "", comNota = fals
     const valorAoFechar = !rotuloCancelar;
     fechar.addEventListener("click", () => concluir(valorAoFechar));
     cancelar?.addEventListener("click", () => concluir(false));
-    confirmar.addEventListener("click", () => concluir(true));
+    confirmar.addEventListener("click", () => { if (notaValida()) concluir(true); });
     fundo.addEventListener("keydown", (evento) => {
       if (evento.key === "Escape") {
         evento.preventDefault();
         concluir(valorAoFechar);
       } else if (evento.key === "Enter" && (evento.ctrlKey || evento.metaKey)) {
         evento.preventDefault();
-        concluir(true);
+        if (notaValida()) concluir(true);
       } else if (evento.key === "Tab") {
         const focaveis = [...caixa.querySelectorAll("button, textarea")];
         const primeiro = focaveis[0];
@@ -2938,106 +3249,146 @@ function abrirDialogoCco({ titulo, subtitulo = "", mensagem = "", comNota = fals
   });
 }
 
-window.toggleAckMural = async function(chave, severidade, nome) {
+/**
+ * Reconhece, revoga, cancela ou reativa um alarme (mesmo registro, com `tipo: "cancelado"` no cancelamento):
+ * persistência, rollback, auditoria, log e sincronização entre janelas são os mesmos do reconhecimento.
+ * opcoes.cancelar: ADMIN cancela o alarme com motivo obrigatório (sai da lista ativa até normalizar ou piorar).
+ */
+window.toggleAckMural = async function(chave, severidade, nome, opcoes = {}) {
   window.ccoReconhecidos = window.ccoReconhecidos || new Map();
   carregarReconhecidosLocalStorage();
-  const reconhecido = window.ccoReconhecidos.has(chave);
+  const jaReconhecido = window.ccoReconhecidos.has(chave);
+  const cancelando = opcoes.cancelar === true;
+  const revogando = jaReconhecido && !cancelando;
+  const eraCancelado = jaReconhecido && ehAlarmeCancelado(chave);
   window.nexoIncidentsLog = window.nexoIncidentsLog || [];
   const tempoRespostaMs = obterTempoRespostaMs(chave);
 
-  let isAdmin = false;
-  let session = {};
-  try {
-    const sessionStr = localStorage.getItem("nexo_hidrico_session");
-    if (sessionStr) {
-      session = JSON.parse(sessionStr);
-      isAdmin = (session.role === "ADMIN");
-    }
-  } catch (error) {
-    console.warn("Não foi possível ler a sessão antes de atualizar o reconhecimento.", error);
-  }
+  const session = obterSessaoAtual();
+  const isAdmin = session.role === "ADMIN";
+  const identificacao = `${nome && nome !== chave ? `${nome} (${chave})` : chave} · ${severidade || "Crítico"}`;
+  const avisoSomenteAdmin = (titulo, mensagem) => abrirDialogoCco({
+    titulo, mensagem, rotuloConfirmar: "Entendi", rotuloCancelar: "",
+  });
 
-
-  // A janela é assíncrona: outra janela pode ter reconhecido/revogado este alarme enquanto ela estava aberta.
+  // A janela é assíncrona: outra janela pode ter mudado este alarme enquanto ela estava aberta.
   const estadoMudouDuranteDialogo = () => {
-    if (window.ccoReconhecidos.has(chave) === reconhecido) return false;
+    if (window.ccoReconhecidos.has(chave) === jaReconhecido) return false;
     mostrarToast(`O alarme ${obterIdentificacaoReservatorio(chave) || chave} foi alterado em outra janela; nada foi gravado.`, "atencao");
     renderizarDashboardExceccoes();
     return true;
   };
+
+  const sevAnterior = window.ccoReconhecidos.get(chave);
+  // Horário da confirmação (depois da janela), não de quando ela abriu.
+  const dataHora = () => {
+    const agora = new Date();
+    return `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+  };
+  window.ccoAckMetadata = window.ccoAckMetadata || new Map();
   let metadadosAnteriores;
-  if (reconhecido) {
+  let acao;
+
+  if (cancelando) {
     if (!isAdmin) {
-      await abrirDialogoCco({
-        titulo: "Acesso negado",
-        mensagem: "Apenas administradores (perfil ADMIN) podem revogar um alarme já reconhecido.",
-        rotuloConfirmar: "Entendi",
-        rotuloCancelar: "",
-      });
+      await avisoSomenteAdmin("Acesso negado", "Apenas administradores (perfil ADMIN) podem cancelar um alarme.");
       return;
     }
-
+    const { confirmado, nota: motivoDigitado } = await abrirDialogoCco({
+      titulo: "Cancelar alarme",
+      subtitulo: identificacao,
+      mensagem: "O alarme sai da lista ativa até normalizar ou piorar de severidade. Fica registrado em Alarmes cancelados, na auditoria e no histórico.",
+      comNota: true,
+      notaMinima: 10,
+      rotuloNota: "Motivo do cancelamento (obrigatório)",
+      placeholderNota: "Ex.: Sensor com defeito; equipe de campo já acionada",
+      rotuloConfirmar: "Cancelar alarme",
+      rotuloCancelar: "Voltar",
+    });
+    const motivo = (motivoDigitado || "").trim();
+    if (!confirmado || motivo.length < 10 || estadoMudouDuranteDialogo()) return;
+    metadadosAnteriores = window.ccoAckMetadata.get(chave);
+    window.ccoReconhecidos.set(chave, severidade || 'Crítico');
+    const codigos = obterCodigosAlarmeAtuais(chave);
+    window.ccoAckMetadata.set(chave, {
+      timestamp: dataHora(),
+      operador: session.username || 'Admin',
+      nota: '',
+      tipo: 'cancelado',
+      motivo,
+      ...(codigos ? { codigos } : {}),
+    });
+    acao = 'Cancelado';
+  } else if (revogando) {
+    if (!isAdmin) {
+      await avisoSomenteAdmin(
+        "Acesso negado",
+        eraCancelado
+          ? "Apenas administradores (perfil ADMIN) podem reativar um alarme cancelado."
+          : "Apenas administradores (perfil ADMIN) podem revogar um alarme já reconhecido.",
+      );
+      return;
+    }
     const { confirmado } = await abrirDialogoCco({
-      titulo: "Revogar reconhecimento",
-      subtitulo: `${nome && nome !== chave ? `${nome} (${chave})` : chave} · ${severidade || "Crítico"}`,
-      mensagem: "Deseja realmente revogar o reconhecimento deste alarme? Os alertas visuais e sonoros voltam a ser exibidos no CCO.",
-      rotuloConfirmar: "Revogar",
+      titulo: eraCancelado ? "Reativar alarme" : "Revogar reconhecimento",
+      subtitulo: identificacao,
+      mensagem: eraCancelado
+        ? "Deseja reativar este alarme? Ele volta à lista ativa e os alertas visuais e sonoros voltam a ser exibidos no CCO."
+        : "Deseja realmente revogar o reconhecimento deste alarme? Os alertas visuais e sonoros voltam a ser exibidos no CCO.",
+      rotuloConfirmar: eraCancelado ? "Reativar" : "Revogar",
     });
     if (!confirmado || estadoMudouDuranteDialogo()) return;
-
-    window.ccoReconhecidos.delete(chave);
-    window.ccoAckMetadata = window.ccoAckMetadata || new Map();
     metadadosAnteriores = window.ccoAckMetadata.get(chave);
+    window.ccoReconhecidos.delete(chave);
     window.ccoAckMetadata.delete(chave);
+    acao = eraCancelado ? 'Reativado' : 'Revogado';
   } else {
     // Cancelar não reconhece (com o prompt nativo, Cancelar reconhecia sem nota).
     const { confirmado, nota } = await abrirDialogoCco({
       titulo: "Reconhecer alarme",
-      subtitulo: `${nome && nome !== chave ? `${nome} (${chave})` : chave} · ${severidade || "Crítico"}`,
+      subtitulo: identificacao,
       comNota: true,
       rotuloConfirmar: "Reconhecer",
     });
     if (!confirmado || estadoMudouDuranteDialogo()) return;
-    const agora = new Date();
-    const dataHoraAck = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
-    window.ccoReconhecidos.set(chave, severidade || 'Crítico');
-    window.ccoAckMetadata = window.ccoAckMetadata || new Map();
     metadadosAnteriores = window.ccoAckMetadata.get(chave);
+    window.ccoReconhecidos.set(chave, severidade || 'Crítico');
+    const codigos = obterCodigosAlarmeAtuais(chave);
     window.ccoAckMetadata.set(chave, {
-      timestamp: dataHoraAck,
+      timestamp: dataHora(),
       operador: session.username || 'Operador',
-      nota: nota.trim()
+      nota: (nota || "").trim(),
+      ...(codigos ? { codigos } : {}),
     });
+    acao = 'Reconhecido';
   }
 
+  const metaNova = window.ccoAckMetadata.get(chave);
   const incidente = {
     timestamp: new Date().toISOString(),
     chave,
     nome,
     severidade,
-    acao: reconhecido ? 'Revogado' : 'Reconhecido',
-    nota: !reconhecido ? (window.ccoAckMetadata.get(chave)?.nota || '') : '',
+    acao,
+    nota: acao === 'Cancelado' ? (metaNova?.motivo || '') : acao === 'Reconhecido' ? (metaNova?.nota || '') : '',
     tempoRespostaMs
   };
   window.nexoIncidentsLog.push(incidente);
 
   try {
     if (window.StorageRepository) {
-      if (reconhecido) {
+      if (revogando) {
         await window.StorageRepository.removerReconhecido(chave);
       } else {
-        await window.StorageRepository.salvarReconhecido(
-          chave,
-          severidade || 'Crítico',
-          window.ccoAckMetadata.get(chave)
-        );
+        await window.StorageRepository.salvarReconhecido(chave, severidade || 'Crítico', metaNova);
       }
       await window.StorageRepository.salvarLog(incidente);
     }
   } catch (error) {
-    if (reconhecido) {
-      window.ccoReconhecidos.set(chave, severidade || 'Crítico');
+    if (jaReconhecido) {
+      window.ccoReconhecidos.set(chave, sevAnterior ?? (severidade || 'Crítico'));
       if (metadadosAnteriores) window.ccoAckMetadata.set(chave, metadadosAnteriores);
+      else window.ccoAckMetadata.delete(chave);
     } else {
       window.ccoReconhecidos.delete(chave);
       window.ccoAckMetadata.delete(chave);
@@ -3054,12 +3405,18 @@ window.toggleAckMural = async function(chave, severidade, nome) {
     return;
   }
 
+  const eventoAuditoria = {
+    Reconhecido: 'MURAL_RECONHECER_ACK',
+    Revogado: 'MURAL_REVOGAR_ACK',
+    Cancelado: 'MURAL_CANCELAR_ALARME',
+    Reativado: 'MURAL_REATIVAR_ALARME',
+  }[acao];
   if (window.AuthRepository && typeof window.AuthRepository.registrarAuditoria === 'function') {
     try {
       await window.AuthRepository.registrarAuditoria(
-        reconhecido ? 'MURAL_REVOGAR_ACK' : 'MURAL_RECONHECER_ACK',
-        session.username || (reconhecido ? 'Admin' : 'Operador'),
-        `${reconhecido ? 'Revogado' : 'Reconhecido'} alarme em ${nome || chave} (${chave}) - Severidade: ${severidade}`
+        eventoAuditoria,
+        session.username || (acao === 'Reconhecido' ? 'Operador' : 'Admin'),
+        `${acao} alarme em ${nome || chave} (${chave}) - Severidade: ${severidade}${acao === 'Cancelado' ? ` - Motivo: ${metaNova?.motivo}` : ''}`
       );
     } catch (error) {
       console.error("Não foi possível registrar a auditoria da alteração do alarme.", error);
@@ -3067,20 +3424,27 @@ window.toggleAckMural = async function(chave, severidade, nome) {
   }
   if (window.ccoChannel) {
     window.ccoChannel.postMessage(
-      reconhecido
+      revogando
         ? { type: 'REVOKE_ACK', chave }
-        : { type: 'ACK_ALARM', chave, severidade: severidade || 'Crítico', metadados: window.ccoAckMetadata.get(chave) }
+        : { type: 'ACK_ALARM', chave, severidade: severidade || 'Crítico', metadados: metaNova }
     );
   }
   salvarReconhecidosLocalStorage();
   const idRes = obterIdentificacaoReservatorio(chave) || chave;
-  if (reconhecido) {
+  if (acao === 'Revogado') {
     mostrarToast(`Reconhecimento do alarme ${idRes} revogado.`, "atencao");
+  } else if (acao === 'Reativado') {
+    mostrarToast(`Alarme ${idRes} reativado.`, "atencao");
+  } else if (acao === 'Cancelado') {
+    mostrarToast(`Alarme ${idRes} cancelado por ${session.username || 'Admin'}. Motivo registrado.`, "atencao");
   } else {
     mostrarToast(`Alarme ${idRes} reconhecido com sucesso por ${session.username || 'Operador'}.`, "sucesso");
   }
   renderizarDashboardExceccoes();
 };
+
+/** ADMIN cancela o alarme (motivo obrigatório): ver toggleAckMural. */
+window.cancelarAlarmeMural = (chave, severidade, nome) => window.toggleAckMural(chave, severidade, nome, { cancelar: true });
 
 function atualizarHeaderEnxutoInvestigacao(
   painelOperacional,
@@ -3379,7 +3743,7 @@ function descreverDiasReferenciaVazao(referencia) {
  * Reaproveita as regras existentes (autonomia/projeção, referência de vazão); não recalcula nada.
  * Dado ausente aparece como N/A. Retorna [{ origem, titulo, linhas }].
  */
-function montarGruposAnaliseAlarme(reservatorio, chave, statusNivel, alertaVazao, alarmes, vazaoSemLeituraValida = false) {
+function montarGruposAnaliseAlarme(reservatorio, chave, statusNivel, alertaVazao, alarmes, vazaoSemLeituraValida = false, ausentes = [], totalHorarios = 0, horariosBoletim = []) {
   const config = obterConfiguracaoReservatorio(chave);
   const pred = calcularAutonomiaEProjecao(reservatorio, chave);
   const nivel = obterUltimaLeituraNivel(reservatorio.leituras?.nivel);
@@ -3436,10 +3800,14 @@ function montarGruposAnaliseAlarme(reservatorio, chave, statusNivel, alertaVazao
   if (origens.has("dados")) {
     const linhas = [];
     if (codigos.has("ALM-DAT-01")) {
-      linhas.push(vazaoSemLeituraValida ? "Vazão sem leitura válida (zerada ou inconsistente)." : "Leituras ausentes no período.");
+      linhas.push(
+        vazaoSemLeituraValida
+          ? "Vazão sem leitura válida (zerada ou inconsistente)."
+          : `${descreverLeiturasAusentes(ausentes, totalHorarios, horariosBoletim) || "Leituras ausentes no período"}.`,
+      );
     }
     if (codigos.has("ALM-DAT-02")) linhas.push("Leituras inconsistentes no período.");
-    grupos.push({ origem: "dados", titulo: "Comunicação", linhas });
+    grupos.push({ origem: "dados", titulo: "Dados", linhas });
   }
 
   return grupos;
@@ -3484,6 +3852,7 @@ function gerarPayloadOrdemDeServicoInteligente(chave, dataSelecionada, banco) {
   // Cada alarme com o dado que o acionou logo abaixo (mesma análise da tela de investigação).
   const grupos = montarGruposAnaliseAlarme(
     reservatorio, chave, statusNivel, alertaVazao, alarmes, Boolean(excObj?.vazaoSemLeituraValida),
+    excObj?.ausentes ?? [], excObj?.horariosEsperados ?? 0, excObj?.horariosBoletim ?? [],
   );
   const origensImpressas = new Set();
   const blocoAlarmes = ativo
@@ -3654,7 +4023,10 @@ function criarPainelAlarmeAtivado(reservatorio, chave, horarios, banco, dataSele
   const taxonomiaDiv = criarElementoTexto("div", "inv-taxonomia");
   // Dados que acionaram o alarme, acima do botão da OS (a OS em si não muda).
   taxonomiaDiv.append(
-    criarResumoAlarme(montarGruposAnaliseAlarme(reservatorio, chave, statusNivel, alertaVazao, alarmes, Boolean(excObj?.vazaoSemLeituraValida))),
+    criarResumoAlarme(montarGruposAnaliseAlarme(
+      reservatorio, chave, statusNivel, alertaVazao, alarmes, Boolean(excObj?.vazaoSemLeituraValida),
+      excObj?.ausentes ?? [], excObj?.horariosEsperados ?? 0, excObj?.horariosBoletim ?? [],
+    )),
   );
 
   const rotuloBotaoOS = "📋 Copiar Ordem de Serviço (OS)";
@@ -3830,13 +4202,13 @@ window.renderizarPainelInvestigacaoDedicado = function(chave, dataSelecionada, b
     if (!window.ccoAlarmTriggerTimes?.has?.(chaveAcionamento) && typeof carregarReconhecidosLocalStorage === "function") {
       carregarReconhecidosLocalStorage();
     }
-    const acionadoEm = temAlarme ? window.ccoAlarmTriggerTimes?.get?.(chaveAcionamento) : null;
+    const acionadoEm = temAlarme ? obterHorarioRegistroCco(chave, dataSelecionada) : null;
     const spanData = criarElementoTexto("span", "", acionadoEm || (temAlarme ? "Não registrado" : "Sem alarme ativo"));
     spanData.id = "cco-investigation-date";
     const spanAtualizacao = criarElementoTexto("span", "", dadosDoDia.ultimaAtualizacao || "Não informada");
     spanAtualizacao.id = "cco-investigation-updated-at";
     const itemData = criarElementoTexto("span", "");
-    itemData.append(criarElementoTexto("strong", "", "Alarme acionado em:"), " ", spanData);
+    itemData.append(criarElementoTexto("strong", "", "Alarme registrado no CCO em:"), " ", spanData);
     const itemAtualizacao = criarElementoTexto("span", "");
     itemAtualizacao.append(criarElementoTexto("strong", "", "Última atualização dos dados:"), " ", spanAtualizacao);
     const { base: baseAlarme, aviso: avisoBaseAlarme } = obterBaseComparacaoAlarme();

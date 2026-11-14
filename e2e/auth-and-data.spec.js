@@ -794,6 +794,443 @@ test("investigação: tendência sob o medidor e vazão líquida com origem", as
   await expect(liquida).toContainText("N/A (capacidade útil não configurada)");
 });
 
+test("leitura ausente: Mural, investigação e OS dizem quais horários faltaram, sem afirmar falta de comunicação", async ({ page }) => {
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  await expect(page.locator("#grid-alarmes .mural-alarm-card").first()).toBeVisible({ timeout: 15_000 });
+
+  // R02 na última data: nível sem 05:15; vazão sem 03:15 e 05:15. Os demais recebem o 05:15 de nível,
+  // para o boletim não contar como incompleto (o boletim real de 04/11 veio sem o 05:15 em todos).
+  const prepararR02 = () => {
+    const banco = window.bancoDeDados;
+    const data = banco.datasDisponiveis[banco.datasDisponiveis.length - 1];
+    Object.entries(banco.historico[data].reservatorios).forEach(([chave, res]) => {
+      if (chave !== "R02" && res.leituras.nivel[5] == null) res.leituras.nivel[5] = 80;
+    });
+    const leituras = banco.historico[data].reservatorios["R02"].leituras;
+    const nivelBase = leituras.nivel.find((v) => typeof v === "number") ?? 80;
+    const vazaoBase = leituras.vazao.find((v) => typeof v === "number" && v > 0) ?? 10;
+    leituras.nivel = leituras.nivel.map((v, i) => (i === 5 ? null : typeof v === "number" ? v : nivelBase));
+    leituras.vazao = leituras.vazao.map((v, i) => (i === 3 || i === 5 ? null : typeof v === "number" && v > 0 ? v : vazaoBase));
+    return data;
+  };
+  const data = await page.evaluate(prepararR02);
+  await page.evaluate(() => renderizarDashboardExceccoes());
+  const card = page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: /^R02/ }).first();
+  await expect(card).toContainText("Nível ausente às 05:15 · Vazão ausente às 03:15 e 05:15");
+  await expect(page.locator("#grid-alarmes")).not.toContainText("Sem Comunicação");
+
+  const os = await page.evaluate((d) => gerarPayloadOrdemDeServicoInteligente("R02", d, window.bancoDeDados), data);
+  expect(os).toContain("ALM-DAT-01 · Leitura Ausente (Inconsistente)");
+  expect(os).toContain("Nível ausente às 05:15 · Vazão ausente às 03:15 e 05:15.");
+  expect(os).not.toContain("Sem Comunicação");
+
+  await page.goto("/?view=investigacao&reservatorio=R02");
+  await expect(page.locator("#container-investigacao-alarme .inv-taxonomia")).toBeVisible({ timeout: 15_000 });
+  await page.evaluate(prepararR02);
+  await page.evaluate(() => {
+    const atual = window.nexoInvestigacaoAtual;
+    window.renderizarPainelInvestigacaoDedicado(atual.chave, atual.dataSelecionada, window.bancoDeDados);
+  });
+  const taxonomia = page.locator("#container-investigacao-alarme .inv-taxonomia");
+  await expect(taxonomia).toContainText("Dados");
+  await expect(taxonomia).toContainText("Nível ausente às 05:15 · Vazão ausente às 03:15 e 05:15.");
+  await expect(taxonomia).not.toContainText("Comunicação");
+});
+
+test("boletim incompleto: faixa informativa separa o problema geral da falha de um reservatório, sem esconder alarmes", async ({ page }) => {
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  const faixa = page.locator("#aviso-boletim-incompleto-mural");
+  await expect(page.locator("#grid-alarmes .mural-alarm-card").first()).toBeVisible({ timeout: 15_000 });
+
+  // Dados reais de 04/11: 05:15 vazio nos 22 reservatórios -> faixa visível e cartões marcados "(boletim)".
+  await expect(faixa).toBeVisible();
+  await expect(faixa).toContainText("Boletim de 04/11/2026 incompleto");
+  await expect(faixa).toContainText("05:15 em 22 de 22 reservatórios");
+  await expect(faixa).toContainText("não de campo");
+  await expect(faixa).toContainText("alarmes de cada reservatório continuam ativos");
+  const cartoes = page.locator("#grid-alarmes .mural-alarm-card");
+  expect(await cartoes.count()).toBe(22);
+  await expect(page.locator("#grid-alarmes").getByText("Leitura ausente às 05:15 (boletim)").first()).toBeVisible();
+
+  // Reservatórios em manutenção ficam fora da conta: com menos de 5 avaliados a faixa não aparece.
+  const chaves = await page.evaluate(() => {
+    const banco = window.bancoDeDados;
+    return Object.keys(banco.historico[banco.datasDisponiveis[banco.datasDisponiveis.length - 1]].reservatorios);
+  });
+  await page.evaluate((emManutencao) => {
+    const config = {};
+    emManutencao.forEach((chave) => { config[chave] = { emManutencao: true }; });
+    localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify(config));
+    renderizarDashboardExceccoes();
+  }, chaves.slice(4));
+  await expect(faixa).toBeHidden();
+  await page.evaluate(() => {
+    localStorage.removeItem("nexo_hidrico_reservatorios_config");
+    renderizarDashboardExceccoes();
+  });
+  await expect(faixa).toBeVisible();
+
+  // Opção A: nada é recolhido; o R02 com falha própria além do boletim mostra as duas partes.
+  await page.evaluate(() => {
+    const banco = window.bancoDeDados;
+    const data = banco.datasDisponiveis[banco.datasDisponiveis.length - 1];
+    const leituras = banco.historico[data].reservatorios["R02"].leituras;
+    leituras.vazao = leituras.vazao.map((v, i) => (i === 3 ? null : v));
+    renderizarDashboardExceccoes();
+  });
+  expect(await cartoes.count()).toBe(22);
+  await expect(cartoes.filter({ hasText: /^R02/ }).first()).toContainText("Vazão ausente às 03:15 · Leitura ausente às 05:15 (boletim)");
+
+  // Falha de um reservatório só: completa o 05:15 em todos menos no R02 -> a faixa some, o alarme do R02 fica.
+  await page.evaluate(() => {
+    const banco = window.bancoDeDados;
+    const data = banco.datasDisponiveis[banco.datasDisponiveis.length - 1];
+    Object.entries(banco.historico[data].reservatorios).forEach(([chave, res]) => {
+      if (chave !== "R02" && res.leituras.nivel[5] == null) res.leituras.nivel[5] = 80;
+    });
+    renderizarDashboardExceccoes();
+  });
+  await expect(faixa).toBeHidden();
+  const r02 = cartoes.filter({ hasText: /^R02/ }).first();
+  await expect(r02).toContainText("Nível ausente às 05:15 · Vazão ausente às 03:15 e 05:15");
+  await expect(r02).not.toContainText("(boletim)");
+});
+
+test("Mural diz 'Registrado no CCO em' e mostra a última leitura real do boletim; registro sem data não é usado", async ({ page }) => {
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  const card = page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: /^R01-A/ }).first();
+  await expect(card).toBeVisible({ timeout: 15_000 });
+
+  // Rótulo honesto + última leitura vinda dos dados (04/11: 05:15 vazio, então a última real é 04:15).
+  await expect(card).toContainText("Registrado no CCO em:");
+  await expect(card).not.toContainText("Acionado em");
+  await expect(card).toContainText("Última leitura: 04/11/2026 04:15");
+
+  // O registro vem só da chave data + reservatório; a chave antiga (só o reservatório) é ignorada.
+  const lido = await page.evaluate(() => {
+    const data = document.getElementById("seletor-data").value;
+    window.ccoAlarmTriggerTimes.set("R01-A", "01/01/2020 00:00:00");
+    window.ccoAlarmTriggerTimes.delete(`${data}_R01-A`);
+    return {
+      semData: obterHorarioRegistroCco("R01-A", data),
+      tempo: window.AlarmTiming.calcularTempoRespostaMs("R01-A", window.ccoAlarmTriggerTimes, data),
+    };
+  });
+  expect(lido).toEqual({ semData: null, tempo: null });
+
+  // Tabela e kanban também mostram o novo rótulo e a última leitura.
+  await page.evaluate(() => { window.ccoMuralModoVisualizacao = "tabela"; renderizarDashboardExceccoes(); });
+  await expect(page.locator("#grid-alarmes th").first()).toHaveText("Registrado no CCO em");
+  await expect(page.locator("#grid-alarmes .mural-table-row").filter({ hasText: "R01-A" }).first())
+    .toContainText("Última leitura: 04/11/2026 04:15");
+  await page.evaluate(() => { window.ccoMuralModoVisualizacao = "kanban"; renderizarDashboardExceccoes(); });
+  await expect(page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: /^R01-A/ }).first())
+    .toContainText("Registrado no CCO em:");
+
+  // Investigação: "Alarme registrado no CCO em".
+  await page.goto("/?view=investigacao&reservatorio=R01-A");
+  await expect(page.locator("#container-investigacao-alarme, #cco-lean-investigation-header").first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".inv-meta").first()).toContainText("Alarme registrado no CCO em:");
+});
+
+test("layout do Mural: pendentes / total, nome em 2 linhas, selo no topo, botões embaixo e reconhecido em cinza", async ({ page }) => {
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  const cartoes = page.locator("#grid-alarmes .mural-alarm-card");
+  await expect(cartoes.first()).toBeVisible({ timeout: 15_000 });
+
+  // Contadores "Pendentes X / Total Y": o total inclui os reconhecidos; o reconhecimento reduz só os pendentes.
+  const lerContadores = () => page.evaluate(() => ({
+    pendentes: Number(document.getElementById("count-pendentes-totais").textContent),
+    total: Number(document.getElementById("count-filtro-totais").textContent),
+    texto: document.querySelector('.cco-filter-btn[data-filter="TODOS"]').textContent.replace(/\s+/g, " ").trim(),
+  }));
+  const antes = await lerContadores();
+  expect(antes.texto).toMatch(/Pendentes \d+ \/ Total \d+/);
+  expect(antes.pendentes).toBeLessThanOrEqual(antes.total);
+  expect(antes.total).toBe(22);
+
+  // Nome em até 2 linhas: nome muito longo é cortado, com o nome completo no title.
+  const medidas = await page.evaluate(() => {
+    const cartao = document.querySelector("#grid-alarmes .mural-alarm-card");
+    const nome = cartao.querySelector(".mural-card-nome");
+    const selo = cartao.querySelector(".mural-card-selo");
+    const longo = "Reservatório com nome extremamente comprido para testar o corte em duas linhas ".repeat(4).trim();
+    nome.textContent = longo;
+    const linha = parseFloat(getComputedStyle(nome).lineHeight);
+    return {
+      clamp: getComputedStyle(nome).webkitLineClamp,
+      altura: nome.getBoundingClientRect().height,
+      linha,
+      cortado: nome.scrollHeight > nome.clientHeight,
+      deslocamentoSelo: Math.abs(selo.getBoundingClientRect().top - nome.getBoundingClientRect().top),
+    };
+  });
+  expect(medidas.clamp).toBe("2");
+  expect(medidas.altura).toBeLessThanOrEqual(medidas.linha * 2 + 1);
+  expect(medidas.cortado).toBe(true);
+  // Selo alinhado à primeira linha do nome (não centralizado verticalmente em um nome de várias linhas).
+  expect(medidas.deslocamentoSelo).toBeLessThan(8);
+  await page.evaluate(() => renderizarDashboardExceccoes());
+  await expect(page.locator("#grid-alarmes .mural-card-nome").first()).toHaveAttribute("title", /\S/);
+
+  // Botões sempre embaixo: na mesma fileira os cartões têm a mesma altura e os rodapés ficam alinhados.
+  const fileiras = await page.evaluate(() => {
+    const porTopo = new Map();
+    document.querySelectorAll("#grid-alarmes .mural-alarm-card").forEach((cartao) => {
+      const caixa = cartao.getBoundingClientRect();
+      const rodape = cartao.querySelector(".mural-card-rodape").getBoundingClientRect();
+      const chave = Math.round(caixa.top + window.scrollY);
+      if (!porTopo.has(chave)) porTopo.set(chave, []);
+      porTopo.get(chave).push({ fundoCartao: Math.round(caixa.bottom), fundoRodape: Math.round(rodape.bottom) });
+    });
+    return [...porTopo.values()].filter((fileira) => fileira.length > 1);
+  });
+  expect(fileiras.length).toBeGreaterThan(0);
+  fileiras.forEach((fileira) => {
+    expect(new Set(fileira.map((c) => c.fundoCartao)).size).toBe(1);
+    expect(new Set(fileira.map((c) => c.fundoRodape)).size).toBe(1);
+  });
+
+  // Reconhecido em cinza (não verde) e com texto curto; o total não muda e os pendentes caem em 1.
+  const cartao = cartoes.first();
+  await cartao.getByRole("button", { name: /Reconhecer/ }).click();
+  await page.locator("#dialogo-cco").getByRole("button", { name: "Reconhecer" }).click();
+  const botaoFeito = cartao.locator(".mural-btn-ack-feito");
+  await expect(botaoFeito).toBeVisible();
+  await expect(botaoFeito).toHaveText(/^✓ admin\.nexo · \d{2}\/\d{2} \d{2}:\d{2}$/);
+  const cor = await botaoFeito.evaluate((el) => getComputedStyle(el).color.match(/\d+/g).slice(0, 3).map(Number));
+  expect(Math.abs(cor[0] - cor[1])).toBeLessThan(25);
+  expect(Math.abs(cor[1] - cor[2])).toBeLessThan(25);
+  const depois = await lerContadores();
+  expect(depois.total).toBe(antes.total);
+  expect(depois.pendentes).toBe(antes.pendentes - 1);
+});
+
+test("só alarmes novos pulsam, por 10 segundos; antigos e reconhecidos não, e a aba só pulsa com alarme novo", async ({ page }) => {
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  const cartoes = page.locator("#grid-alarmes .mural-alarm-card");
+  await expect(cartoes.first()).toBeVisible({ timeout: 15_000 });
+  const pulsando = page.locator("#grid-alarmes .mural-alarm-card.animar-pulso");
+  const abaPulsa = () => page.evaluate(() => document.getElementById("tab-alarmes")?.classList.contains("animar-pulso-tab") ?? null);
+
+  // Primeira abertura da data neste navegador: os alarmes acabaram de ser registrados, então são novos e pulsam
+  // (com animação de verdade, não só a classe).
+  await expect(pulsando.first()).toBeVisible();
+  expect(await pulsando.first().evaluate((el) => getComputedStyle(el).animationName)).toBe("pulsarAlarmeNovo");
+  expect(await abaPulsa()).not.toBe(false);
+
+  // Registro com 15 s de idade: já não é novo. Só o R01-A, registrado há 3 s, continua pulsando.
+  const registrar = (alvos) => page.evaluate((definicoes) => {
+    const formatar = (ms) => {
+      const d = new Date(Date.now() - ms);
+      return `${d.toLocaleDateString("pt-BR")} ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+    };
+    const data = document.getElementById("seletor-data").value;
+    window.ccoAlarmTriggerTimes.forEach((_, chave) => window.ccoAlarmTriggerTimes.set(chave, formatar(15_000)));
+    definicoes.forEach(([chave, idadeMs]) => window.ccoAlarmTriggerTimes.set(`${data}_${chave}`, formatar(idadeMs)));
+    // O Mural recarrega os horários do armazenamento local a cada desenho: grava a simulação lá.
+    salvarReconhecidosLocalStorage();
+    renderizarDashboardExceccoes();
+  }, alvos);
+  await registrar([["R01-A", 3_000]]);
+  await expect(pulsando).toHaveCount(1);
+  await expect(pulsando.first()).toContainText("R01-A");
+  expect(await abaPulsa()).not.toBe(false);
+
+  // Reconhecido não pulsa, mesmo sendo novo.
+  await page.evaluate(() => { window.ccoReconhecidos.set("R01-A", "Crítico"); renderizarDashboardExceccoes(); });
+  await expect(pulsando).toHaveCount(0);
+  expect(await abaPulsa()).not.toBe(true);
+  await page.evaluate(() => { window.ccoReconhecidos.delete("R01-A"); });
+
+  // Registrado há 8 s: pulsa e se desliga sozinho ao completar 10 s (sem esperar o tempo todo).
+  await registrar([["R01-A", 8_000]]);
+  await expect(pulsando).toHaveCount(1);
+  await expect(pulsando).toHaveCount(0, { timeout: 5_000 });
+  expect(await abaPulsa()).not.toBe(true);
+});
+
+const CONFIG_ALARME_R01A = {
+  "R01-A": { nivelAtencao: 101, nivelCritico: 100, alertaNivelAtivo: true },
+};
+
+test("reconhecimento vale até normalizar, mesmo trocando a data na tela, e avisa alarme novo sem derrubar o ACK", async ({ page }) => {
+  await page.addInitScript((config) => {
+    localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify(config));
+  }, CONFIG_ALARME_R01A);
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  const card = page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: /^R01-A/ }).first();
+  await expect(card).toBeVisible({ timeout: 15_000 });
+
+  await card.getByRole("button", { name: /Reconhecer/ }).click();
+  await page.locator("#dialogo-cco").getByRole("button", { name: "Reconhecer" }).click();
+  await expect(card.locator("button").filter({ hasText: "✓" })).toBeVisible();
+  // O reconhecimento guarda os códigos dos alarmes que estavam ativos.
+  const codigos = await page.evaluate(() => window.ccoAckMetadata.get("R01-A")?.codigos);
+  expect(Array.isArray(codigos) && codigos.length > 0).toBe(true);
+
+  // Olhar um dia antigo em que o R01-A não tem alarme não apaga o reconhecimento (vale o estado mais recente).
+  await page.evaluate(() => {
+    const banco = window.bancoDeDados;
+    const antiga = banco.datasDisponiveis[0];
+    delete banco.historico[antiga].reservatorios["R01-A"];
+    const seletor = document.getElementById("seletor-data");
+    seletor.value = antiga;
+    renderizarDashboardExceccoes();
+  });
+  expect(await page.evaluate(() => window.ccoReconhecidos.has("R01-A"))).toBe(true);
+  await page.evaluate(() => {
+    const banco = window.bancoDeDados;
+    document.getElementById("seletor-data").value = banco.datasDisponiveis[banco.datasDisponiveis.length - 1];
+    renderizarDashboardExceccoes();
+  });
+  await expect(card.locator("button").filter({ hasText: "✓" })).toBeVisible();
+
+  // Alarme que apareceu depois do reconhecimento: o ACK continua, mas o cartão avisa.
+  await page.evaluate(() => {
+    const meta = window.ccoAckMetadata.get("R01-A");
+    window.ccoAckMetadata.set("R01-A", { ...meta, codigos: ["ALM-XXX-99"] });
+    renderizarDashboardExceccoes();
+  });
+  await expect(card).toContainText("Novo desde o reconhecimento");
+  await expect(card.locator("button").filter({ hasText: "✓" })).toBeVisible();
+
+  // Reconhecimento antigo, sem códigos gravados: não inventa aviso.
+  await page.evaluate(() => {
+    const { codigos, ...semCodigos } = window.ccoAckMetadata.get("R01-A");
+    window.ccoAckMetadata.set("R01-A", semCodigos);
+    renderizarDashboardExceccoes();
+  });
+  await expect(card).not.toContainText("Novo desde");
+
+  // Normalizou (some do estado mais recente): o reconhecimento cai.
+  await page.evaluate(() => {
+    const banco = window.bancoDeDados;
+    const ultima = banco.datasDisponiveis[banco.datasDisponiveis.length - 1];
+    delete banco.historico[ultima].reservatorios["R01-A"];
+    renderizarDashboardExceccoes();
+  });
+  expect(await page.evaluate(() => window.ccoReconhecidos.has("R01-A"))).toBe(false);
+});
+
+test("ADMIN cancela o alarme com motivo obrigatório; sai da lista ativa, fica registrado e pode ser reativado", async ({ page, context }) => {
+  test.setTimeout(60_000);
+  await context.addInitScript((config) => {
+    localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify(config));
+  }, CONFIG_ALARME_R01A);
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  const grid = page.locator("#grid-alarmes");
+  const card = grid.locator(".mural-alarm-card").filter({ hasText: /^R01-A/ }).first();
+  await expect(card).toBeVisible({ timeout: 15_000 });
+  const totais = page.locator("#count-filtro-totais");
+  const antes = Number(await totais.textContent());
+  const dialogo = page.locator("#dialogo-cco");
+
+  // Motivo curto demais não deixa confirmar; Voltar não cancela.
+  await card.getByRole("button", { name: /Cancelar/ }).click();
+  await expect(dialogo).toContainText("Cancelar alarme");
+  const confirmar = dialogo.getByRole("button", { name: "Cancelar alarme" });
+  await expect(confirmar).toBeDisabled();
+  await page.locator("#dialogo-cco-nota").fill("curto");
+  await expect(confirmar).toBeDisabled();
+  await page.keyboard.press("Control+Enter");
+  await expect(dialogo).toHaveCount(1);
+  await dialogo.getByRole("button", { name: "Voltar" }).click();
+  await expect(dialogo).toHaveCount(0);
+  expect(await page.evaluate(() => window.ccoReconhecidos.has("R01-A"))).toBe(false);
+
+  // Motivo válido (com HTML, que deve aparecer como texto): cancela.
+  await card.getByRole("button", { name: /Cancelar/ }).click();
+  await page.locator("#dialogo-cco-nota").fill(TEXTO_MALICIOSO);
+  await expect(confirmar).toBeEnabled();
+  await confirmar.click();
+  await expect(dialogo).toHaveCount(0);
+
+  // Saiu da lista ativa e dos contadores; está em "Alarmes cancelados" com quem, quando e por quê.
+  await expect(grid.locator(".mural-alarm-card").filter({ hasText: /^R01-A/ })).toHaveCount(0);
+  expect(Number(await totais.textContent())).toBe(antes - 1);
+  const secao = page.locator("#secao-alarmes-cancelados");
+  await expect(secao).toBeVisible();
+  await secao.locator("summary").click();
+  const item = secao.locator(".mural-cancelado-item").filter({ hasText: "R01-A" });
+  await expect(item).toContainText("Cancelado por admin.nexo");
+  await expect(item.locator(".mural-cancelado-motivo")).toContainText(TEXTO_MALICIOSO);
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+
+  // Persiste ao recarregar e vai para a auditoria, o histórico e os relatórios.
+  await page.reload();
+  await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.locator("#secao-alarmes-cancelados")).toBeVisible({ timeout: 15_000 });
+  expect(await page.evaluate((texto) => window.nexoIncidentsLog.some((i) => i.acao === "Cancelado" && i.nota === texto), TEXTO_MALICIOSO)).toBe(true);
+  const auditoria = await page.evaluate(async () => {
+    const registros = await window.AuthRepository.obterLogsAuditoria();
+    return registros.filter((r) => r.acao === "MURAL_CANCELAR_ALARME").map((r) => r.detalhes);
+  });
+  expect(auditoria.length).toBe(1);
+  expect(auditoria[0]).toContain("Motivo:");
+  const resumo = await page.evaluate(() => listarAlarmesCancelados().map((c) => `${c.chave}|${c.operador}|${c.motivo}`));
+  expect(resumo).toEqual([`R01-A|admin.nexo|${TEXTO_MALICIOSO}`]);
+  const relatorio = await page.evaluate(() => {
+    const exc = obterReservatoriosComAlertaOuExcecao(window.bancoDeDados, document.getElementById("seletor-data").value)
+      .find((e) => e.chave === "R01-A");
+    return obterMensagensRelatorioAlarme(exc).join(" | ");
+  });
+  expect(relatorio).toContain("Cancelado por admin.nexo");
+
+  // Agent não vê o botão Cancelar nem Reativar; ADMIN reativa e o alarme volta à lista.
+  await page.evaluate(() => localStorage.setItem("nexo_hidrico_session", JSON.stringify({ username: "operador.nexo", role: "Agent" })));
+  await page.evaluate(() => renderizarDashboardExceccoes());
+  await expect(page.locator("#grid-alarmes .mural-btn-cancelar")).toHaveCount(0);
+  await expect(page.locator(".mural-cancelado-reativar")).toHaveCount(0);
+  await page.evaluate(() => localStorage.setItem("nexo_hidrico_session", JSON.stringify({ username: "admin.nexo", role: "ADMIN" })));
+  await page.evaluate(() => renderizarDashboardExceccoes());
+  await page.locator("#secao-alarmes-cancelados summary").click();
+  await page.locator(".mural-cancelado-reativar").first().click();
+  await expect(dialogo).toContainText("Reativar alarme");
+  await dialogo.getByRole("button", { name: "Reativar" }).click();
+  await expect(page.locator("#secao-alarmes-cancelados")).toBeHidden();
+  await expect(grid.locator(".mural-alarm-card").filter({ hasText: /^R01-A/ }).first()).toBeVisible();
+  expect(await page.evaluate(() => window.ccoReconhecidos.has("R01-A"))).toBe(false);
+});
+
+test("alarme cancelado volta à lista ao piorar de severidade e avisa alarme novo na lista de cancelados", async ({ page }) => {
+  await page.addInitScript((config) => {
+    localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify(config));
+  }, CONFIG_ALARME_R01A);
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  await expect(page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: /^R01-A/ }).first()).toBeVisible({ timeout: 15_000 });
+
+  // O R01-A está Crítico. Cancelado como Crítico, com um alarme novo (código fora da lista gravada).
+  await page.evaluate(() => {
+    window.ccoReconhecidos.set("R01-A", "Crítico");
+    window.ccoAckMetadata.set("R01-A", {
+      timestamp: "01/01/2026 00:00:00", operador: "admin.nexo", nota: "", tipo: "cancelado",
+      motivo: "Sensor em manutenção programada", codigos: ["ALM-XXX-99"],
+    });
+    renderizarDashboardExceccoes();
+  });
+  const secao = page.locator("#secao-alarmes-cancelados");
+  await expect(secao).toBeVisible();
+  await expect(secao.locator("summary")).toContainText("com alarme novo");
+
+  // Piorou (gravado como Inconsistente, agora Crítico): o cancelamento cai e o alarme volta à lista ativa.
+  await page.evaluate(() => {
+    window.ccoReconhecidos.set("R01-A", "Inconsistente");
+    renderizarDashboardExceccoes();
+  });
+  await expect(secao).toBeHidden();
+  await expect(page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: /^R01-A/ }).first()).toBeVisible();
+  expect(await page.evaluate(() => window.ccoReconhecidos.has("R01-A"))).toBe(false);
+});
+
 const TEXTO_MALICIOSO = `<img src=x onerror="window.__xss=1">vazão < 10 & "ok"`;
 
 test("janela do painel: Cancelar não reconhece, nota é gravada como texto, revogação pede confirmação e erros não somem", async ({ page }) => {
