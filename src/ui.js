@@ -2809,6 +2809,135 @@ window.abrirReservatorioMural = function(chave) {
   }
 };
 
+/**
+ * Janela modal do painel (substitui prompt/confirm/alert nativos): nota do ACK, confirmações e avisos.
+ * Sem rotuloCancelar vira aviso (alertdialog, só o botão de confirmar).
+ * Monta o DOM com createElement/textContent: o texto pode trazer nome do reservatório e a nota é livre.
+ * Resolve { confirmado, nota }. Esc, ✕ e Cancelar resolvem confirmado: false; clique fora não fecha,
+ * para a nota digitada não se perder. Ctrl+Enter confirma. Uma janela por vez.
+ */
+function abrirDialogoCco({ titulo, subtitulo = "", mensagem = "", comNota = false, rotuloConfirmar = "OK", rotuloCancelar = "Cancelar" }) {
+  const existente = document.getElementById("dialogo-cco");
+  if (existente) {
+    existente.querySelector("textarea, .dialogo-cco__confirmar")?.focus();
+    return Promise.resolve({ confirmado: false, nota: "" });
+  }
+
+  return new Promise((resolve) => {
+    const focoAnterior = document.activeElement;
+    const fundo = document.createElement("div");
+    fundo.id = "dialogo-cco";
+    fundo.className = "dialogo-cco";
+
+    const caixa = document.createElement("div");
+    caixa.className = "dialogo-cco__caixa";
+    caixa.setAttribute("role", rotuloCancelar ? "dialog" : "alertdialog");
+    caixa.setAttribute("aria-modal", "true");
+    caixa.setAttribute("aria-labelledby", "dialogo-cco-titulo");
+
+    const cabecalho = document.createElement("div");
+    cabecalho.className = "dialogo-cco__cabecalho";
+    const tituloEl = document.createElement("h2");
+    tituloEl.id = "dialogo-cco-titulo";
+    tituloEl.className = "dialogo-cco__titulo";
+    tituloEl.textContent = titulo;
+    const fechar = document.createElement("button");
+    fechar.type = "button";
+    fechar.className = "dialogo-cco__fechar";
+    fechar.setAttribute("aria-label", "Fechar");
+    fechar.textContent = "✕";
+    cabecalho.append(tituloEl, fechar);
+
+    const corpo = document.createElement("div");
+    corpo.className = "dialogo-cco__corpo";
+    if (subtitulo) {
+      const sub = document.createElement("p");
+      sub.className = "dialogo-cco__subtitulo";
+      sub.textContent = subtitulo;
+      corpo.append(sub);
+    }
+    if (mensagem) {
+      const msg = document.createElement("p");
+      msg.className = "dialogo-cco__mensagem";
+      msg.textContent = mensagem;
+      corpo.append(msg);
+    }
+    let campo = null;
+    if (comNota) {
+      const rotulo = document.createElement("label");
+      rotulo.className = "dialogo-cco__rotulo";
+      rotulo.htmlFor = "dialogo-cco-nota";
+      rotulo.textContent = "Nota (opcional)";
+      campo = document.createElement("textarea");
+      campo.id = "dialogo-cco-nota";
+      campo.className = "dialogo-cco__nota";
+      campo.rows = 4;
+      campo.placeholder = "Ex.: Válvula manobrada pela equipe";
+      const dica = document.createElement("p");
+      dica.className = "dialogo-cco__dica";
+      dica.textContent = "Ctrl+Enter confirma · Esc cancela";
+      corpo.append(rotulo, campo, dica);
+    }
+
+    const rodape = document.createElement("div");
+    rodape.className = "dialogo-cco__rodape";
+    let cancelar = null;
+    if (rotuloCancelar) {
+      cancelar = document.createElement("button");
+      cancelar.type = "button";
+      cancelar.className = "dialogo-cco__botao";
+      cancelar.textContent = rotuloCancelar;
+      rodape.append(cancelar);
+    }
+    const confirmar = document.createElement("button");
+    confirmar.type = "button";
+    confirmar.className = "dialogo-cco__botao dialogo-cco__confirmar";
+    confirmar.textContent = rotuloConfirmar;
+    rodape.append(confirmar);
+
+    caixa.append(cabecalho, corpo, rodape);
+    fundo.append(caixa);
+    document.body.append(fundo);
+
+    const concluir = (confirmado) => {
+      fundo.remove();
+      if (focoAnterior && typeof focoAnterior.focus === "function" && document.contains(focoAnterior)) {
+        focoAnterior.focus();
+      }
+      resolve({ confirmado, nota: confirmado && campo ? campo.value : "" });
+    };
+
+    // Sem botão Cancelar (aviso), fechar equivale a "OK": não há ação a confirmar.
+    const valorAoFechar = !rotuloCancelar;
+    fechar.addEventListener("click", () => concluir(valorAoFechar));
+    cancelar?.addEventListener("click", () => concluir(false));
+    confirmar.addEventListener("click", () => concluir(true));
+    fundo.addEventListener("keydown", (evento) => {
+      if (evento.key === "Escape") {
+        evento.preventDefault();
+        concluir(valorAoFechar);
+      } else if (evento.key === "Enter" && (evento.ctrlKey || evento.metaKey)) {
+        evento.preventDefault();
+        concluir(true);
+      } else if (evento.key === "Tab") {
+        const focaveis = [...caixa.querySelectorAll("button, textarea")];
+        const primeiro = focaveis[0];
+        const ultimo = focaveis[focaveis.length - 1];
+        if (evento.shiftKey && document.activeElement === primeiro) {
+          evento.preventDefault();
+          ultimo.focus();
+        } else if (!evento.shiftKey && document.activeElement === ultimo) {
+          evento.preventDefault();
+          primeiro.focus();
+        }
+      }
+    });
+
+    // Na revogação o foco começa em Cancelar, para Enter acidental não revogar.
+    (campo || cancelar || confirmar).focus();
+  });
+}
+
 window.toggleAckMural = async function(chave, severidade, nome) {
   window.ccoReconhecidos = window.ccoReconhecidos || new Map();
   carregarReconhecidosLocalStorage();
@@ -2828,22 +2957,47 @@ window.toggleAckMural = async function(chave, severidade, nome) {
     console.warn("Não foi possível ler a sessão antes de atualizar o reconhecimento.", error);
   }
 
+
+  // A janela é assíncrona: outra janela pode ter reconhecido/revogado este alarme enquanto ela estava aberta.
+  const estadoMudouDuranteDialogo = () => {
+    if (window.ccoReconhecidos.has(chave) === reconhecido) return false;
+    mostrarToast(`O alarme ${obterIdentificacaoReservatorio(chave) || chave} foi alterado em outra janela; nada foi gravado.`, "atencao");
+    renderizarDashboardExceccoes();
+    return true;
+  };
   let metadadosAnteriores;
   if (reconhecido) {
     if (!isAdmin) {
-      alert("Acesso Negado (RBAC): Apenas administradores (Perfil ADMIN) podem revogar (des-reconhecer) um alarme já reconhecido.");
+      await abrirDialogoCco({
+        titulo: "Acesso negado",
+        mensagem: "Apenas administradores (perfil ADMIN) podem revogar um alarme já reconhecido.",
+        rotuloConfirmar: "Entendi",
+        rotuloCancelar: "",
+      });
       return;
     }
 
-    const confirmar = confirm(`⚠️ Confirmação Administrativa (ADMIN):\n\nDeseja realmente revogar o reconhecimento do alarme do reservatório "${nome || chave}" (${chave})?\n\nEsta ação reativará os alertas visuais e sonoros no CCO.`);
-    if (!confirmar) return;
+    const { confirmado } = await abrirDialogoCco({
+      titulo: "Revogar reconhecimento",
+      subtitulo: `${nome && nome !== chave ? `${nome} (${chave})` : chave} · ${severidade || "Crítico"}`,
+      mensagem: "Deseja realmente revogar o reconhecimento deste alarme? Os alertas visuais e sonoros voltam a ser exibidos no CCO.",
+      rotuloConfirmar: "Revogar",
+    });
+    if (!confirmado || estadoMudouDuranteDialogo()) return;
 
     window.ccoReconhecidos.delete(chave);
     window.ccoAckMetadata = window.ccoAckMetadata || new Map();
     metadadosAnteriores = window.ccoAckMetadata.get(chave);
     window.ccoAckMetadata.delete(chave);
   } else {
-    const nota = prompt("Insira uma nota descritiva opcional para o reconhecimento (ex: Válvula manobrada pela equipe):", "") || "";
+    // Cancelar não reconhece (com o prompt nativo, Cancelar reconhecia sem nota).
+    const { confirmado, nota } = await abrirDialogoCco({
+      titulo: "Reconhecer alarme",
+      subtitulo: `${nome && nome !== chave ? `${nome} (${chave})` : chave} · ${severidade || "Crítico"}`,
+      comNota: true,
+      rotuloConfirmar: "Reconhecer",
+    });
+    if (!confirmado || estadoMudouDuranteDialogo()) return;
     const agora = new Date();
     const dataHoraAck = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
     window.ccoReconhecidos.set(chave, severidade || 'Crítico');
@@ -2890,7 +3044,12 @@ window.toggleAckMural = async function(chave, severidade, nome) {
     }
     window.nexoIncidentsLog.pop();
     console.error("Não foi possível persistir a alteração do reconhecimento.", error);
-    alert("Não foi possível salvar a alteração do alarme. Verifique o armazenamento do navegador e tente novamente.");
+    abrirDialogoCco({
+      titulo: "Não foi possível salvar",
+      mensagem: "A alteração do alarme não foi gravada. Verifique o armazenamento do navegador e tente novamente.",
+      rotuloConfirmar: "Entendi",
+      rotuloCancelar: "",
+    });
     salvarReconhecidosLocalStorage();
     return;
   }

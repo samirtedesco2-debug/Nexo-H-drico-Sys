@@ -385,9 +385,16 @@ test("logout permite entrar novamente com a mesma conta", async ({ page }) => {
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
   await loginReload;
 
-  page.once("dialog", (dialog) => dialog.accept());
+  // Cancelar na janela de logout mantém a sessão.
+  await page.locator("#btn-global-logout").click();
+  await expect(page.locator("#dialogo-cco")).toContainText("Deseja realmente encerrar a sessão atual?");
+  await page.locator("#dialogo-cco").getByRole("button", { name: "Cancelar" }).click();
+  await expect(page.locator("#dialogo-cco")).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("nexo_hidrico_session"))).not.toBeNull();
+
   const logoutReload = page.waitForEvent("load");
-  await page.getByRole("button", { name: "Sair" }).click();
+  await page.locator("#btn-global-logout").click();
+  await page.locator("#dialogo-cco").getByRole("button", { name: "Sair" }).click();
   await logoutReload;
   await expect(page.locator("#nexo-auth-overlay")).toBeVisible({ timeout: 15_000 });
   expect(await page.evaluate(() => localStorage.getItem("nexo_hidrico_session"))).toBeNull();
@@ -411,9 +418,9 @@ test("bloqueio de uma conta não impede o login de outro usuário", async ({ pag
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.locator("#nexo-auth-overlay")).toHaveCount(0, { timeout: 15_000 });
   await operatorLoginReload;
-  page.once("dialog", (dialog) => dialog.accept());
   const operatorLogoutReload = page.waitForEvent("load");
-  await page.getByRole("button", { name: "Sair" }).click();
+  await page.locator("#btn-global-logout").click();
+  await page.locator("#dialogo-cco").getByRole("button", { name: "Sair" }).click();
   await operatorLogoutReload;
   await expect(page.locator("#nexo-auth-overlay")).toBeVisible({ timeout: 15_000 });
 
@@ -467,6 +474,7 @@ test("reconhecimento do alarme persiste e sincroniza entre janelas", async ({ pa
   const alarme = page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: "R01-A" }).first();
   await expect(alarme).toBeVisible({ timeout: 15_000 });
   await alarme.getByRole("button", { name: /Reconhecer/ }).click();
+  await page.locator("#dialogo-cco").getByRole("button", { name: "Reconhecer" }).click();
   await expect(alarme.locator("button").filter({ hasText: "✓" })).toBeVisible();
   await expect.poll(() =>
     page.evaluate(() => JSON.parse(localStorage.getItem("nexo_hidrico_reconhecidos") || "{}")["R01-A"])
@@ -721,14 +729,15 @@ test("investigação aberta acompanha o reconhecimento feito no Mural e mostra N
   await expect(botaoAck).toHaveText("🚨 Reconhecer", { timeout: 15_000 });
 
   // Reconhece no Mural (outra janela): a investigação recebe pelo BroadcastChannel e redesenha.
-  page.once("dialog", (dialogo) => dialogo.accept("teste e2e"));
-  await page.evaluate(() => toggleAckMural("R01-A", "Crítico", "R01-A"));
+  await page.evaluate(() => { toggleAckMural("R01-A", "Crítico", "R01-A"); });
+  await page.locator("#dialogo-cco-nota").fill("teste e2e");
+  await page.locator("#dialogo-cco").getByRole("button", { name: "Reconhecer" }).click();
   await expect(botaoAck).toHaveText(/^✓ /);
   await expect(botaoAck).toHaveClass(/inv-btn--ack-done/);
 
   // Revoga no Mural (ADMIN confirma): volta a "Reconhecer" na investigação.
-  page.once("dialog", (dialogo) => dialogo.accept());
-  await page.evaluate(() => toggleAckMural("R01-A", "Crítico", "R01-A"));
+  await page.evaluate(() => { toggleAckMural("R01-A", "Crítico", "R01-A"); });
+  await page.locator("#dialogo-cco").getByRole("button", { name: "Revogar" }).click();
   await expect(botaoAck).toHaveText("🚨 Reconhecer");
 
   // Vazão sem leitura válida (zerada): N/A, nunca "0 L/s".
@@ -786,6 +795,87 @@ test("investigação: tendência sob o medidor e vazão líquida com origem", as
 });
 
 const TEXTO_MALICIOSO = `<img src=x onerror="window.__xss=1">vazão < 10 & "ok"`;
+
+test("janela do painel: Cancelar não reconhece, nota é gravada como texto, revogação pede confirmação e erros não somem", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("nexo_hidrico_reservatorios_config", JSON.stringify({
+      "R01-A": { nivelAtencao: 101, nivelCritico: 100, alertaNivelAtivo: true }
+    }));
+  });
+  page.on("dialog", (dialogo) => { throw new Error(`diálogo nativo inesperado: ${dialogo.message()}`); });
+  await page.goto("/?view=alarmes");
+  await entrar(page, "admin.nexo", "Admin@2026");
+  const card = page.locator("#grid-alarmes .mural-alarm-card").filter({ hasText: "R01-A" }).first();
+  await expect(card).toBeVisible({ timeout: 15_000 });
+  const dialogo = page.locator("#dialogo-cco");
+  const reconhecidoR01A = () => page.evaluate(() => window.ccoReconhecidos.has("R01-A"));
+
+  // Cancelar (e Esc) fecham sem reconhecer; o foco começa no campo da nota.
+  await card.getByRole("button", { name: /Reconhecer/ }).click();
+  await expect(dialogo.getByRole("dialog")).toBeVisible();
+  await expect(dialogo).toContainText("R01-A");
+  await expect(page.locator("#dialogo-cco-nota")).toBeFocused();
+  await dialogo.getByRole("button", { name: "Cancelar" }).click();
+  await expect(dialogo).toHaveCount(0);
+  expect(await reconhecidoR01A()).toBe(false);
+
+  await card.getByRole("button", { name: /Reconhecer/ }).click();
+  await page.keyboard.press("Escape");
+  await expect(dialogo).toHaveCount(0);
+  expect(await reconhecidoR01A()).toBe(false);
+
+  // Reconhecido em outra janela enquanto esta estava aberta: nada é gravado por cima.
+  await card.getByRole("button", { name: /Reconhecer/ }).click();
+  await page.evaluate(() => window.ccoReconhecidos.set("R01-A", "Atenção"));
+  await dialogo.getByRole("button", { name: "Reconhecer" }).click();
+  await expect(page.getByText("foi alterado em outra janela; nada foi gravado")).toBeVisible();
+  expect(await page.evaluate(() => window.ccoAckMetadata.has("R01-A"))).toBe(false);
+  await page.evaluate(() => { window.ccoReconhecidos.delete("R01-A"); renderizarDashboardExceccoes(); });
+
+  // Ctrl+Enter confirma; a nota com HTML é gravada e exibida como texto.
+  await card.getByRole("button", { name: /Reconhecer/ }).click();
+  await page.locator("#dialogo-cco-nota").fill(TEXTO_MALICIOSO);
+  await page.keyboard.press("Control+Enter");
+  await expect(dialogo).toHaveCount(0);
+  await expect(card.locator("button").filter({ hasText: "✓" })).toBeVisible();
+  expect(await page.evaluate(() => window.ccoAckMetadata.get("R01-A")?.nota)).toBe(TEXTO_MALICIOSO);
+  await expect(page.locator("#grid-alarmes .mural-ack-nota").first()).toContainText(TEXTO_MALICIOSO);
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+
+  // Revogação: foco em Cancelar (Enter acidental não revoga); Cancelar mantém o reconhecimento.
+  await card.locator("button").filter({ hasText: "✓" }).click();
+  await expect(dialogo).toContainText("Revogar reconhecimento");
+  await expect(dialogo.getByRole("button", { name: "Cancelar" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(dialogo).toHaveCount(0);
+  expect(await reconhecidoR01A()).toBe(true);
+
+  // Falha ao gravar: aviso na janela (não some sozinho) e o estado volta ao anterior.
+  await page.evaluate(() => {
+    window.__removerOriginal = window.StorageRepository.removerReconhecido;
+    window.StorageRepository.removerReconhecido = async () => { throw new Error("falha simulada"); };
+  });
+  await card.locator("button").filter({ hasText: "✓" }).click();
+  await dialogo.getByRole("button", { name: "Revogar" }).click();
+  await expect(dialogo.getByRole("alertdialog")).toContainText("Não foi possível salvar");
+  expect(await reconhecidoR01A()).toBe(true);
+  await dialogo.getByRole("button", { name: "Entendi" }).click();
+  await expect(dialogo).toHaveCount(0);
+  await page.evaluate(() => { window.StorageRepository.removerReconhecido = window.__removerOriginal; });
+
+  // Aviso simples de "sem dados" vira toast, sem janela.
+  await page.evaluate(() => window.baixarLogsFiltradosCSV([]));
+  await expect(page.locator(".nexo-toast").filter({ hasText: "Nenhum dado para exportar" })).toBeVisible();
+  await expect(dialogo).toHaveCount(0);
+
+  // Perfil sem ADMIN: aviso de acesso negado na janela, sem revogar.
+  await page.evaluate(() => localStorage.setItem("nexo_hidrico_session", JSON.stringify({ username: "operador.nexo", role: "Agent" })));
+  await page.evaluate(() => { toggleAckMural("R01-A", "Crítico", "R01-A"); });
+  await expect(dialogo.getByRole("alertdialog")).toContainText("Apenas administradores");
+  await dialogo.getByRole("button", { name: "Entendi" }).click();
+  await expect(dialogo).toHaveCount(0);
+  expect(await reconhecidoR01A()).toBe(true);
+});
 
 test("nota do ACK com HTML aparece como texto nos 3 modos do Mural e no relatório exportado", async ({ page }) => {
   await page.addInitScript(() => {

@@ -868,7 +868,7 @@ function inicializarDashboard() {
   const executarCopiaResumo = (botaoAlvo) => {
     const dados = gerarDadosResumoPlantao();
     if (!dados) {
-      alert("Nenhum dado carregado para gerar o resumo.");
+      mostrarToast("Nenhum dado carregado para gerar o resumo.", "atencao");
       return;
     }
 
@@ -882,14 +882,14 @@ function inicializarDashboard() {
       }, 3000);
     }).catch(err => {
       console.error("Erro ao copiar resumo:", err);
-      alert("Não foi possível copiar o resumo para a área de transferência.");
+      abrirDialogoCco({ titulo: "Falha ao copiar", mensagem: "Não foi possível copiar o resumo para a área de transferência.", rotuloConfirmar: "Entendi", rotuloCancelar: "" });
     });
   };
 
   const executarBaixarTxtPlantao = () => {
     const dados = gerarDadosResumoPlantao();
     if (!dados) {
-      alert("Nenhum dado carregado para gerar o TXT de plantão.");
+      mostrarToast("Nenhum dado carregado para gerar o TXT de plantão.", "atencao");
       return;
     }
     const blob = new Blob([dados.textoResumo], { type: 'text/plain;charset=utf-8;' });
@@ -904,7 +904,7 @@ function inicializarDashboard() {
   const executarBaixarHtmlPlantao = () => {
     const dados = gerarDadosResumoPlantao();
     if (!dados) {
-      alert("Nenhum dado carregado para gerar o relatório de plantão.");
+      mostrarToast("Nenhum dado carregado para gerar o relatório de plantão.", "atencao");
       return;
     }
 
@@ -1000,7 +1000,7 @@ function inicializarDashboard() {
   const executarImprimirPdfPlantao = () => {
     const dados = gerarDadosResumoPlantao();
     if (!dados) {
-      alert("Nenhum dado carregado para gerar a impressão em PDF.");
+      mostrarToast("Nenhum dado carregado para gerar a impressão em PDF.", "atencao");
       return;
     }
 
@@ -1015,7 +1015,7 @@ function inicializarDashboard() {
 
     const win = window.open('', '_blank', 'width=1000,height=800');
     if (!win) {
-      alert("Permita pop-ups no navegador para gerar o PDF.");
+      abrirDialogoCco({ titulo: "Pop-up bloqueado", mensagem: "Permita pop-ups no navegador para gerar o PDF.", rotuloConfirmar: "Entendi", rotuloCancelar: "" });
       return;
     }
 
@@ -2747,7 +2747,7 @@ async function vincularArquivoConfiguracao() {
     }
 
     if (!window.showOpenFilePicker) {
-      alert("Seu navegador não suporta salvamento direto de arquivos. Utilize Google Chrome ou Microsoft Edge.");
+      abrirDialogoCco({ titulo: "Navegador sem suporte", mensagem: "Seu navegador não suporta salvamento direto de arquivos. Utilize Google Chrome ou Microsoft Edge.", rotuloConfirmar: "Entendi", rotuloCancelar: "" });
       return;
     }
     const [handle] = await window.showOpenFilePicker({
@@ -2770,7 +2770,7 @@ async function vincularArquivoConfiguracao() {
   } catch (err) {
     if (err.name !== 'AbortError') {
       console.error("Erro ao vincular arquivo:", err);
-      alert("Erro ao vincular o arquivo.");
+      abrirDialogoCco({ titulo: "Erro ao vincular arquivo", mensagem: "Não foi possível vincular o arquivo de configuração.", rotuloConfirmar: "Entendi", rotuloCancelar: "" });
     }
   }
 }
@@ -3861,7 +3861,7 @@ async function renderizarPainelLogsAuditoria() {
 
 window.baixarLogsFiltradosCSV = function(dados) {
   if (!dados || dados.length === 0) {
-    alert("Nenhum dado para exportar. Clique em 'Gerar / Visualizar' primeiro.");
+    mostrarToast("Nenhum dado para exportar. Clique em 'Gerar / Visualizar' primeiro.", "atencao");
     return;
   }
   let csvContent = "\uFEFFTimestamp;Usuário;Ação;Detalhes\n";
@@ -3882,13 +3882,13 @@ window.baixarLogsFiltradosCSV = function(dados) {
 
 window.baixarLogsFiltradosPDF = function(dados) {
   if (!dados || dados.length === 0) {
-    alert("Nenhum dado para exportar. Clique em 'Gerar / Visualizar' primeiro.");
+    mostrarToast("Nenhum dado para exportar. Clique em 'Gerar / Visualizar' primeiro.", "atencao");
     return;
   }
 
   const win = window.open('', '_blank');
   if (!win) {
-    alert("Permita pop-ups no navegador para gerar o relatório em PDF.");
+    abrirDialogoCco({ titulo: "Pop-up bloqueado", mensagem: "Permita pop-ups no navegador para gerar o relatório em PDF.", rotuloConfirmar: "Entendi", rotuloCancelar: "" });
     return;
   }
 

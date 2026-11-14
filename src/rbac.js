@@ -24,8 +24,13 @@ class RBACManager {
     const btnLogout = document.getElementById("btn-global-logout");
     if (btnLogout && !btnLogout.dataset.bound) {
       btnLogout.dataset.bound = "true";
-      btnLogout.onclick = () => {
-        if (confirm("Deseja realmente encerrar a sessão atual?")) {
+      btnLogout.onclick = async () => {
+        const { confirmado } = await abrirDialogoCco({
+          titulo: "Encerrar sessão",
+          mensagem: "Deseja realmente encerrar a sessão atual?",
+          rotuloConfirmar: "Sair",
+        });
+        if (confirmado) {
           localStorage.removeItem("nexo_hidrico_session");
           window.location.reload();
         }

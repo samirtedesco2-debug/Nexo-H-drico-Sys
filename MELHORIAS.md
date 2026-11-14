@@ -178,3 +178,13 @@ Este documento registra o histórico cronológico de melhorias, refatorações e
 ### Investigação: botão para a Visão Operacional
 * **Agora:** o painel "Diagnóstico do Alarme" tem o botão "📊 Ver na Visão Operacional", que abre (ou reaproveita) a janela da Visão Operacional já filtrada no reservatório e na data investigados, com card, gráficos e informativo do alarme. A Visão Operacional passou a respeitar `?data=`; data inexistente fica na última data e avisa.
 * **Validação:** E2E clica no botão e confere view, reservatório e data na nova janela, e o aviso com data inexistente.
+
+### Janela própria para a nota do reconhecimento
+* **Antes:** a nota do ACK era pedida por `prompt()` nativo do navegador, e Cancelar **reconhecia o alarme mesmo assim**, sem nota. A revogação (ADMIN) e o aviso de acesso negado também usavam `confirm`/`alert` nativos.
+* **Agora:** janela modal no estilo do painel (`abrirDialogoCco` em `ui.js`, tema claro/escuro pelos tokens): reservatório e severidade no topo, campo de nota opcional, Cancelar e Reconhecer. Cancelar, Esc ou ✕ **não reconhecem**; Ctrl+Enter confirma. A revogação pede confirmação na mesma janela (foco inicial em Cancelar) e o acesso negado vira aviso. Se o alarme for reconhecido/revogado em outra janela enquanto ela está aberta, nada é gravado e um toast avisa. Nota sem limite de tamanho, como antes; dados gravados, auditoria e sincronização inalterados.
+* **Validação:** E2E (Cancelar e Esc sem ACK, nota com HTML gravada como texto, mudança em outra janela, revogação cancelada, acesso negado com perfil Agent); E2E de ACK existentes adaptados à janela.
+
+### Fim dos alert/confirm nativos no painel
+* **Antes:** confirmação de logout, erros (falha ao gravar o reconhecimento, ao copiar o resumo, pop-up bloqueado, navegador sem suporte, falha ao vincular arquivo) e avisos de "sem dados" usavam `alert`/`confirm` do navegador.
+* **Agora:** a janela do reconhecimento virou a janela do painel (`abrirDialogoCco`, `#dialogo-cco`, `.dialogo-cco*`). Logout pede confirmação nela (Cancelar mantém a sessão; foco inicial em Cancelar); os erros aparecem como aviso com "Entendi", que não some sozinho; os avisos de "Nenhum dado carregado/para exportar" viram toast de atenção. Nenhum fluxo mudou, só a forma de exibir.
+* **Validação:** E2E de logout (Cancelar e Sair), falha simulada ao gravar a revogação (aviso visível, estado preservado) e toast de exportação vazia.
